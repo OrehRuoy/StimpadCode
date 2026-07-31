@@ -1,0 +1,293 @@
+[
+  {
+    "id": "police_siren",
+    "mixkit_id": 1643,
+    "title": "Police siren",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1643/1643-preview.mp3"
+  },
+  {
+    "id": "fire_whistle",
+    "mixkit_id": 2018,
+    "title": "Manual siren fire alert",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3"
+  },
+  {
+    "id": "school_bell",
+    "mixkit_id": 933,
+    "title": "School bell ring",
+    "url": "https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3"
+  },
+  {
+    "id": "vacuum",
+    "mixkit_id": 2608,
+    "title": "Air zoom vacuum",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3"
+  },
+  {
+    "id": "white_noise",
+    "source": "generated",
+    "color": "white"
+  },
+  {
+    "id": "pen_click",
+    "mixkit_id": 1114,
+    "title": "Pen clicking twice",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3"
+  },
+  {
+    "id": "rain",
+    "mixkit_id": 2394,
+    "title": "Rain long loop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2394/2394-preview.mp3"
+  },
+  {
+    "id": "fan_hum",
+    "mixkit_id": 1704,
+    "title": "Electric fan blowing",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1704/1704-preview.mp3"
+  },
+  {
+    "id": "ambulance_siren",
+    "mixkit_id": 998,
+    "title": "Ambulance siren US",
+    "url": "https://assets.mixkit.co/active_storage/sfx/998/998-preview.mp3"
+  },
+  {
+    "id": "fire_truck_siren",
+    "mixkit_id": 610,
+    "title": "Fire truck siren US",
+    "url": "https://assets.mixkit.co/active_storage/sfx/610/610-preview.mp3"
+  },
+  {
+    "id": "tornado_siren",
+    "mixkit_id": 2018,
+    "title": "Manual siren fire alert",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3"
+  },
+  {
+    "id": "alarm_clock",
+    "mixkit_id": 615,
+    "title": "Alarm clock beep",
+    "url": "https://assets.mixkit.co/active_storage/sfx/615/615-preview.mp3"
+  },
+  {
+    "id": "smoke_alarm",
+    "mixkit_id": 1611,
+    "title": "Smoke alarm detector",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1611/1611-preview.mp3"
+  },
+  {
+    "id": "doorbell",
+    "mixkit_id": 2357,
+    "title": "Doorbell tone",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2357/2357-preview.mp3"
+  },
+  {
+    "id": "bicycle_bell",
+    "mixkit_id": 1028,
+    "title": "Bicycle bell ring",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1028/1028-preview.mp3"
+  },
+  {
+    "id": "wind_chimes",
+    "mixkit_id": 1792,
+    "title": "Wind chimes",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1792/1792-preview.mp3"
+  },
+  {
+    "id": "church_bell",
+    "mixkit_id": 933,
+    "title": "Church bell",
+    "url": "https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3"
+  },
+  {
+    "id": "washing_machine",
+    "mixkit_id": 1181,
+    "title": "Washing machine cycle",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1181/1181-preview.mp3"
+  },
+  {
+    "id": "dryer",
+    "mixkit_id": 1180,
+    "title": "Dryer running",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1180/1180-preview.mp3"
+  },
+  {
+    "id": "dishwasher",
+    "mixkit_id": 1182,
+    "title": "Dishwasher running",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1182/1182-preview.mp3"
+  },
+  {
+    "id": "hair_dryer",
+    "mixkit_id": 1183,
+    "title": "Hair dryer",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1183/1183-preview.mp3"
+  },
+  {
+    "id": "blender",
+    "mixkit_id": 1184,
+    "title": "Blender running",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1184/1184-preview.mp3"
+  },
+  {
+    "id": "microwave_hum",
+    "mixkit_id": 1185,
+    "title": "Microwave hum",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1185/1185-preview.mp3"
+  },
+  {
+    "id": "fridge_hum",
+    "mixkit_id": 2507,
+    "title": "Sci fi computer ambience",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2507/2507-preview.mp3"
+  },
+  {
+    "id": "ac_hum",
+    "mixkit_id": 447,
+    "title": "Office ambience",
+    "url": "https://assets.mixkit.co/active_storage/sfx/447/447-preview.mp3"
+  },
+  {
+    "id": "keyboard_typing",
+    "mixkit_id": 1386,
+    "title": "Keyboard key presses",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1386/1386-preview.mp3"
+  },
+  {
+    "id": "light_switch",
+    "mixkit_id": 2573,
+    "title": "Light switch click",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2573/2573-preview.mp3"
+  },
+  {
+    "id": "fidget_click",
+    "mixkit_id": 1114,
+    "title": "Pen clicking twice",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3"
+  },
+  {
+    "id": "zipper",
+    "mixkit_id": 2574,
+    "title": "Zip fast",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2574/2574-preview.mp3"
+  },
+  {
+    "id": "bubble_wrap",
+    "mixkit_id": 956,
+    "title": "Bubble pop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/956/956-preview.mp3"
+  },
+  {
+    "id": "velcro",
+    "mixkit_id": 2561,
+    "title": "Fabric rip",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3"
+  },
+  {
+    "id": "train_horn",
+    "mixkit_id": 1715,
+    "title": "Train horn",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1715/1715-preview.mp3"
+  },
+  {
+    "id": "car_horn",
+    "mixkit_id": 1716,
+    "title": "Car horn",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1716/1716-preview.mp3"
+  },
+  {
+    "id": "subway_rumble",
+    "mixkit_id": 1717,
+    "title": "Subway train passing",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1717/1717-preview.mp3"
+  },
+  {
+    "id": "thunder",
+    "mixkit_id": 2395,
+    "title": "Thunder with rain in the storm",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2395/2395-preview.mp3"
+  },
+  {
+    "id": "shower",
+    "mixkit_id": 2396,
+    "title": "Shower running",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2396/2396-preview.mp3"
+  },
+  {
+    "id": "tap_drip",
+    "mixkit_id": 2397,
+    "title": "Water tap drip",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2397/2397-preview.mp3"
+  },
+  {
+    "id": "pink_noise",
+    "source": "generated",
+    "color": "pink"
+  },
+  {
+    "id": "brown_noise",
+    "source": "generated",
+    "color": "brown"
+  },
+  {
+    "id": "tv_static",
+    "mixkit_id": 1789,
+    "title": "Summer night crickets loop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1789/1789-preview.mp3"
+  },
+  {
+    "id": "paper_crinkle",
+    "mixkit_id": 2570,
+    "title": "Paper crinkle",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2570/2570-preview.mp3"
+  },
+  {
+    "id": "scissors_snip",
+    "mixkit_id": 2569,
+    "title": "Scissors cut",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3"
+  },
+  {
+    "id": "metronome",
+    "mixkit_id": 2568,
+    "title": "Metronome tick",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"
+  },
+  {
+    "id": "dial_tone",
+    "mixkit_id": 2567,
+    "title": "Dial tone",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3"
+  },
+  {
+    "id": "old_phone_ring",
+    "mixkit_id": 2566,
+    "title": "Office telephone ring",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2566/2566-preview.mp3"
+  },
+  {
+    "id": "popcorn_pop",
+    "mixkit_id": 2565,
+    "title": "Popcorn pop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2565/2565-preview.mp3"
+  },
+  {
+    "id": "ice_crunch",
+    "mixkit_id": 2564,
+    "title": "Ice crunch",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2564/2564-preview.mp3"
+  },
+  {
+    "id": "xylophone",
+    "mixkit_id": 2563,
+    "title": "Xylophone note",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2563/2563-preview.mp3"
+  },
+  {
+    "id": "triangle_ting",
+    "mixkit_id": 2561,
+    "title": "Small bell ting",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3"
+  }
+]
