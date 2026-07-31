@@ -1,0 +1,138 @@
+name: iOS TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_macos_export:
+        description: "Run macOS export + TestFlight upload"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate GitHub secrets
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+          APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [ -z "${APPLE_CERTIFICATE_BASE64:-}" ] && missing+=("APPLE_CERTIFICATE_BASE64")
+          [ -z "${APPLE_CERTIFICATE_PASSWORD:-}" ] && missing+=("APPLE_CERTIFICATE_PASSWORD")
+          [ -z "${APPLE_PROVISIONING_PROFILE_BASE64:-}" ] && missing+=("APPLE_PROVISIONING_PROFILE_BASE64")
+          [ -z "${APPLE_ID_USERNAME:-}" ] && missing+=("APPLE_ID_USERNAME")
+          [ -z "${APPLE_ID_PASSWORD:-}" ] && missing+=("APPLE_ID_PASSWORD")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Validate export preset and plugins
+        run: |
+          set -euo pipefail
+          grep -q 'name="iOS (TestFlight IPA)"' export_presets.cfg
+          grep -q 'application/bundle_identifier="com.stimpad.soundboard"' export_presets.cfg
+          grep -q 'plugins/AdmobPlugin=true' export_presets.cfg
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          if [ "$UUID" = "PASTE_PROFILE_UUID_HERE" ]; then
+            echo "::error::Replace PASTE_PROFILE_UUID_HERE in export_presets.cfg"
+            exit 1
+          fi
+          test -f assets/branding/icon_1024.png
+          test -f ios/plugins/AdmobPlugin.gdip
+          test -f ios/plugins/AdmobPlugin.release.xcframework/ios-arm64/AdmobPlugin.a
+          if grep -nE '^\s*#' ios/plugins/*.gdip 2>/dev/null; then
+            echo "::error::Remove # comments from .gdip files"
+            exit 1
+          fi
+          chmod +x scripts/setup_ios_admob_frameworks.sh scripts/verify_ios_ipa_plugins.sh
+          ./scripts/setup_ios_admob_frameworks.sh
+          grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot || echo "::warning::Enable AdmobPlugin in project.godot editor_plugins after first open"
+
+  build-ios:
+    needs: preflight
+    if: ${{ inputs.run_macos_export }}
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      GODOT_VERSION: "4.6.3"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
+
+      - name: Setup Godot
+        run: |
+          curl -fsSL "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_macos.universal.zip" -o "$RUNNER_TEMP/godot.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP"
+          echo "GODOT_BIN=$RUNNER_TEMP/Godot.app/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+          curl -fsSL "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o "$RUNNER_TEMP/templates.tpz"
+          unzip -q "$RUNNER_TEMP/templates.tpz" -d "$RUNNER_TEMP"
+          TDIR="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$TDIR"
+          cp "$RUNNER_TEMP/templates/ios.zip" "$TDIR/"
+
+      - name: Verify AdMob frameworks
+        run: ./scripts/setup_ios_admob_frameworks.sh
+
+      - name: Import signing certificate
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE_BASE64" | base64 --decode > certificate.p12
+          KC_PASS=$(uuidgen)
+          security create-keychain -p "$KC_PASS" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KC_PASS" build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KC_PASS" build.keychain
+          rm certificate.p12
+
+      - name: Install provisioning profile
+        env:
+          APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+
+      - name: Set build number
+        run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg
+
+      - name: Export iOS IPA
+        run: |
+          mkdir -p build
+          "$GODOT_BIN" --headless --path . --import || true
+          "$GODOT_BIN" --headless --path . --export-release "iOS (TestFlight IPA)" "build/StimPad.ipa"
+
+      - name: Verify IPA
+        run: ./scripts/verify_ios_ipa_plugins.sh build/StimPad.ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: StimPad-ipa
+          path: build/*.ipa
+          retention-days: 7
+
+      - name: Upload to TestFlight
+        env:
+          APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        run: |
+          xcrun altool --upload-app -t ios -f build/StimPad.ipa \
+            -u "$APPLE_ID_USERNAME" -p "$APPLE_ID_PASSWORD" --verbose

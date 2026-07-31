@@ -1,0 +1,30 @@
+name: Upload Existing StimPad IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "GitHub run ID that produced StimPad-ipa artifact"
+        required: true
+        type: string
+
+jobs:
+  upload:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: StimPad-ipa
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.source_run_id }}
+          path: build
+      - name: Verify and upload
+        env:
+          APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        run: |
+          chmod +x scripts/verify_ios_ipa_plugins.sh
+          ./scripts/verify_ios_ipa_plugins.sh build/StimPad.ipa
+          xcrun altool --upload-app -t ios -f build/StimPad.ipa \
+            -u "$APPLE_ID_USERNAME" -p "$APPLE_ID_PASSWORD" --verbose
