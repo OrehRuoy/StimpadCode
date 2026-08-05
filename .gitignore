@@ -19,7 +19,9 @@ Thumbs.db
 desktop.ini
 
 # Secrets (never commit)
+GoogleService-Info.plist
 ios/GoogleService-Info.plist
+addons/GodotFirebaseiOS/GoogleService-Info.plist
 android/app/google-services.json
 *.p12
 *.mobileprovision
@@ -35,6 +37,15 @@ android/app/google-services.json
 docs-ref-*
 *-ref.yml
 *.log
+_tmp_firebase/
+
+# Firebase iOS plugin frameworks are huge (~300MB) + Windows MAX_PATH issues.
+# Install via scripts/setup_ios_firebase.sh (CI does this automatically).
+addons/GodotFirebaseiOS/
 
 # Local Firebase configs (use CI secrets or local copy)
 # ios/framework and ios/plugins are committed with AdmobPlugin
+
+node_modules/
+package-lock.json
+

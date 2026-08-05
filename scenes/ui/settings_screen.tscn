@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://stimpad_settings"]
+[gd_scene load_steps=4 format=3 uid="uid://stimpad_settings"]
 
 [ext_resource type="Script" path="res://scripts/ui/settings_screen.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/bg_settings.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ui/settings_hero.png" id="3"]
 
 [node name="SettingsScreen" type="Control"]
 layout_mode = 3
@@ -11,6 +13,28 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
+[node name="Bg" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="BgScrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.07, 0.09, 0.13, 0.42)
+
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -19,50 +43,77 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
+theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
 [node name="VBox" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 12
+
+[node name="Top" type="HBoxContainer" parent="Margin/VBox"]
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="Margin/VBox/Top"]
+custom_minimum_size = Vector2(100, 44)
+layout_mode = 2
+text = "← Back"
+
+[node name="Spacer" type="Control" parent="Margin/VBox/Top"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Scroll" type="ScrollContainer" parent="Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 14
 
-[node name="Title" type="Label" parent="Margin/VBox"]
+[node name="Hero" type="TextureRect" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 110)
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+size_flags_horizontal = 3
+texture = ExtResource("3")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
 text = "Settings"
+horizontal_alignment = 1
 
-[node name="PlusStatus" type="Label" parent="Margin/VBox"]
+[node name="PlusStatus" type="Label" parent="Margin/VBox/Scroll/Content"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.37, 0.81, 0.69, 1)
 text = "StimPad Plus: Not purchased"
+horizontal_alignment = 1
 
-[node name="FxToggle" type="CheckButton" parent="Margin/VBox"]
-layout_mode = 2
-button_pressed = true
-text = "Visual effects while playing"
-
-[node name="RestoreBtn" type="Button" parent="Margin/VBox"]
+[node name="RestoreBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "Restore Purchases"
 
-[node name="CreditsBtn" type="Button" parent="Margin/VBox"]
-layout_mode = 2
-text = "Sound Credits"
-
-[node name="CreditsPanel" type="Label" parent="Margin/VBox"]
-visible = false
-layout_mode = 2
-autowrap_mode = 3
-text = "Most bundled sounds sourced from Mixkit (Mixkit License, free commercial use). Generated noise tracks are CC0. See docs/SOUND_LICENSES.md in the repository."
-
-[node name="PrivacyBtn" type="Button" parent="Margin/VBox"]
+[node name="PrivacyBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "Privacy Policy"
 
-[node name="VersionLabel" type="Label" parent="Margin/VBox"]
+[node name="AdPrivacyBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
+visible = false
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-text = "StimPad v1.0.0"
+text = "Manage Ad Consent"
 
-[node name="BackBtn" type="Button" parent="Margin/VBox"]
+[node name="VersionLabel" type="Label" parent="Margin/VBox/Scroll/Content"]
 layout_mode = 2
-text = "Back"
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "StimPad v1.0.0"
+horizontal_alignment = 1

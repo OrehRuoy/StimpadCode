@@ -12,12 +12,6 @@
     "url": "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3"
   },
   {
-    "id": "school_bell",
-    "mixkit_id": 933,
-    "title": "School bell ring",
-    "url": "https://assets.mixkit.co/active_storage/sfx/933/933-preview.mp3"
-  },
-  {
     "id": "vacuum",
     "mixkit_id": 2608,
     "title": "Air zoom vacuum",
@@ -185,40 +179,10 @@
     "url": "https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3"
   },
   {
-    "id": "train_horn",
-    "mixkit_id": 1715,
-    "title": "Train horn",
-    "url": "https://assets.mixkit.co/active_storage/sfx/1715/1715-preview.mp3"
-  },
-  {
-    "id": "car_horn",
-    "mixkit_id": 1716,
-    "title": "Car horn",
-    "url": "https://assets.mixkit.co/active_storage/sfx/1716/1716-preview.mp3"
-  },
-  {
     "id": "subway_rumble",
     "mixkit_id": 1717,
     "title": "Subway train passing",
     "url": "https://assets.mixkit.co/active_storage/sfx/1717/1717-preview.mp3"
-  },
-  {
-    "id": "thunder",
-    "mixkit_id": 2395,
-    "title": "Thunder with rain in the storm",
-    "url": "https://assets.mixkit.co/active_storage/sfx/2395/2395-preview.mp3"
-  },
-  {
-    "id": "shower",
-    "mixkit_id": 2396,
-    "title": "Shower running",
-    "url": "https://assets.mixkit.co/active_storage/sfx/2396/2396-preview.mp3"
-  },
-  {
-    "id": "tap_drip",
-    "mixkit_id": 2397,
-    "title": "Water tap drip",
-    "url": "https://assets.mixkit.co/active_storage/sfx/2397/2397-preview.mp3"
   },
   {
     "id": "pink_noise",
@@ -289,5 +253,53 @@
     "mixkit_id": 2561,
     "title": "Small bell ting",
     "url": "https://assets.mixkit.co/active_storage/sfx/2561/2561-preview.mp3"
+  },
+  {
+    "id": "school_bell",
+    "source": "freesound",
+    "freesound_id": "217486",
+    "title": "Long school hall electric bell",
+    "url": "https://cdn.freesound.org/previews/217/217486_4017029-hq.mp3"
+  },
+  {
+    "id": "car_horn",
+    "source": "bigsoundbank",
+    "bsb_id": "258",
+    "title": "Recent car horn held",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/0258.mp3"
+  },
+  {
+    "id": "steam_train",
+    "source": "freesound",
+    "freesound_id": "277496",
+    "title": "Steam-Train Molli with whistle",
+    "url": "https://cdn.freesound.org/previews/277/277496_5339600-hq.mp3"
+  },
+  {
+    "id": "shower",
+    "source": "freesound",
+    "freesound_id": "802544",
+    "title": "Shower Running",
+    "url": "https://cdn.freesound.org/previews/802/802544_14426029-hq.mp3"
+  },
+  {
+    "id": "train_horn",
+    "source": "freesound",
+    "freesound_id": "591808",
+    "title": "Train horn at railroad crossing",
+    "url": "https://cdn.freesound.org/previews/591/591808_6456158-hq.mp3"
+  },
+  {
+    "id": "thunder",
+    "mixkit_id": 2402,
+    "title": "Long thunderstorm with loud cracks",
+    "url": "https://assets.mixkit.co/active_storage/sfx/2402/2402-preview.mp3"
+  },
+  {
+    "id": "tap_drip",
+    "source": "bigsoundbank",
+    "bsb_id": "1384",
+    "title": "Irregular quiet water drips",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/1384.mp3"
   }
 ]

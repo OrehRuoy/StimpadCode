@@ -3,8 +3,8 @@ extends Node
 const PREFS_PATH := "user://stimpad_prefs.json"
 
 var favorites: Array[String] = []
-var visual_effects_enabled: bool = true
-var last_category: String = "All"
+var last_scope: String = "All" ## All | Free | Favorites
+var last_sound_category: String = "All" ## All | Alarms | Bells | ...
 var session_duration_sec: int = 60
 
 
@@ -23,16 +23,26 @@ func load_prefs() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	favorites = _to_string_array(parsed.get("favorites", []))
-	visual_effects_enabled = bool(parsed.get("visual_effects_enabled", true))
-	last_category = str(parsed.get("last_category", "All"))
 	session_duration_sec = int(parsed.get("session_duration_sec", 60))
+	if parsed.has("last_scope"):
+		last_scope = str(parsed.get("last_scope", "All"))
+		last_sound_category = str(parsed.get("last_sound_category", "All"))
+	else:
+		## Migrate older single last_category field.
+		var legacy := str(parsed.get("last_category", "All"))
+		if legacy in ["All", "Free", "Favorites"]:
+			last_scope = legacy
+			last_sound_category = "All"
+		else:
+			last_scope = "All"
+			last_sound_category = legacy
 
 
 func save_prefs() -> void:
 	var data := {
 		"favorites": favorites,
-		"visual_effects_enabled": visual_effects_enabled,
-		"last_category": last_category,
+		"last_scope": last_scope,
+		"last_sound_category": last_sound_category,
 		"session_duration_sec": session_duration_sec,
 	}
 	var file := FileAccess.open(PREFS_PATH, FileAccess.WRITE)

@@ -17,9 +17,7 @@ Only people with **admin/write access** to the repo can add or view secret names
 | `APPLE_PROVISIONING_PROFILE_BASE64` | Base64 of StimPad `.mobileprovision` |
 | `APPLE_ID_USERNAME` | Apple ID email |
 | `APPLE_ID_PASSWORD` | App-specific password (appleid.apple.com → Sign-In and Security) |
-
-Optional later:
-| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | Firebase iOS plist (when you wire Analytics)
+| `GOOGLE_SERVICE_INFO_PLIST_BASE64` | Base64 of `GoogleService-Info.plist` (Firebase Analytics) |
 
 ## How to add (GitHub website)
 
@@ -43,6 +41,10 @@ You must generate the base64 values locally first (PowerShell):
 gh secret set APPLE_CERTIFICATE_PASSWORD --repo OrehRuoy/StimpadCode
 gh secret set APPLE_ID_USERNAME --repo OrehRuoy/StimpadCode
 gh secret set APPLE_ID_PASSWORD --repo OrehRuoy/StimpadCode
+
+# Firebase Analytics plist (from project root or ios/)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\Users\Ultima\Desktop\StimPad\GoogleService-Info.plist")) | Set-Clipboard
+gh secret set GOOGLE_SERVICE_INFO_PLIST_BASE64 --repo OrehRuoy/StimpadCode
 ```
 
 ## Can the agent add them for me?
@@ -61,5 +63,6 @@ gh secret list --repo OrehRuoy/StimpadCode
 
 These files stay **gitignored**:
 - `*.p12`, `*.mobileprovision`
-- `ios/GoogleService-Info.plist`
+- `GoogleService-Info.plist`, `ios/GoogleService-Info.plist`, `addons/GodotFirebaseiOS/GoogleService-Info.plist`
+- `addons/GodotFirebaseiOS/` (installed by `scripts/setup_ios_firebase.sh` / CI)
 - `android/app/google-services.json`

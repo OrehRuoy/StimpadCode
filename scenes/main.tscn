@@ -7,7 +7,9 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/paywall_screen.tscn" id="5"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
-bg_color = Color(0.05, 0.07, 0.1, 0.9)
+bg_color = Color(0.12, 0.15, 0.2, 0.96)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
 
 [node name="Main" type="Control" groups=["main_nav"]]
 layout_mode = 3

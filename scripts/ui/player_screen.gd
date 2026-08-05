@@ -3,17 +3,19 @@ extends Control
 @onready var _title: Label = $Margin/VBox/Title
 @onready var _art: TextureRect = $Margin/VBox/ArtFrame/Art
 @onready var _fx_layer: ColorRect = $Margin/VBox/ArtFrame/FxLayer
-@onready var _play_btn: Button = $Margin/VBox/Controls/PlayBtn
-@onready var _stop_btn: Button = $Margin/VBox/Controls/StopBtn
+@onready var _play_btn: Button = $Margin/VBox/ControlsPanel/Controls/PlayBtn
+@onready var _stop_btn: Button = $Margin/VBox/ControlsPanel/Controls/StopBtn
 @onready var _back_btn: Button = $Margin/VBox/Top/BackBtn
 @onready var _favorite_btn: Button = $Margin/VBox/Top/FavoriteBtn
-@onready var _duration_row: HBoxContainer = $Margin/VBox/DurationRow
-@onready var _duration_30: Button = $Margin/VBox/DurationRow/Duration30
-@onready var _duration_60: Button = $Margin/VBox/DurationRow/Duration60
-@onready var _duration_300: Button = $Margin/VBox/DurationRow/Duration300
+@onready var _controls_panel: PanelContainer = $Margin/VBox/ControlsPanel
+@onready var _art_frame: PanelContainer = $Margin/VBox/ArtFrame
+@onready var _margin: MarginContainer = $Margin
+@onready var _vbox: VBoxContainer = $Margin/VBox
+
+const FAV_ON := "res://assets/ui/icon_favorite_on.png"
+const FAV_OFF := "res://assets/ui/icon_favorite_off.png"
 
 var _sound: Dictionary = {}
-var _fx_tween: Tween
 
 
 func _ready() -> void:
@@ -22,13 +24,47 @@ func _ready() -> void:
 	_play_btn.pressed.connect(_on_play)
 	_stop_btn.pressed.connect(_on_stop)
 	_favorite_btn.pressed.connect(_on_favorite_toggle)
-	_duration_30.pressed.connect(_set_duration.bind(30))
-	_duration_60.pressed.connect(_set_duration.bind(60))
-	_duration_300.pressed.connect(_set_duration.bind(300))
 	AudioController.playback_started.connect(_on_playback_started)
 	AudioController.playback_stopped.connect(_on_playback_stopped)
 	AudioController.playback_finished.connect(_on_playback_stopped)
-	LocalPrefs.save_prefs()
+	resized.connect(_apply_responsive_layout)
+	get_viewport().size_changed.connect(_apply_responsive_layout)
+	_fx_layer.visible = false
+	_style_controls()
+	_apply_responsive_layout()
+
+
+func _style_controls() -> void:
+	UiLook.style_back(_back_btn)
+	UiLook.style_primary_mint(_play_btn)
+	UiLook.style_secondary_slate(_stop_btn)
+	UiLook.style_icon_button(_favorite_btn, FAV_OFF, true)
+	UiLook.style_player_controls_panel(_controls_panel)
+	_play_btn.add_theme_font_size_override("font_size", 22)
+	_stop_btn.add_theme_font_size_override("font_size", 20)
+	_stop_btn.modulate = Color(1, 1, 1, 0.7)
+
+
+func _apply_responsive_layout() -> void:
+	var vs := get_viewport_rect().size
+	var margins := Responsive.safe_outer_margins(Responsive.content_margins(vs))
+	var tablet := Responsive.is_tablet(vs)
+	_margin.add_theme_constant_override("margin_left", int(margins.x))
+	_margin.add_theme_constant_override("margin_top", int(margins.y))
+	_margin.add_theme_constant_override("margin_right", int(margins.z))
+	_margin.add_theme_constant_override("margin_bottom", int(margins.w))
+	_vbox.add_theme_constant_override("separation", 16 if tablet else 12)
+	_title.add_theme_font_size_override("font_size", Responsive.title_font_size(vs))
+	_art_frame.custom_minimum_size = Vector2(0, Responsive.player_art_min_height(vs))
+	var btn_h := Responsive.top_button_min_height(vs)
+	_back_btn.custom_minimum_size = Vector2(100, btn_h)
+	_favorite_btn.custom_minimum_size = Vector2(btn_h + 8.0, btn_h + 8.0)
+	var control_h := 72.0 if tablet else 64.0
+	_play_btn.custom_minimum_size = Vector2(0, control_h)
+	_stop_btn.custom_minimum_size = Vector2(0, control_h)
+	_play_btn.add_theme_font_size_override("font_size", 24 if tablet else 22)
+	_stop_btn.add_theme_font_size_override("font_size", 22 if tablet else 20)
+	_favorite_btn.add_theme_constant_override("icon_max_width", int(btn_h + 4.0))
 
 
 func open_sound(sound: Dictionary) -> void:
@@ -39,24 +75,40 @@ func open_sound(sound: Dictionary) -> void:
 		_art.texture = load(art_path)
 	else:
 		_art.texture = null
-	var is_loop := str(sound.get("mode", "")) == "loop"
-	_duration_row.visible = is_loop
-	_update_duration_buttons()
-	_favorite_btn.text = "★" if LocalPrefs.is_favorite(str(sound.get("id", ""))) else "☆"
-	_stop_fx()
+	_refresh_favorite_icon()
+	_art.rotation_degrees = 0
+	_art.scale = Vector2.ONE
+	_art.position = Vector2.ZERO
+	_art.modulate = Color.WHITE
+	_fx_layer.visible = false
+	_apply_art_frame()
+
+
+func _apply_art_frame() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.13, 0.18, 0.92)
+	style.corner_radius_top_left = 28
+	style.corner_radius_top_right = 28
+	style.corner_radius_bottom_right = 28
+	style.corner_radius_bottom_left = 28
+	style.set_content_margin_all(16)
+	style.border_color = Color(0.37, 0.81, 0.69, 0.5)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.shadow_color = Color(0.02, 0.03, 0.05, 0.45)
+	style.shadow_size = 14
+	style.shadow_offset = Vector2(0, 5)
+	_art_frame.add_theme_stylebox_override("panel", style)
 
 
 func _on_play() -> void:
 	AudioController.play_sound(_sound)
-	if str(_sound.get("mode", "")) == "oneshot":
-		_pulse_fx_once()
-	else:
-		_start_fx_loop()
 
 
 func _on_stop() -> void:
 	AudioController.stop()
-	_stop_fx()
 
 
 func _on_back() -> void:
@@ -67,21 +119,17 @@ func _on_back() -> void:
 func _on_favorite_toggle() -> void:
 	var sound_id := str(_sound.get("id", ""))
 	LocalPrefs.toggle_favorite(sound_id)
-	_favorite_btn.text = "★" if LocalPrefs.is_favorite(sound_id) else "☆"
+	_refresh_favorite_icon()
 
 
-func _set_duration(seconds: int) -> void:
-	LocalPrefs.session_duration_sec = seconds
-	LocalPrefs.save_prefs()
-	AudioController.set_session_duration(seconds)
-	_update_duration_buttons()
-
-
-func _update_duration_buttons() -> void:
-	var current := AudioController.get_session_duration()
-	_duration_30.button_pressed = current == 30
-	_duration_60.button_pressed = current == 60
-	_duration_300.button_pressed = current == 300
+func _refresh_favorite_icon() -> void:
+	var on := LocalPrefs.is_favorite(str(_sound.get("id", "")))
+	var path := FAV_ON if on else FAV_OFF
+	if ResourceLoader.exists(path):
+		_favorite_btn.icon = load(path)
+		_favorite_btn.expand_icon = true
+	_favorite_btn.text = ""
+	_favorite_btn.tooltip_text = "Remove favorite" if on else "Add to favorites"
 
 
 func _on_playback_started(sound_id: String) -> void:
@@ -89,6 +137,8 @@ func _on_playback_started(sound_id: String) -> void:
 		return
 	_play_btn.disabled = true
 	_stop_btn.disabled = false
+	_play_btn.modulate = Color(1, 1, 1, 0.55)
+	_stop_btn.modulate = Color.WHITE
 
 
 func _on_playback_stopped(_sound_id: String = "") -> void:
@@ -98,35 +148,5 @@ func _on_playback_stopped(_sound_id: String = "") -> void:
 		return
 	_play_btn.disabled = false
 	_stop_btn.disabled = true
-	_stop_fx()
-
-
-func _start_fx_loop() -> void:
-	if not LocalPrefs.visual_effects_enabled:
-		_fx_layer.visible = false
-		return
-	_fx_layer.visible = true
-	if _fx_tween:
-		_fx_tween.kill()
-	_fx_tween = create_tween().set_loops()
-	_fx_tween.tween_property(_fx_layer, "color:a", 0.55, 0.35)
-	_fx_tween.tween_property(_fx_layer, "color:a", 0.08, 0.35)
-
-
-func _pulse_fx_once() -> void:
-	if not LocalPrefs.visual_effects_enabled:
-		return
-	_fx_layer.visible = true
-	if _fx_tween:
-		_fx_tween.kill()
-	_fx_tween = create_tween()
-	_fx_layer.color.a = 0.0
-	_fx_tween.tween_property(_fx_layer, "color:a", 0.65, 0.08)
-	_fx_tween.tween_property(_fx_layer, "color:a", 0.0, 0.25)
-
-
-func _stop_fx() -> void:
-	if _fx_tween:
-		_fx_tween.kill()
-	_fx_layer.visible = false
-	_fx_layer.color.a = 0.0
+	_play_btn.modulate = Color.WHITE
+	_stop_btn.modulate = Color(1, 1, 1, 0.7)

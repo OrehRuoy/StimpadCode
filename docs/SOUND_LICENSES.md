@@ -1,40 +1,44 @@
 # StimPad Sound Licenses
 
-Launch catalog: **49 sounds** (8 free, 41 Plus).
+Launch catalog: **84 sounds** (14 free, 70 Plus).
 
-License: [Mixkit License](https://mixkit.co/license/) — free for commercial use; attribution appreciated, not required.
+## Sources
 
-Generated noise tracks (white/pink/brown) are **CC0** (created in-repo).
+- Most stim clips are **bundled locally** under `assets/audio/` (app works offline for playback).
+- Primary libraries: [Freesound](https://freesound.org/) **CC0** field recordings and [BigSoundBank](https://bigsoundbank.com/) **CC0**.
+- Some clips: [Mixkit License](https://mixkit.co/license/) — free for commercial use; attribution appreciated, not required.
+- Full per-sound attribution lives in `data/sounds.json` / `data/mixkit_manifest.json` (this file is the in-repo credits source; no in-app Sound Credits screen).
+- Generated noise (white/pink/brown) and a few synth tones: **CC0** (created in-repo).
+- Retro “console boot” entries are **original synthesized tones** or generic Mixkit UI/arcade SFX — **not** Nintendo, Sega, Sony, or Microsoft startup jingles. Art uses generic devices without brand logos.
 
-Full download manifest: `data/mixkit_manifest.json`  
-Re-download script: `node tools/download_mixkit_sounds.js`
+Manifest: `data/mixkit_manifest.json`  
+Household re-download helper: `node tools/fix_household_sfx.js`
 
-## Free tier (8)
+## Free tier (14)
 
-| ID | Mixkit title | Mixkit ID |
-|----|--------------|-----------|
-| police_siren | Police siren | 1643 |
-| fire_whistle | Manual siren fire alert | 2018 |
-| school_bell | School bell ring | 933 |
-| vacuum | Air zoom vacuum | 2608 |
-| white_noise | Generated CC0 | — |
-| pen_click | Pen clicking twice | 1114 |
-| rain | Rain long loop | 2394 |
-| fan_hum | Electric fan blowing | 1704 |
+| ID | Name |
+|----|------|
+| police_siren | Police Wail Siren |
+| fire_whistle | Manual Fire Whistle |
+| school_bell | School Hall Bell |
+| vacuum | Upright Vacuum |
+| white_noise | White Noise Hiss |
+| pen_click | Ballpoint Pen Click |
+| rain | Steady Rain Loop |
+| fan_hum | Desk Fan |
+| ocean_waves | Ocean Waves Loop |
+| clock_tick | Wall Clock Tick-Tock |
+| campfire | Campfire Crackles |
+| camera_shutter | Camera Shutter Click |
+| cat_meow | Sweet Cat Meow |
+| coin_drop | Arcade Coin Drop |
 
-## Plus tier (41)
+## Plus tier
 
-See `data/mixkit_manifest.json` for every file URL. All Plus sounds sourced from Mixkit CDN except pink/brown noise (generated CC0).
+See `data/sounds.json` and `data/mixkit_manifest.json` for full list (Animals, Nature, Tools, Retro, Vehicles, etc.).
 
 ## File format
 
-- Mixkit clips: **MP3** at `assets/audio/{id}.mp3`
-- Generated noise: **WAV** at `assets/audio/{id}.wav`
-
-Godot 4 plays both natively.
-
-## Before store submit
-
-1. Spot-check a few clips in-app (some Mixkit title→ID pairings are approximate)
-2. Replace any misfit sound by editing `tools/download_mixkit_sounds.js` CURATED map and re-running the script
-3. Keep `data/mixkit_manifest.json` updated in git for audit trail
+- Mixkit clips: `assets/audio/{id}.mp3`
+- Generated WAV: `assets/audio/{id}.wav`
+- Art: `assets/art/sounds/{id}.png`

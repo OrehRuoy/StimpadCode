@@ -12,6 +12,7 @@ var _session_duration_sec: int = 60
 var _session_timer: Timer
 var _stop_after_loop: bool = false
 var _loop_pass_pending: bool = false
+var _play_started_msec: int = 0
 
 
 func _ready() -> void:
@@ -60,22 +61,39 @@ func play_sound(sound: Dictionary) -> void:
 	var stream: AudioStream = load(path)
 	if stream == null:
 		return
+	## Important: load() returns a shared cached resource — duplicate before mutating loop flags.
+	if stream.has_method("duplicate"):
+		stream = stream.duplicate()
 	_player.stream = stream
 	var mode: String = str(sound.get("mode", "oneshot"))
 	if mode == "loop":
-		if stream is AudioStreamOggVorbis:
-			stream.loop = true
-		elif stream is AudioStreamWAV:
-			stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		_enable_stream_loop(stream)
 		_stop_after_loop = false
 		_loop_pass_pending = false
-		_session_timer.start(float(_session_duration_sec))
+		## Loops play until the user hits Stop (no duration chips).
+		_session_timer.stop()
 	else:
 		_session_timer.stop()
 		_stop_after_loop = false
 	_player.play()
+	_play_started_msec = Time.get_ticks_msec()
 	playback_started.emit(str(sound.get("id", "")))
-	AnalyticsService.log_event("sound_play", {"sound_id": str(sound.get("id", ""))})
+	AnalyticsService.log_sound_play(sound)
+
+
+func _enable_stream_loop(stream: AudioStream) -> void:
+	## Godot 4: MP3/OGG use `.loop`; WAV uses loop_mode + sample points.
+	if stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
+	elif stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		wav.loop_begin = 0
+		var frames := int(round(wav.get_length() * float(wav.mix_rate)))
+		if frames > 0:
+			wav.loop_end = frames
 
 
 func replay_current() -> void:
@@ -87,30 +105,49 @@ func replay_current() -> void:
 func stop() -> void:
 	if not is_playing() and _current_sound.is_empty():
 		return
-	var stopped_id := str(_current_sound.get("id", ""))
+	var stopped := _current_sound.duplicate()
+	var stopped_id := str(stopped.get("id", ""))
+	var duration_sec := 0.0
+	if _play_started_msec > 0:
+		duration_sec = float(Time.get_ticks_msec() - _play_started_msec) / 1000.0
 	_player.stop()
 	_session_timer.stop()
 	_stop_after_loop = false
 	_loop_pass_pending = false
+	_play_started_msec = 0
 	_current_sound = {}
+	if not stopped_id.is_empty():
+		AnalyticsService.log_sound_stop(stopped, duration_sec)
 	playback_stopped.emit(stopped_id)
 
 
 func _on_session_timer_timeout() -> void:
-	if str(_current_sound.get("mode", "")) == "loop":
-		_stop_after_loop = true
-		if not _player.playing:
-			stop()
-	else:
-		stop()
+	## Looping streams (esp. MP3 with loop=true) often never emit `finished`,
+	## so end the session on the timer itself.
+	var finished_id := str(_current_sound.get("id", ""))
+	stop()
+	if not finished_id.is_empty():
+		playback_finished.emit(finished_id)
 
 
 func _on_player_finished() -> void:
 	var finished_id := str(_current_sound.get("id", ""))
+	if finished_id.is_empty():
+		return
 	if _stop_after_loop:
 		stop()
 		playback_finished.emit(finished_id)
 		return
-	if str(_current_sound.get("mode", "")) == "oneshot":
-		_current_sound = {}
-		playback_finished.emit(finished_id)
+	## Fallback: if native loop didn't engage, keep replaying until Stop.
+	if str(_current_sound.get("mode", "")) == "loop":
+		_player.play()
+		return
+	## Oneshot finished.
+	var finished_sound := _current_sound.duplicate()
+	var duration_sec := 0.0
+	if _play_started_msec > 0:
+		duration_sec = float(Time.get_ticks_msec() - _play_started_msec) / 1000.0
+	_play_started_msec = 0
+	_current_sound = {}
+	AnalyticsService.log_sound_stop(finished_sound, duration_sec)
+	playback_finished.emit(finished_id)

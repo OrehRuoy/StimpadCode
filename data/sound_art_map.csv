@@ -1,0 +1,85 @@
+id,display_name,audio_file,art_file,tier,category
+ambulance_siren,"Ambulance Yelp Siren",ambulance_siren.mp3,ambulance_siren.png,plus,Alarms
+alarm_clock,"Beeping Alarm Clock",alarm_clock.mp3,alarm_clock.png,plus,Alarms
+tornado_siren,"Civil Defense Siren",tornado_siren.wav,tornado_siren.png,plus,Alarms
+fire_truck_siren,"Fire Engine Siren",fire_truck_siren.mp3,fire_truck_siren.png,plus,Alarms
+fire_whistle,"Manual Fire Whistle",fire_whistle.wav,fire_whistle.png,free,Alarms
+police_siren,"Police Wail Siren",police_siren.mp3,police_siren.png,free,Alarms
+smoke_alarm,"Smoke Detector Beep",smoke_alarm.mp3,smoke_alarm.png,plus,Alarms
+bicycle_bell,"Bike Handlebar Bell",bicycle_bell.mp3,bicycle_bell.png,plus,Bells
+church_bell,"Church Tower Bell",church_bell.wav,church_bell.png,plus,Bells
+doorbell,"Home Doorbell Chime",doorbell.mp3,doorbell.png,plus,Bells
+wind_chimes,"Metal Wind Chimes",wind_chimes.mp3,wind_chimes.png,plus,Bells
+school_bell,"School Hall Bell",school_bell.wav,school_bell.png,free,Bells
+hair_dryer,"Blow Dryer Whine",hair_dryer.wav,hair_dryer.png,plus,Household
+dryer,"Clothes Dryer Tumbling",dryer.wav,dryer.png,plus,Household
+fan_hum,"Desk Fan Blow",fan_hum.wav,fan_hum.png,free,Household
+dishwasher,"Dishwasher Cycle",dishwasher.wav,dishwasher.png,plus,Household
+washing_machine,"Front-Load Washer",washing_machine.wav,washing_machine.png,plus,Household
+blender,"Kitchen Blender Whirr",blender.wav,blender.png,plus,Household
+oven_ding,"Kitchen Oven Ding",oven_ding.mp3,oven_ding.png,plus,Household
+lawn_mower,"Lawn Mower Engine",lawn_mower.mp3,lawn_mower.png,plus,Household
+microwave_hum,"Microwave Hum",microwave_hum.wav,microwave_hum.png,plus,Household
+fridge_hum,"Refrigerator Hum",fridge_hum.wav,fridge_hum.png,plus,Household
+toaster_pop,"Toaster Pop",toaster_pop.mp3,toaster_pop.png,plus,Household
+vacuum,"Upright Vacuum Hum",vacuum.mp3,vacuum.png,free,Household
+ac_hum,"Window AC Hum",ac_hum.wav,ac_hum.png,plus,Household
+pen_click,"Ballpoint Pen Click",pen_click.mp3,pen_click.png,free,Clicks
+bubble_wrap,"Bubble Wrap Pop",bubble_wrap.mp3,bubble_wrap.png,plus,Clicks
+camera_shutter,"Camera Shutter Click",camera_shutter.mp3,camera_shutter.png,free,Clicks
+fidget_click,"Fidget Clicker",fidget_click.mp3,fidget_click.png,plus,Clicks
+zipper,"Jacket Zipper Pull",zipper.mp3,zipper.png,plus,Clicks
+keyboard_typing,"Mechanical Keyboard",keyboard_typing.mp3,keyboard_typing.png,plus,Clicks
+velcro,"Velcro Rip",velcro.mp3,velcro.png,plus,Clicks
+light_switch,"Wall Light Switch",light_switch.mp3,light_switch.png,plus,Clicks
+car_horn,"Car Horn",car_horn.mp3,car_horn.png,plus,Vehicles
+city_bus,"City Bus Pass-By",city_bus.mp3,city_bus.png,plus,Vehicles
+train_horn,"Diesel Train Horn",train_horn.mp3,train_horn.png,plus,Vehicles
+helicopter,"Helicopter Close Engine",helicopter.mp3,helicopter.png,plus,Vehicles
+motorcycle_idle,"Motorcycle Engine Idle",motorcycle_idle.mp3,motorcycle_idle.png,plus,Vehicles
+steam_train,"Steam Train Passing",steam_train.wav,steam_train.png,plus,Vehicles
+subway_rumble,"Subway Train Pass",subway_rumble.wav,subway_rumble.png,plus,Vehicles
+shower,"Bathroom Shower Spray",shower.wav,shower.png,plus,Water
+tap_drip,"Faucet Water Drip",tap_drip.wav,tap_drip.png,plus,Water
+flowing_water,"Flowing Stream",flowing_water.mp3,flowing_water.png,plus,Water
+ocean_waves,"Ocean Waves",ocean_waves.mp3,ocean_waves.png,free,Water
+rain,"Rain",rain.mp3,rain.png,free,Water
+thunder,"Thunder Storm",thunder.wav,thunder.png,plus,Water
+tv_static,"Analog TV Static",tv_static.wav,tv_static.png,plus,Noise
+brown_noise,"Brown Noise Deep",brown_noise.wav,brown_noise.png,plus,Noise
+pink_noise,"Pink Noise Soft",pink_noise.wav,pink_noise.png,plus,Noise
+white_noise,"White Noise Hiss",white_noise.wav,white_noise.png,free,Noise
+campfire,"Campfire Crackles",campfire.mp3,campfire.png,free,Nature
+morning_birds,"Morning Birdsong",morning_birds.mp3,morning_birds.png,plus,Nature
+night_crickets,"Night Cricket Ambience",night_crickets.mp3,night_crickets.png,plus,Nature
+forest_insects,"Night Forest Insects",forest_insects.mp3,forest_insects.png,plus,Nature
+cat_purr,"Cat Long Purr",cat_purr.mp3,cat_purr.png,plus,Animals
+dog_bark,"Dog Bark Twice",dog_bark.mp3,dog_bark.png,plus,Animals
+cat_meow,"Sweet Cat Meow",cat_meow.mp3,cat_meow.png,free,Animals
+chainsaw,"Chainsaw Cutting",chainsaw.mp3,chainsaw.png,plus,Tools
+construction_site,"Construction Site Ambience",construction_site.mp3,construction_site.png,plus,Tools
+electric_drill,"Electric Drill Whirr",electric_drill.mp3,electric_drill.png,plus,Tools
+retro_game_notify,"8-Bit Notify Beep",retro_game_notify.mp3,retro_game_notify.png,plus,Retro
+arcade_boot_jingle,"Arcade Cabinet Boot",arcade_boot_jingle.wav,arcade_boot_jingle.png,plus,Retro
+arcade_notify,"Arcade Cabinet Chime",arcade_notify.mp3,arcade_notify.png,plus,Retro
+coin_drop,"Arcade Coin Drop",coin_drop.mp3,coin_drop.png,free,Retro
+arcade_game_over,"Arcade Game-Over Tone",arcade_game_over.mp3,arcade_game_over.png,plus,Retro
+cassette_deck,"Cassette Deck Play",cassette_deck.mp3,cassette_deck.png,plus,Retro
+ui_boot_start,"Device Power-On UI",ui_boot_start.mp3,ui_boot_start.png,plus,Retro
+disc_console_boot,"Disc Console Startup",disc_console_boot.wav,disc_console_boot.png,plus,Retro
+unlock_chime,"Disc Console Unlock",unlock_chime.mp3,unlock_chime.png,plus,Retro
+handheld_boot,"Handheld Console Boot",handheld_boot.wav,handheld_boot.png,plus,Retro
+home_console_boot,"Home Console Startup",home_console_boot.wav,home_console_boot.png,plus,Retro
+os_loading_hum,"OS Boot Loading Hum",os_loading_hum.mp3,os_loading_hum.png,plus,Retro
+paper_crinkle,"Crumpled Paper",paper_crinkle.mp3,paper_crinkle.png,plus,Misc
+ice_crunch,"Crunching Ice Cubes",ice_crunch.mp3,ice_crunch.png,plus,Misc
+triangle_ting,"Orchestra Triangle",triangle_ting.wav,triangle_ting.png,plus,Misc
+dial_tone,"Phone Dial Tone",dial_tone.mp3,dial_tone.png,plus,Misc
+popcorn_pop,"Popcorn Kernel Pop",popcorn_pop.mp3,popcorn_pop.png,plus,Misc
+restaurant_crowd,"Restaurant Crowd Chatter",restaurant_crowd.mp3,restaurant_crowd.png,plus,Misc
+old_phone_ring,"Rotary Phone Ring",old_phone_ring.mp3,old_phone_ring.png,plus,Misc
+scissors_snip,"Scissors Snip",scissors_snip.mp3,scissors_snip.png,plus,Misc
+heartbeat_slow,"Slow Heartbeat",heartbeat_slow.mp3,heartbeat_slow.png,plus,Misc
+xylophone,"Toy Xylophone Notes",xylophone.mp3,xylophone.png,plus,Misc
+clock_tick,"Wall Clock Tick-Tock",clock_tick.mp3,clock_tick.png,free,Misc
+metronome,"Wooden Metronome Tick",metronome.mp3,metronome.png,plus,Misc

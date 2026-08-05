@@ -23,6 +23,7 @@ jobs:
           APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
           APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
         run: |
           set -euo pipefail
           missing=()
@@ -31,6 +32,7 @@ jobs:
           [ -z "${APPLE_PROVISIONING_PROFILE_BASE64:-}" ] && missing+=("APPLE_PROVISIONING_PROFILE_BASE64")
           [ -z "${APPLE_ID_USERNAME:-}" ] && missing+=("APPLE_ID_USERNAME")
           [ -z "${APPLE_ID_PASSWORD:-}" ] && missing+=("APPLE_ID_PASSWORD")
+          [ -z "${GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ] && missing+=("GOOGLE_SERVICE_INFO_PLIST_BASE64")
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "::error::Missing secrets: ${missing[*]}"
             exit 1
@@ -109,6 +111,37 @@ jobs:
           UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+
+      - name: Install GodotApplePlugins (StoreKit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          GAP_DIR="$RUNNER_TEMP/gap"
+          mkdir -p "$GAP_DIR/download"
+          gh release download "build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65" \
+            --repo migueldeicaza/GodotApplePlugins --pattern "*.zip" --dir "$GAP_DIR/download"
+          unzip -q "$GAP_DIR"/download/*.zip -d "$GAP_DIR/extracted"
+          ADDONS_SRC=$(find "$GAP_DIR/extracted" -type d -name "addons" | head -n 1)
+          if [ -z "$ADDONS_SRC" ]; then
+            echo "addons folder not found in GodotApplePlugins release zip" && exit 1
+          fi
+          mkdir -p addons
+          for MODULE in GodotApplePluginsRuntime GodotApplePluginsStoreKit; do
+            if [ ! -d "$ADDONS_SRC/$MODULE" ]; then
+              echo "$MODULE not found in release zip" && exit 1
+            fi
+            cp -R "$ADDONS_SRC/$MODULE" addons/
+          done
+          ls addons/
+
+      - name: Install GodotFirebaseiOS (Analytics)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+        run: |
+          chmod +x scripts/setup_ios_firebase.sh
+          ./scripts/setup_ios_firebase.sh
+          test -f addons/GodotFirebaseiOS/GoogleService-Info.plist
 
       - name: Set build number
         run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg

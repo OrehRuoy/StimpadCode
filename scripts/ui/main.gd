@@ -14,8 +14,23 @@ func _ready() -> void:
 	AudioController.set_session_duration(LocalPrefs.session_duration_sec)
 	_show_screen(_home)
 	AdsService.banner_visibility_changed.connect(_on_banner_visibility_changed)
-	AdsService.show_banner_if_allowed()
+	## Banner lives on AdsService for the whole free-tier session — not per-screen.
+	AdsService.ensure_banner_mounted()
 	AnalyticsService.log_screen("home")
+	get_viewport().size_changed.connect(_update_banner_inset)
+	_update_banner_inset()
+
+
+func _update_banner_inset() -> void:
+	var show_banner := AdsService.should_show_banner()
+	var banner_h := 0.0
+	if show_banner:
+		banner_h = 64.0 if Responsive.is_tablet(get_viewport_rect().size) else 52.0
+	## Reserve bottom space for the persistent native banner; do not recreate the ad.
+	_screens.offset_bottom = -banner_h
+	_banner_placeholder.offset_top = -banner_h
+	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
+	_banner_placeholder.visible = show_banner
 
 
 func show_home() -> void:
@@ -26,7 +41,7 @@ func show_home() -> void:
 
 func show_player(sound: Dictionary) -> void:
 	if not SoundCatalog.is_sound_unlocked(sound):
-		show_paywall()
+		show_paywall(sound)
 		return
 	_show_screen(_player)
 	_player.call("open_sound", sound)
@@ -39,8 +54,9 @@ func show_settings() -> void:
 	AnalyticsService.log_screen("settings")
 
 
-func show_paywall() -> void:
+func show_paywall(for_sound: Dictionary = {}) -> void:
 	_show_screen(_paywall)
+	_paywall.call("open_for_sound", for_sound)
 	AnalyticsService.log_screen("paywall")
 
 
@@ -48,7 +64,8 @@ func _show_screen(screen: Control) -> void:
 	for child in _screens.get_children():
 		child.visible = child == screen
 	_current_screen = screen
+	## Keep the same banner visible while switching sounds / screens.
 
 
-func _on_banner_visibility_changed(visible: bool) -> void:
-	_banner_placeholder.visible = visible and AdsService.should_show_banner()
+func _on_banner_visibility_changed(_visible: bool) -> void:
+	_update_banner_inset()

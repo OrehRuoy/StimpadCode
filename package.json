@@ -1,0 +1,27 @@
+{
+  "dependencies": {
+    "sharp": "^0.35.3"
+  },
+  "name": "stimpad",
+  "version": "1.0.0",
+  "description": "Godot 4.6.3 mobile soundboard for neurodivergent users. iOS-first, Android-ready.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OrehRuoy/StimPadCode.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/OrehRuoy/StimPadCode/issues"
+  },
+  "homepage": "https://github.com/OrehRuoy/StimPadCode#readme"
+}
