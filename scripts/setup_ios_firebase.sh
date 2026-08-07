@@ -35,4 +35,18 @@ fi
 
 test -f addons/GodotFirebaseiOS/FirebaseIOS.gd
 test -f addons/GodotFirebaseiOS/GodotFirebaseiOS.gdextension
+
+# App Store rejects GodotFirebaseiOS.framework without CFBundleShortVersionString (90057).
+# Circuit Sort / StimPad CI patches this after unzip (PlistBuddy is macOS-only).
+if [ -x /usr/libexec/PlistBuddy ]; then
+  while IFS= read -r -d '' plist; do
+    /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist" >/dev/null 2>&1 \
+      || /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string ${VERSION}" "$plist"
+    /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$plist" >/dev/null 2>&1 \
+      || /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${VERSION}" "$plist"
+    echo "Patched Firebase framework plist: $plist"
+    /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist"
+  done < <(find addons/GodotFirebaseiOS -path "*/GodotFirebaseiOS.framework/Info.plist" -print0)
+fi
+
 echo "GodotFirebaseiOS $VERSION ready under addons/"

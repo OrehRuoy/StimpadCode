@@ -162,6 +162,20 @@ jobs:
           chmod +x scripts/setup_ios_firebase.sh
           ./scripts/setup_ios_firebase.sh
           test -f addons/GodotFirebaseiOS/GoogleService-Info.plist
+          # Headless CI never runs EditorPlugin._enable_plugin(), so ensure FirebaseIOS autoload exists.
+          if ! grep -q '^FirebaseIOS=' project.godot; then
+            python3 -c '
+from pathlib import Path
+p = Path("project.godot")
+t = p.read_text(encoding="utf-8")
+needle = "AnalyticsService=\"*res://scripts/autoload/analytics_service.gd\"\n"
+insert = needle + "FirebaseIOS=\"*res://addons/GodotFirebaseiOS/FirebaseIOS.gd\"\n"
+assert needle in t, "AnalyticsService autoload missing"
+p.write_text(t.replace(needle, insert, 1), encoding="utf-8")
+print("Added FirebaseIOS autoload")
+'
+          fi
+          grep -q '^FirebaseIOS=' project.godot
 
       - name: Set build number
         run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg

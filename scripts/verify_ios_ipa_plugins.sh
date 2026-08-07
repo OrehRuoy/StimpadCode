@@ -14,4 +14,16 @@ if [ -f "$APP/GoogleService-Info.plist" ]; then
 else
   echo "::warning::GoogleService-Info.plist missing from app bundle — Analytics will not initialize"
 fi
+# App Store 90057: embedded GodotFirebaseiOS.framework needs CFBundleShortVersionString.
+FB_PLIST=$(find "$APP/Frameworks" -path "*/GodotFirebaseiOS.framework/Info.plist" 2>/dev/null | head -1 || true)
+if [ -n "$FB_PLIST" ]; then
+  if /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$FB_PLIST" >/dev/null 2>&1; then
+    echo "GodotFirebaseiOS.framework CFBundleShortVersionString OK"
+  else
+    echo "::error::GodotFirebaseiOS.framework missing CFBundleShortVersionString (App Store 90057)"
+    exit 1
+  fi
+else
+  echo "::warning::GodotFirebaseiOS.framework not found under Frameworks/"
+fi
 echo "IPA plugin verification passed"
