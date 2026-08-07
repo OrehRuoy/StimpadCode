@@ -40,7 +40,9 @@ docs-ref-*
 _tmp_firebase/
 _tmp/
 assets/audio/_tmp*/
-assets/audio/_wav_masters/
+assets/audio/_wav_masters/**
+!assets/audio/_wav_masters/
+!assets/audio/_wav_masters/.gdignore
 assets/ui/_theme_previews/
 assets/branding/concepts/
 
