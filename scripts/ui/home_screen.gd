@@ -1,8 +1,12 @@
 extends Control
 
+signal home_content_ready
+
 const SOUND_TILE_SCENE := preload("res://scenes/ui/sound_tile.tscn")
 const PLUS_ICON := "res://assets/ui/icon_plus_badge.png"
 const SETTINGS_ICON := "res://assets/ui/icon_settings_gear.png"
+## Stagger tile art so iOS doesn't jetsam from decoding ~95 textures in one frame.
+const TILE_BATCH := 6
 
 ## Scope chips stay compact. Categories use a dropdown (many items).
 const CHIP_H_PHONE := 44.0
@@ -39,6 +43,8 @@ var _scope_ids: Array[String] = ["All", "Free", "Favorites", "Recent"]
 var _category_ids: Array[String] = []
 var _scope_chips: Dictionary = {} ## id -> Button
 var _syncing_dev_menu: bool = false
+var _grid_gen: int = 0
+var _first_home_ready_emitted: bool = false
 
 enum DevMenuItem {
 	UNPAID = 0,
@@ -264,8 +270,14 @@ func _on_category_item_selected(index: int) -> void:
 
 
 func _refresh_grid() -> void:
+	_grid_gen += 1
+	var gen := _grid_gen
 	for child in _grid.get_children():
 		child.queue_free()
+	## Let queue_free settle before adding a big batch (avoids one-frame spike).
+	await get_tree().process_frame
+	if gen != _grid_gen:
+		return
 	var sounds := _filtered_sounds()
 	_last_columns = Responsive.grid_columns(get_viewport_rect().size)
 	_grid.columns = _last_columns
@@ -278,15 +290,33 @@ func _refresh_grid() -> void:
 	_scroll.visible = not empty
 	if empty:
 		_empty_state.text = _empty_message()
+		_emit_first_home_ready()
 		return
 
+	var i := 0
 	for sound in sounds:
+		if gen != _grid_gen:
+			return
 		var tile: Control = SOUND_TILE_SCENE.instantiate()
 		_grid.add_child(tile)
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.size_flags_stretch_ratio = 1.0
 		tile.call("setup", sound)
 		tile.pressed.connect(_on_tile_pressed.bind(sound))
+		i += 1
+		## First batch paints under splash; then emit ready so splash can fade.
+		if i == mini(TILE_BATCH, sounds.size()):
+			_emit_first_home_ready()
+		if i % TILE_BATCH == 0:
+			await get_tree().process_frame
+	_emit_first_home_ready()
+
+
+func _emit_first_home_ready() -> void:
+	if _first_home_ready_emitted:
+		return
+	_first_home_ready_emitted = true
+	home_content_ready.emit()
 
 
 func _empty_message() -> String:

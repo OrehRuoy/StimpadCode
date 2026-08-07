@@ -1,5 +1,7 @@
 extends Control
 
+signal banner_visibility_changed(visible: bool) ## unused; kept for scene group
+
 @onready var _screens: Control = $Screens
 @onready var _home: Control = $Screens/HomeScreen
 @onready var _player: Control = $Screens/PlayerScreen
@@ -7,22 +9,57 @@ extends Control
 @onready var _paywall: Control = $Screens/PaywallScreen
 @onready var _feedback: Control = $Screens/FeedbackScreen
 @onready var _banner_placeholder: Control = $BannerPlaceholder
+@onready var _boot_overlay: TextureRect = $BootOverlay
 
 var _current_screen: Control
 var _ripple_layer: Control
+var _boot_dismissed: bool = false
 
 
 func _ready() -> void:
 	AudioController.set_session_duration(LocalPrefs.session_duration_sec)
+	_setup_boot_overlay()
 	_ensure_ripple_layer()
 	_show_screen(_home)
 	AdsService.banner_visibility_changed.connect(_on_banner_visibility_changed)
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
-	## Banner lives on AdsService for the whole free-tier session — not per-screen.
-	AdsService.ensure_banner_mounted()
-	AnalyticsService.log_screen("home")
 	get_viewport().size_changed.connect(_update_banner_inset)
 	_update_banner_inset()
+	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
+	if _home.has_signal("home_content_ready"):
+		_home.home_content_ready.connect(_on_home_content_ready, CONNECT_ONE_SHOT)
+	else:
+		call_deferred("_on_home_content_ready")
+
+
+func _setup_boot_overlay() -> void:
+	if _boot_overlay == null:
+		return
+	_boot_overlay.visible = true
+	_boot_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_boot_overlay.z_index = 100
+	_boot_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_boot_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
+		_boot_overlay.texture = load("res://assets/branding/boot_splash.png")
+	_boot_overlay.modulate = Color.WHITE
+
+
+func _on_home_content_ready() -> void:
+	if _boot_dismissed:
+		return
+	_boot_dismissed = true
+	## One idle frame so first tiles are on screen, then fade splash.
+	await get_tree().process_frame
+	if _boot_overlay != null and is_instance_valid(_boot_overlay):
+		var tw := create_tween()
+		tw.tween_property(_boot_overlay, "modulate:a", 0.0, 0.28)
+		await tw.finished
+		_boot_overlay.visible = false
+		_boot_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	AdsService.notify_ui_ready()
+	AdsService.ensure_banner_mounted()
+	AnalyticsService.log_screen("home")
 
 
 func _ensure_ripple_layer() -> void:
@@ -66,6 +103,7 @@ func show_settings() -> void:
 
 
 func show_paywall(for_sound: Dictionary = {}) -> void:
+	IAPService.ensure_store_started()
 	_show_screen(_paywall)
 	_paywall.call("open_for_sound", for_sound)
 	AnalyticsService.log_screen("paywall")

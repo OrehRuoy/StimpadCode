@@ -35,17 +35,25 @@ func setup(sound: Dictionary) -> void:
 		_hint.modulate = Color(1, 1, 1, 1)
 	modulate = Color.WHITE
 	_art.modulate = Color(1, 1, 1, 1) if _unlocked else Color(0.82, 0.84, 0.88, 1)
-	var art_path: String = str(sound.get("art", ""))
-	if art_path != "" and ResourceLoader.exists(art_path):
-		_art.texture = load(art_path)
-	else:
-		_art.texture = null
+	_art.texture = null
 	_art.rotation_degrees = 0.0
 	_art.scale = Vector2.ONE
 	_art.position = Vector2.ZERO
 	_apply_frame_style()
 	_apply_responsive_sizes()
 	call_deferred("_layout_name_row")
+	## Defer art so grid build doesn't decode every PNG in one frame.
+	call_deferred("_load_art")
+
+
+func _load_art() -> void:
+	if not is_instance_valid(_art):
+		return
+	var art_path: String = str(_sound.get("art", ""))
+	if art_path != "" and ResourceLoader.exists(art_path):
+		_art.texture = load(art_path)
+	else:
+		_art.texture = null
 
 
 func _ready() -> void:

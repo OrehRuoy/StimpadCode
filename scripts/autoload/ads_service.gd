@@ -50,12 +50,22 @@ var _last_interstitial_unix: float = -99999.0
 var _banner_mounted: bool = false
 var _pending_reward_sound_id: String = ""
 var _reward_earned_pending: bool = false
+## Main UI (home grid) finished first paint — set via notify_ui_ready().
+var _ui_ready: bool = false
 
 
 func _ready() -> void:
 	AudioController.playback_started.connect(_on_playback_started)
 	AudioController.playback_stopped.connect(_on_playback_stopped)
 	AudioController.playback_finished.connect(_on_playback_stopped)
+	## Do not start AdMob until Main dismisses the boot overlay (home content ready).
+	## Starting during cold load / texture spike crashes TestFlight devices.
+
+
+func notify_ui_ready() -> void:
+	if _ui_ready:
+		return
+	_ui_ready = true
 	call_deferred("_initialize_ads")
 
 
@@ -261,8 +271,8 @@ func _initialize_ads() -> void:
 	if not _admob.is_node_ready():
 		await _admob.ready
 	await get_tree().process_frame
-	## Let the home screen settle before ATT / SDK work (cold-launch race).
-	await get_tree().create_timer(1.5).timeout
+	## Short settle after splash fade before ATT.
+	await get_tree().create_timer(0.8).timeout
 	if _admob == null:
 		return
 	if not Engine.has_singleton("AdmobPlugin"):

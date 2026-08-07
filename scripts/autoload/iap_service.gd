@@ -16,10 +16,22 @@ var _display_price: String = DISPLAY_PRICE
 var _ios_store: Node = null
 var _ios_store_ready: bool = false
 var _pending_purchase: bool = false
+var _store_start_requested: bool = false
 
 
 func _ready() -> void:
-	call_deferred("_initialize_store")
+	## Delay StoreKit until UI is up / paywall opens — avoids native work during boot spike.
+	if OS.has_feature("mobile") and OS.get_name() == "iOS":
+		get_tree().create_timer(12.0).timeout.connect(ensure_store_started, CONNECT_ONE_SHOT)
+	else:
+		call_deferred("_initialize_store")
+
+
+func ensure_store_started() -> void:
+	if _store_start_requested:
+		return
+	_store_start_requested = true
+	_initialize_store()
 
 
 func get_product_id() -> String:
@@ -33,6 +45,7 @@ func get_display_price() -> String:
 func purchase_plus() -> void:
 	if Entitlements.has_plus():
 		return
+	ensure_store_started()
 	purchase_started.emit(PRODUCT_ID)
 	if not OS.has_feature("mobile"):
 		await get_tree().create_timer(0.4).timeout
@@ -45,6 +58,7 @@ func purchase_plus() -> void:
 
 
 func restore_purchases() -> void:
+	ensure_store_started()
 	if not OS.has_feature("mobile"):
 		if Entitlements.has_plus():
 			purchase_restored.emit([PRODUCT_ID])
@@ -56,6 +70,8 @@ func restore_purchases() -> void:
 
 
 func _initialize_store() -> void:
+	if _ios_store != null:
+		return
 	if not OS.has_feature("mobile"):
 		_ready_to_purchase = true
 		return

@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://stimpad_main"]
+[gd_scene load_steps=8 format=3 uid="uid://stimpad_main"]
 
 [ext_resource type="Script" path="res://scripts/ui/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/home_screen.tscn" id="2"]
@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/paywall_screen.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/ui/feedback_screen.tscn" id="6"]
+[ext_resource type="Texture2D" path="res://assets/branding/boot_splash.png" id="7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
 bg_color = Color(0.14, 0.18, 0.26, 0.92)
@@ -98,3 +99,16 @@ theme_override_colors/font_color = Color(0.75, 0.84, 0.9, 1)
 text = "Ad banner area (preview)"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="BootOverlay" type="TextureRect" parent="."]
+z_index = 100
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+texture = ExtResource("7")
+expand_mode = 1
+stretch_mode = 6
