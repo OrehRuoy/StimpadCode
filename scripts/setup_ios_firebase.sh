@@ -13,6 +13,12 @@ gh release download "$VERSION" \
 unzip -q "$TMP/download/"*.zip -d "$TMP/extracted"
 rm -rf addons/GodotFirebaseiOS
 cp -R "$TMP/extracted/addons/GodotFirebaseiOS" addons/
+# Analytics-only patch from Circuit Sort: do not abort export when REVERSED_CLIENT_ID is absent,
+# and inject force_load correctly into the Xcode project (prevents TestFlight launch crash).
+if [ -f tools/ios/GodotFirebaseiOS_export_plugin.gd ]; then
+  cp tools/ios/GodotFirebaseiOS_export_plugin.gd addons/GodotFirebaseiOS/export_plugin.gd
+  echo "Installed patched GodotFirebaseiOS export_plugin.gd"
+fi
 rm -rf "$TMP"
 
 # Prefer CI-injected or local plist locations.

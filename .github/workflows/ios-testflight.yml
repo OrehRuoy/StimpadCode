@@ -64,6 +64,9 @@ jobs:
           test -f addons/AdmobPlugin/plugin.cfg
           test -f addons/AdmobPlugin/ios_export.cfg
           test -f scripts/setup_ios_firebase.sh
+          test -f tools/ios/inject_firebase_force_load.sh
+          test -f tools/ios/GodotFirebaseiOS_export_plugin.gd
+          test -f tools/ios/patch_xcode_signing.py
           grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot
           grep -q 'res://addons/GodotFirebaseiOS/plugin.cfg' project.godot
           if grep -nE '^\s*#' ios/plugins/*.gdip 2>/dev/null; then
@@ -82,7 +85,7 @@ jobs:
     needs: preflight
     if: ${{ inputs.run_macos_export }}
     runs-on: macos-26
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       GODOT_VERSION: "4.6.3"
     steps:
@@ -167,11 +170,85 @@ jobs:
       - name: Set build number
         run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg
 
-      - name: Export iOS IPA
+      - name: Export iOS Xcode project
         run: |
           mkdir -p build
+          # Direct .ipa export archives BEFORE GodotFirebaseiOS can inject -force_load,
+          # which produces a TestFlight binary that crashes on launch (Circuit Sort fix).
+          sed -i '' 's|application/export_project_only=false|application/export_project_only=true|' export_presets.cfg
+          grep 'application/export_project_only=' export_presets.cfg
           "$GODOT_BIN" --headless --path . --import || true
           "$GODOT_BIN" --headless --path . --export-release "iOS (TestFlight IPA)" "build/StimPad.ipa"
+          if [[ ! -d build/StimPad/frameworks ]]; then
+            echo "WARNING: export plugin did not copy frameworks; copying from addon"
+            mkdir -p build/StimPad
+            cp -R addons/GodotFirebaseiOS/frameworks build/StimPad/frameworks
+          fi
+          test -d "build/StimPad/frameworks"
+          test -f "build/StimPad.xcodeproj/project.pbxproj"
+          chmod +x tools/ios/inject_firebase_force_load.sh tools/ios/patch_xcode_signing.py
+          tools/ios/inject_firebase_force_load.sh StimPad build
+          grep -q 'force_load' build/StimPad.xcodeproj/project.pbxproj
+          if grep -qE -- '-Wl-U_|-Wl -weak-l' build/StimPad.xcodeproj/project.pbxproj; then
+            echo "ERROR: corrupted -Wl linker flags in project.pbxproj" && exit 1
+          fi
+          if grep -q -- '_swift_entry_point' build/StimPad.xcodeproj/project.pbxproj; then
+            grep -q -- '-Wl,-U,_swift_entry_point' build/StimPad.xcodeproj/project.pbxproj \
+              || { echo "ERROR: -Wl,-U,_swift_entry_point missing"; exit 1; }
+          fi
+          echo "Firebase force_load injection OK"
+          ls -la build/
+
+      - name: Archive and export IPA
+        run: |
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          PROFILE="$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
+          PROFILE_NAME=$(security cms -D -i "$PROFILE" 2>/dev/null | plutil -extract Name raw -)
+          echo "Provisioning profile name: $PROFILE_NAME"
+          printf '%s\n' '{}' | plutil -convert xml1 -o build/ExportOptions.plist -
+          /usr/libexec/PlistBuddy -c "Add :method string app-store" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string 9WRNQYQZTB" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string manual" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.stimpad.soundboard string ${PROFILE_NAME}" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :uploadSymbols bool true" build/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :compileBitcode bool false" build/ExportOptions.plist
+          plutil -lint build/ExportOptions.plist
+          if [[ -d build/StimPad.xcworkspace ]]; then
+            XCODE_ARGS=(-workspace build/StimPad.xcworkspace)
+          else
+            XCODE_ARGS=(-project build/StimPad.xcodeproj)
+          fi
+          python3 tools/ios/patch_xcode_signing.py build "$PROFILE_NAME"
+          # Keep Firebase symbols exported; Release strip causes dyld crash on launch.
+          xcodebuild "${XCODE_ARGS[@]}" \
+            -scheme StimPad \
+            -sdk iphoneos \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/StimPad.xcarchive \
+            -allowProvisioningUpdates \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM=9WRNQYQZTB \
+            STRIP_INSTALLED_PRODUCT=NO \
+            COPY_PHASE_STRIP=NO \
+            STRIP_STYLE=non-global \
+            archive
+          APP_BIN="build/StimPad.xcarchive/Products/Applications/StimPad.app/StimPad"
+          test -f "$APP_BIN"
+          EXPORTED=$(nm -gU "$APP_BIN" 2>/dev/null | grep -c 'FirebaseAuth\|FIRApp\|FirebaseCore' || true)
+          echo "Firebase symbols exported by app binary: $EXPORTED"
+          if [[ "$EXPORTED" -eq 0 ]]; then
+            echo "ERROR: app exports no Firebase symbols; GodotFirebaseiOS.framework will crash on launch"
+            exit 1
+          fi
+          xcodebuild -exportArchive \
+            -archivePath build/StimPad.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -allowProvisioningUpdates
+          ls -la build/*.ipa
+          test -f build/StimPad.ipa
 
       - name: Verify IPA
         run: ./scripts/verify_ios_ipa_plugins.sh build/StimPad.ipa
