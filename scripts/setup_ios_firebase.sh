@@ -49,4 +49,17 @@ if [ -x /usr/libexec/PlistBuddy ]; then
   done < <(find addons/GodotFirebaseiOS -path "*/GodotFirebaseiOS.framework/Info.plist" -print0)
 fi
 
+# Headless CI never runs EditorPlugin._enable_plugin(), so ensure FirebaseIOS autoload exists.
+if ! grep -q '^FirebaseIOS=' project.godot; then
+  awk '
+    { print }
+    $0 == "AnalyticsService=\"*res://scripts/autoload/analytics_service.gd\"" {
+      print "FirebaseIOS=\"*res://addons/GodotFirebaseiOS/FirebaseIOS.gd\""
+    }
+  ' project.godot > project.godot.tmp
+  mv project.godot.tmp project.godot
+  echo "Added FirebaseIOS autoload to project.godot"
+fi
+grep -q '^FirebaseIOS=' project.godot
+
 echo "GodotFirebaseiOS $VERSION ready under addons/"
