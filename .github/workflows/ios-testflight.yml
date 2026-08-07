@@ -106,7 +106,9 @@ jobs:
           cp "$RUNNER_TEMP/templates/ios.zip" "$TDIR/"
 
       - name: Verify AdMob frameworks
-        run: ./scripts/setup_ios_admob_frameworks.sh
+        run: |
+          chmod +x scripts/setup_ios_admob_frameworks.sh scripts/verify_ios_ipa_plugins.sh scripts/setup_ios_firebase.sh
+          ./scripts/setup_ios_admob_frameworks.sh
 
       - name: Import signing certificate
         env:
