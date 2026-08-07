@@ -9,7 +9,8 @@ signal banner_visibility_changed(visible: bool) ## unused; kept for scene group
 @onready var _paywall: Control = $Screens/PaywallScreen
 @onready var _feedback: Control = $Screens/FeedbackScreen
 @onready var _banner_placeholder: Control = $BannerPlaceholder
-@onready var _boot_overlay: TextureRect = $BootOverlay
+@onready var _boot_overlay: ColorRect = $BootOverlay
+@onready var _boot_image: TextureRect = $BootOverlay/SplashImage
 
 var _current_screen: Control
 var _ripple_layer: Control
@@ -38,28 +39,37 @@ func _setup_boot_overlay() -> void:
 	_boot_overlay.visible = true
 	_boot_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_boot_overlay.z_index = 100
-	_boot_overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_boot_overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
-		_boot_overlay.texture = load("res://assets/branding/boot_splash.png")
+	_boot_overlay.color = Color(0.102, 0.133, 0.188, 1)
 	_boot_overlay.modulate = Color.WHITE
+	if _boot_image:
+		_boot_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_boot_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		## Fill the screen completely (no letterbox bars). Slight crop/stretch beats black bars.
+		_boot_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		_boot_image.stretch_mode = TextureRect.STRETCH_SCALE
+		if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
+			_boot_image.texture = load("res://assets/branding/boot_splash.png")
 
 
 func _on_home_content_ready() -> void:
 	if _boot_dismissed:
 		return
 	_boot_dismissed = true
-	## One idle frame so first tiles are on screen, then fade splash.
-	await get_tree().process_frame
+	## Wait until several tile batches are on screen before revealing home.
+	await get_tree().create_timer(0.35).timeout
 	if _boot_overlay != null and is_instance_valid(_boot_overlay):
 		var tw := create_tween()
-		tw.tween_property(_boot_overlay, "modulate:a", 0.0, 0.28)
+		tw.tween_property(_boot_overlay, "modulate:a", 0.0, 0.35)
 		await tw.finished
 		_boot_overlay.visible = false
 		_boot_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	## Ads start only after splash is gone (and AdsService may still no-op if disabled).
 	AdsService.notify_ui_ready()
 	AdsService.ensure_banner_mounted()
-	AnalyticsService.log_screen("home")
+	## Defer analytics — native Firebase log right at reveal coincided with prior crashes.
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		AnalyticsService.log_screen("home")
+	, CONNECT_ONE_SHOT)
 
 
 func _ensure_ripple_layer() -> void:

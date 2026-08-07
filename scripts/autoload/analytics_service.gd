@@ -8,7 +8,11 @@ var _native = null
 
 
 func _ready() -> void:
-	call_deferred("_initialize_analytics")
+	## Defer native Firebase Analytics bind — cold-start races with AdMob/home caused TestFlight crashes.
+	if OS.has_feature("mobile") and OS.get_name() == "iOS":
+		get_tree().create_timer(10.0).timeout.connect(_initialize_analytics, CONNECT_ONE_SHOT)
+	else:
+		call_deferred("_initialize_analytics")
 
 
 func log_event(event_name: String, params: Dictionary = {}) -> void:

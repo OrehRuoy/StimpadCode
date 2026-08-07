@@ -186,7 +186,8 @@ jobs:
           fi
           test -d "build/StimPad/frameworks"
           test -f "build/StimPad.xcodeproj/project.pbxproj"
-          chmod +x tools/ios/inject_firebase_force_load.sh tools/ios/patch_xcode_signing.py
+          chmod +x tools/ios/inject_firebase_force_load.sh tools/ios/patch_xcode_signing.py tools/ios/ensure_admob_info_plist.sh
+          tools/ios/ensure_admob_info_plist.sh build "ca-app-pub-5356882403986713~1231581339"
           tools/ios/inject_firebase_force_load.sh StimPad build
           grep -q 'force_load' build/StimPad.xcodeproj/project.pbxproj
           if grep -qE -- '-Wl-U_|-Wl -weak-l' build/StimPad.xcodeproj/project.pbxproj; then

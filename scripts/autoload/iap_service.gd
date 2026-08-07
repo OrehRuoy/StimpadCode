@@ -20,11 +20,10 @@ var _store_start_requested: bool = false
 
 
 func _ready() -> void:
-	## Delay StoreKit until UI is up / paywall opens — avoids native work during boot spike.
+	## iOS: only start StoreKit when paywall/restore is used — auto-init at 12s coincided with post-home crashes.
 	if OS.has_feature("mobile") and OS.get_name() == "iOS":
-		get_tree().create_timer(12.0).timeout.connect(ensure_store_started, CONNECT_ONE_SHOT)
-	else:
-		call_deferred("_initialize_store")
+		return
+	call_deferred("_initialize_store")
 
 
 func ensure_store_started() -> void:

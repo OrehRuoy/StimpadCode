@@ -26,4 +26,15 @@ if [ -n "$FB_PLIST" ]; then
 else
   echo "::warning::GodotFirebaseiOS.framework not found under Frameworks/"
 fi
+# Soft-require AdMob Info.plist keys (headless export sometimes omits them).
+if /usr/libexec/PlistBuddy -c "Print :GADApplicationIdentifier" "$APP/Info.plist" >/dev/null 2>&1; then
+  echo "GADApplicationIdentifier present: $(/usr/libexec/PlistBuddy -c "Print :GADApplicationIdentifier" "$APP/Info.plist")"
+else
+  echo "::warning::GADApplicationIdentifier missing from Info.plist — AdMob initialize will crash on device"
+fi
+if /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$APP/Info.plist" >/dev/null 2>&1; then
+  echo "NSUserTrackingUsageDescription present"
+else
+  echo "::warning::NSUserTrackingUsageDescription missing from Info.plist"
+fi
 echo "IPA plugin verification passed"

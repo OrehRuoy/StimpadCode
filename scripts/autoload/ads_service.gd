@@ -21,6 +21,10 @@ const ATT_TEXT := (
 	+ "You can change this anytime in Settings."
 )
 
+## When false, AdMob never initializes on cold start (isolates TestFlight crash after home).
+## Re-enable after GADApplicationIdentifier is confirmed in the IPA Info.plist.
+const ENABLE_COLD_START_ADS := false
+
 var _ads_enabled: bool = true
 ## True only after ATT (iOS) + UMP consent + Mobile Ads init — ads must not load before this.
 var _sdk_ready: bool = false
@@ -66,6 +70,9 @@ func notify_ui_ready() -> void:
 	if _ui_ready:
 		return
 	_ui_ready = true
+	if not ENABLE_COLD_START_ADS:
+		print("[AdsService] Cold-start ads disabled — skipping AdMob init (crash isolation)")
+		return
 	call_deferred("_initialize_ads")
 
 
