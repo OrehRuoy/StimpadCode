@@ -1,47 +1,30 @@
 # StimPad Sound QA Tracker
 
-Last updated: 2026-08-03 (round 4)
+Last updated: 2026-08-07 (late)
 
-Status key:
-- **OK** — leave for now
-- **FIXED (needs listen)** — replaced again; please verify
-- **TODO** — not reviewed yet
+**Resume bookmark: console boots (deferred). New stim pack of 10 added — listen through Clicks + Rain on Metal Roof.**
 
-Policy: prefer **real recordings** over generated audio.
+New sounds (all Plus):
+- Thocky Keyboard (loop) · Relay Click · Circuit Breaker · Rotary Selector
+- Magnetic Fidget · Magnetic Charger Snap
+- Nails on Glass / Plastic / Wood
+- Rain on Metal Roof (Water loop)
 
----
 
-## Alarms
+Recent audio:
+- Disc Tray Open → FS #556487 Disc drive open (short, quieter, CC0)
+- PC Fan Hum → leave as-is (FS #269744)
+- Dial-Up Modem → FS #546450 classic line-in handshake (CC0)
+- Head Flossing → default ~0.4 Hz; toggle on player + Settings
 
-| Sound | Status | Notes |
-|---|---|---|
-| Ambulance Yelp Siren | **OK** | Confirmed good (~75s continuous Free Sounds Library recording). |
-| Ringing Alarm Clock | **FIXED (needs listen)** | Louder / less fade (awaiting confirm). |
-| Civil Defense Siren | **OK** | |
-| Fire Engine Siren | **OK** | |
-| Whistle | **FIXED (needs listen)** | Renamed; real plastic whistle. Awaiting confirm. |
-| Police Wail Siren | **OK** | |
-| Smoke Detector Beep | **OK** | |
+## Console boots policy
+Shipping real Nintendo/Sony/Sega jingles is not allowed.
+Current boots are original inspired mimics (structure/timbre, different melodies).
+Next option if still weak: pull CC0 homebrew jingles (Beatscribe / itch GB packs) that are purpose-built mimics.
 
-## Bells
-
-| Sound | Status | Notes |
-|---|---|---|
-| Bike Handlebar Bell | **OK** | Confirmed good (BSB #0275 short multi-ding). |
-| Church Tower Bell | TODO | |
-| Home Doorbell Chime | TODO | |
-| Metal Wind Chimes | TODO | |
-| School Hall Bell | TODO | |
-
-## Other categories
-
-Not reviewed yet.
-
----
-
-## Confirmed OK
-
-- Civil Defense Siren
-- Police Wail Siren
-- Smoke Detector Beep
-- Fire Engine Siren
+## This round
+- Disc Tray Open → FS #325730 PC Disk Drive Open (open segment, CC BY)
+- PC Fan Hum → leave (FS #269744)
+- Dial-Up Modem → FS #454651 real handshake (CC0)
+- Console/arcade boots → deferred
+- Head Flossing → Settings global toggle

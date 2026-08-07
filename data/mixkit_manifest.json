@@ -18,11 +18,6 @@
     "url": "https://assets.mixkit.co/active_storage/sfx/2608/2608-preview.mp3"
   },
   {
-    "id": "white_noise",
-    "source": "generated",
-    "color": "white"
-  },
-  {
     "id": "pen_click",
     "mixkit_id": 1114,
     "title": "Pen clicking twice",
@@ -185,22 +180,6 @@
     "url": "https://assets.mixkit.co/active_storage/sfx/1717/1717-preview.mp3"
   },
   {
-    "id": "pink_noise",
-    "source": "generated",
-    "color": "pink"
-  },
-  {
-    "id": "brown_noise",
-    "source": "generated",
-    "color": "brown"
-  },
-  {
-    "id": "tv_static",
-    "mixkit_id": 1789,
-    "title": "Summer night crickets loop",
-    "url": "https://assets.mixkit.co/active_storage/sfx/1789/1789-preview.mp3"
-  },
-  {
     "id": "paper_crinkle",
     "mixkit_id": 2570,
     "title": "Paper crinkle",
@@ -299,7 +278,129 @@
     "id": "tap_drip",
     "source": "bigsoundbank",
     "bsb_id": "1384",
-    "title": "Irregular quiet water drips",
+    "title": "Drops of water #1",
     "url": "https://bigsoundbank.com/UPLOAD/mp3/1384.mp3"
+  },
+  {
+    "id": "white_noise",
+    "source": "generated_continuous",
+    "note": "ffmpeg anoisesrc white 45s (no stitch seams)"
+  },
+  {
+    "id": "pink_noise",
+    "source": "generated_continuous",
+    "note": "ffmpeg anoisesrc pink 45s, softer level"
+  },
+  {
+    "id": "brown_noise",
+    "source": "generated_continuous",
+    "note": "ffmpeg anoisesrc brown 45s"
+  },
+  {
+    "id": "tv_static",
+    "source": "generated_continuous",
+    "note": "filtered continuous white noise 45s"
+  },
+  {
+    "id": "night_crickets",
+    "source": "mixkit",
+    "mixkit_id": 1789,
+    "title": "Summer night crickets loop",
+    "url": "https://assets.mixkit.co/active_storage/sfx/1789/1789-preview.mp3"
+  },
+  {
+    "id": "cat_meow",
+    "source": "bigsoundbank",
+    "bsb_id": "1902",
+    "title": "Meow Cat #14",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/1902.mp3",
+    "page": "https://bigsoundbank.com/meow-cat-14-s1902.html",
+    "note": "Replaced mismatched Mixkit ID; verified BSB title"
+  },
+  {
+    "id": "cat_purr",
+    "source": "bigsoundbank",
+    "bsb_id": "0981",
+    "title": "Cat purring #2",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/0981.mp3",
+    "page": "https://bigsoundbank.com/cat-purring-2-s0981.html",
+    "note": "Replaced mismatched Mixkit ID; verified BSB title"
+  },
+  {
+    "id": "dog_bark",
+    "source": "bigsoundbank",
+    "bsb_id": "0112",
+    "title": "Barking Dog Inside",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/0112.mp3",
+    "page": "https://bigsoundbank.com/barking-dog-inside-s0112.html",
+    "note": "Replaced mismatched Mixkit ID; verified BSB title"
+  },
+  {
+    "id": "campfire",
+    "source": "bigsoundbank",
+    "bsb_id": "2856",
+    "title": "Fireplace #4",
+    "url": "https://bigsoundbank.com/UPLOAD/mp3/2856.mp3",
+    "page": "https://bigsoundbank.com/fireplace-4-s2856.html",
+    "note": "Replaced mismatched Mixkit ID; verified BSB title"
+  },
+  {
+    "id": "chainsaw",
+    "source": "bigsoundbank",
+    "bsb_id": "0983",
+    "title": "Chainsaw, Using"
+  },
+  {
+    "id": "construction_site",
+    "note": "renamed only — audio unchanged"
+  },
+  {
+    "id": "electric_drill",
+    "source": "bsb0791_held_loop"
+  },
+  {
+    "id": "cassette_deck",
+    "source": "bsb0571+0566"
+  },
+  {
+    "id": "ui_boot_start",
+    "freesound": 52050
+  },
+  {
+    "id": "unlock_chime",
+    "freesound": 812507
+  },
+  {
+    "id": "os_loading_hum",
+    "source": "bsb0125_fan_loop"
+  },
+  {
+    "id": "modem_dial",
+    "freesound": 454651
+  },
+  {
+    "id": "arcade_boot_jingle",
+    "source": "generated_inspired",
+    "note": "arcade CRT+attract mimic"
+  },
+  {
+    "id": "arcade_notify",
+    "source": "generated_inspired",
+    "note": "arcade chime mimic"
+  },
+  {
+    "id": "disc_console_boot",
+    "source": "generated_inspired",
+    "note": "disc-console boot mimic"
+  },
+  {
+    "id": "handheld_boot",
+    "source": "generated_inspired",
+    "note": "handheld boot mimic"
+  },
+  {
+    "id": "home_console_boot",
+    "source": "generated_inspired",
+    "note": "16-bit home boot mimic"
   }
 ]

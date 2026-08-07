@@ -55,6 +55,10 @@ custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 theme_override_constants/separation = 10
 
+[node name="LeftBalance" type="Control" parent="Margin/VBox/TopBar"]
+custom_minimum_size = Vector2(114, 0)
+layout_mode = 2
+
 [node name="Logo" type="TextureRect" parent="Margin/VBox/TopBar"]
 custom_minimum_size = Vector2(200, 56)
 layout_mode = 2
@@ -62,40 +66,77 @@ size_flags_horizontal = 3
 expand_mode = 1
 stretch_mode = 5
 
-[node name="PlusBtn" type="Button" parent="Margin/VBox/TopBar"]
+[node name="RightCluster" type="HBoxContainer" parent="Margin/VBox/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PlusBtn" type="Button" parent="Margin/VBox/TopBar/RightCluster"]
 custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 flat = true
 text = ""
 
-[node name="SettingsBtn" type="Button" parent="Margin/VBox/TopBar"]
+[node name="SettingsBtn" type="Button" parent="Margin/VBox/TopBar/RightCluster"]
 custom_minimum_size = Vector2(52, 52)
 layout_mode = 2
 flat = true
 text = ""
 
-[node name="ScopeSelect" type="OptionButton" parent="Margin/VBox"]
-custom_minimum_size = Vector2(0, 58)
+[node name="ScopeRow" type="HBoxContainer" parent="Margin/VBox"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-size_flags_horizontal = 3
-fit_to_longest_item = false
+alignment = 1
+theme_override_constants/separation = 8
 
 [node name="CategorySelect" type="OptionButton" parent="Margin/VBox"]
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 52)
 layout_mode = 2
 size_flags_horizontal = 3
 fit_to_longest_item = false
 
-[node name="DevPlusToggle" type="CheckButton" parent="Margin/VBox"]
-visible = false
-custom_minimum_size = Vector2(0, 44)
+[node name="FeaturesBanner" type="HBoxContainer" parent="Margin/VBox"]
 layout_mode = 2
-text = "Test as StimPad Plus"
+theme_override_constants/separation = 8
+
+[node name="FeaturesTip" type="Label" parent="Margin/VBox/FeaturesBanner"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.7, 0.78, 0.86, 1)
+text = "Tip: Head Flossing, haptics & more live in Settings."
+autowrap_mode = 3
+
+[node name="FeaturesDismiss" type="Button" parent="Margin/VBox/FeaturesBanner"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+flat = true
+text = "✕"
+tooltip_text = "Dismiss"
+
+[node name="DevMenu" type="OptionButton" parent="Margin/VBox"]
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+fit_to_longest_item = false
+
+[node name="EmptyState" type="Label" parent="Margin/VBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.72, 0.8, 0.88, 1)
+text = "No favorites yet.
+Tap the heart on a sound to save it here."
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
 
 [node name="Scroll" type="ScrollContainer" parent="Margin/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
 scroll_deadzone = 8
 
 [node name="Grid" type="GridContainer" parent="Margin/VBox/Scroll"]

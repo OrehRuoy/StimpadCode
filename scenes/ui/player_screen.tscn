@@ -71,13 +71,13 @@ tooltip_text = "Add to favorites"
 
 [node name="Title" type="Label" parent="Margin/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 30
-theme_override_colors/font_color = Color(0.98, 0.96, 0.94, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.86, 0.9, 0.94, 0.92)
 text = "Sound"
 horizontal_alignment = 1
 
 [node name="ArtFrame" type="PanelContainer" parent="Margin/VBox"]
-custom_minimum_size = Vector2(0, 280)
+custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -101,20 +101,41 @@ color = Color(0.37, 0.81, 0.69, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Controls" type="HBoxContainer" parent="Margin/VBox/ControlsPanel"]
+[node name="Controls" type="VBoxContainer" parent="Margin/VBox/ControlsPanel"]
 layout_mode = 2
 alignment = 1
-theme_override_constants/separation = 14
+theme_override_constants/separation = 10
 
-[node name="PlayBtn" type="Button" parent="Margin/VBox/ControlsPanel/Controls"]
-custom_minimum_size = Vector2(0, 64)
+[node name="PlayStopBtn" type="Button" parent="Margin/VBox/ControlsPanel/Controls"]
+custom_minimum_size = Vector2(112, 112)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "▶  Play"
+size_flags_horizontal = 4
+flat = true
+text = ""
+tooltip_text = "Play"
 
-[node name="StopBtn" type="Button" parent="Margin/VBox/ControlsPanel/Controls"]
-custom_minimum_size = Vector2(0, 64)
+[node name="RepeatBtn" type="Button" parent="Margin/VBox/ControlsPanel/Controls"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-size_flags_horizontal = 3
-disabled = true
-text = "■  Stop"
+size_flags_horizontal = 4
+text = "Repeat  Off"
+tooltip_text = "Replay short sounds until you stop"
+
+[node name="RatePanel" type="VBoxContainer" parent="Margin/VBox"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="RateLabel" type="Label" parent="Margin/VBox/RatePanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Pitch & Speed  ·  100%"
+horizontal_alignment = 1
+
+[node name="RateSlider" type="HSlider" parent="Margin/VBox/RatePanel"]
+custom_minimum_size = Vector2(0, 28)
+layout_mode = 2
+min_value = 0.5
+max_value = 1.5
+step = 0.05
+value = 1.0

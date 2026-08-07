@@ -81,6 +81,19 @@ func get_favorite_sounds(favorite_ids: Array) -> Array[Dictionary]:
 	return _sorted_free_first(favs)
 
 
+func get_sounds_by_ids(ids: Array) -> Array[Dictionary]:
+	## Preserve caller order (e.g. recent = newest first).
+	var by_id: Dictionary = {}
+	for sound in sounds:
+		by_id[str(sound.get("id", ""))] = sound
+	var out: Array[Dictionary] = []
+	for id_v in ids:
+		var id := str(id_v)
+		if by_id.has(id):
+			out.append(by_id[id])
+	return out
+
+
 func is_sound_unlocked(sound: Dictionary) -> bool:
 	if str(sound.get("tier", "plus")) == "free" or Entitlements.has_plus():
 		return true

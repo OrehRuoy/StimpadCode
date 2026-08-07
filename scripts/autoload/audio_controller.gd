@@ -18,6 +18,8 @@ var _play_started_msec: int = 0
 func _ready() -> void:
 	_player = AudioStreamPlayer.new()
 	_player.name = "MainAudioPlayer"
+	## HeadFlossService pans this bus; falls back to Master if SFX is missing.
+	_player.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
 	add_child(_player)
 	_player.finished.connect(_on_player_finished)
 
@@ -25,6 +27,23 @@ func _ready() -> void:
 	_session_timer.one_shot = true
 	_session_timer.timeout.connect(_on_session_timer_timeout)
 	add_child(_session_timer)
+	apply_sfx_volume(LocalPrefs.sfx_volume)
+
+
+func apply_sfx_volume(linear_01: float) -> void:
+	var v := clampf(linear_01, 0.0, 1.0)
+	LocalPrefs.sfx_volume = v
+	var bus_name := "SFX"
+	if _player != null and not str(_player.bus).is_empty():
+		bus_name = str(_player.bus)
+	var bus := AudioServer.get_bus_index(bus_name)
+	if bus < 0:
+		bus = AudioServer.get_bus_index("Master")
+	if bus < 0:
+		return
+	## 0 → -40 dB (near mute), 1 → 0 dB
+	var db := -40.0 if v <= 0.001 else (20.0 * log(v) / log(10.0))
+	AudioServer.set_bus_volume_db(bus, db)
 
 
 func set_session_duration(seconds: int) -> void:
@@ -66,19 +85,32 @@ func play_sound(sound: Dictionary) -> void:
 		stream = stream.duplicate()
 	_player.stream = stream
 	var mode: String = str(sound.get("mode", "oneshot"))
-	if mode == "loop":
+	var force_repeat := LocalPrefs.repeat_oneshots and mode != "loop"
+	if mode == "loop" or force_repeat:
 		_enable_stream_loop(stream)
 		_stop_after_loop = false
 		_loop_pass_pending = false
-		## Loops play until the user hits Stop (no duration chips).
+		## Loops / repeat play until the user hits Stop (no duration chips).
 		_session_timer.stop()
 	else:
 		_session_timer.stop()
 		_stop_after_loop = false
 	_player.play()
+	_player.pitch_scale = clampf(LocalPrefs.playback_rate, 0.5, 1.5)
 	_play_started_msec = Time.get_ticks_msec()
 	playback_started.emit(str(sound.get("id", "")))
+	LocalPrefs.note_recent_sound(str(sound.get("id", "")))
 	AnalyticsService.log_sound_play(sound)
+
+
+func set_playback_rate(rate: float) -> void:
+	LocalPrefs.playback_rate = clampf(rate, 0.5, 1.5)
+	if _player != null:
+		_player.pitch_scale = LocalPrefs.playback_rate
+
+
+func get_playback_rate() -> float:
+	return clampf(LocalPrefs.playback_rate, 0.5, 1.5)
 
 
 func _enable_stream_loop(stream: AudioStream) -> void:
@@ -139,7 +171,8 @@ func _on_player_finished() -> void:
 		playback_finished.emit(finished_id)
 		return
 	## Fallback: if native loop didn't engage, keep replaying until Stop.
-	if str(_current_sound.get("mode", "")) == "loop":
+	var mode := str(_current_sound.get("mode", ""))
+	if mode == "loop" or LocalPrefs.repeat_oneshots:
 		_player.play()
 		return
 	## Oneshot finished.

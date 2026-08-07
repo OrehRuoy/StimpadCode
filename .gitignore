@@ -38,6 +38,11 @@ docs-ref-*
 *-ref.yml
 *.log
 _tmp_firebase/
+_tmp/
+assets/audio/_tmp*/
+assets/audio/_wav_masters/
+assets/ui/_theme_previews/
+assets/branding/concepts/
 
 # Firebase iOS plugin frameworks are huge (~300MB) + Windows MAX_PATH issues.
 # Install via scripts/setup_ios_firebase.sh (CI does this automatically).

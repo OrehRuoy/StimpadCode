@@ -1,6 +1,6 @@
 # StimPad Sound Licenses
 
-Launch catalog: **84 sounds** (14 free, 70 Plus).
+Launch catalog: **85 sounds** (14 free, 71 Plus).
 
 ## Sources
 
@@ -22,15 +22,15 @@ Household re-download helper: `node tools/fix_household_sfx.js`
 | fire_whistle | Manual Fire Whistle |
 | school_bell | School Hall Bell |
 | vacuum | Upright Vacuum |
-| white_noise | White Noise Hiss |
+| white_noise | White Noise |
 | pen_click | Ballpoint Pen Click |
 | rain | Steady Rain Loop |
 | fan_hum | Desk Fan |
 | ocean_waves | Ocean Waves Loop |
 | clock_tick | Wall Clock Tick-Tock |
-| campfire | Campfire Crackles |
+| campfire | Campfire Crackles (BigSoundBank #2856) |
 | camera_shutter | Camera Shutter Click |
-| cat_meow | Sweet Cat Meow |
+| cat_meow | Cat Meow (BigSoundBank #1902) |
 | coin_drop | Arcade Coin Drop |
 
 ## Plus tier

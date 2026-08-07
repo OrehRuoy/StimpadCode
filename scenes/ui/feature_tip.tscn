@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3 uid="uid://stimpad_feature_tip"]
+
+[ext_resource type="Script" path="res://scripts/ui/feature_tip.gd" id="1"]
+
+[node name="FeatureTip" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+script = ExtResource("1")
+
+[node name="Scrim" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.07, 0.1, 0.72)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="Control" parent="Center"]
+custom_minimum_size = Vector2(318, 280)
+layout_mode = 2
+
+[node name="Panel" type="PanelContainer" parent="Center/Card"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+clip_contents = true
+
+[node name="Margin" type="MarginContainer" parent="Center/Card/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 22
+theme_override_constants/margin_top = 34
+theme_override_constants/margin_right = 22
+theme_override_constants/margin_bottom = 22
+
+[node name="VBox" type="VBoxContainer" parent="Center/Card/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Title" type="Label" parent="Center/Card/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Tip"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Subtitle" type="Label" parent="Center/Card/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Feature tip body"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="Buttons" type="VBoxContainer" parent="Center/Card/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SettingsBtn" type="Button" parent="Center/Card/Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Open Settings"
+
+[node name="OkBtn" type="Button" parent="Center/Card/Panel/Margin/VBox/Buttons"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Got it"
+
+[node name="CloseBtn" type="Button" parent="Center/Card"]
+z_index = 2
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -28.0
+offset_top = 0.0
+offset_right = 8.0
+offset_bottom = 32.0
+grow_horizontal = 0
+focus_mode = 0
+flat = true
+text = ""

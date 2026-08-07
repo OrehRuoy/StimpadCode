@@ -127,7 +127,14 @@ func _end_press() -> void:
 	_pressing = false
 	_play_press_squash(false)
 	if not _dragged:
+		_emit_tap_feedback()
 		pressed.emit()
+
+
+func _emit_tap_feedback() -> void:
+	var layer := get_tree().get_first_node_in_group("tap_ripple_layer")
+	if layer != null and layer.has_method("spawn_at_global"):
+		layer.call("spawn_at_global", get_global_transform_with_canvas() * _press_pos)
 
 
 func _play_press_squash(down: bool) -> void:

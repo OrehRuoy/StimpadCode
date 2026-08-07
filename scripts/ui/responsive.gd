@@ -43,14 +43,14 @@ static func top_button_min_height(viewport_size: Vector2) -> float:
 	return 52.0 if is_tablet(viewport_size) else 44.0
 
 
-static func title_font_size(viewport_size: Vector2) -> int:
-	return 34 if is_tablet(viewport_size) else 28
-
-
 static func player_art_min_height(viewport_size: Vector2) -> float:
 	if is_tablet(viewport_size):
-		return maxf(360.0, viewport_size.y * 0.42)
-	return maxf(240.0, viewport_size.y * 0.34)
+		return maxf(400.0, viewport_size.y * 0.48)
+	return maxf(280.0, viewport_size.y * 0.40)
+
+
+static func title_font_size(viewport_size: Vector2) -> int:
+	return 30 if is_tablet(viewport_size) else 24
 
 
 static func safe_outer_margins(base: Vector4) -> Vector4:
@@ -60,6 +60,7 @@ static func safe_outer_margins(base: Vector4) -> Vector4:
 	var top := maxf(base.y, float(sa.position.y) + 8.0)
 	var right := maxf(base.z, float(win.x - sa.position.x - sa.size.x) + 8.0)
 	var bottom := maxf(base.w, float(win.y - sa.position.y - sa.size.y) + 8.0)
-	if OS.has_feature("mobile") and top < 28.0:
-		top = 28.0
+	## Keep chrome clear of status bar / notch (esp. player Back).
+	if OS.has_feature("mobile") and top < 40.0:
+		top = 40.0
 	return Vector4(left, top, right, bottom)

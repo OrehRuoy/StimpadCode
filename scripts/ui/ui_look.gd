@@ -158,6 +158,54 @@ static func style_back(btn: Button) -> void:
 	btn.focus_mode = Control.FOCUS_ALL
 
 
+static func style_hslider(slider: HSlider) -> void:
+	## Mint fill + slate track to match StimPad chrome (not default gray).
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(0.14, 0.18, 0.26, 0.95)
+	track.set_corner_radius_all(8)
+	track.content_margin_left = 0
+	track.content_margin_right = 0
+	track.content_margin_top = 7
+	track.content_margin_bottom = 7
+	track.border_color = Color(0.37, 0.81, 0.69, 0.28)
+	track.border_width_left = 1
+	track.border_width_top = 1
+	track.border_width_right = 1
+	track.border_width_bottom = 1
+
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(0.37, 0.81, 0.69, 0.9)
+	fill.set_corner_radius_all(8)
+	fill.content_margin_top = 7
+	fill.content_margin_bottom = 7
+
+	var grab := StyleBoxFlat.new()
+	grab.bg_color = Color(0.45, 0.88, 0.76, 1)
+	grab.set_corner_radius_all(14)
+	grab.content_margin_left = 11
+	grab.content_margin_right = 11
+	grab.content_margin_top = 11
+	grab.content_margin_bottom = 11
+	grab.border_color = Color(0.72, 0.95, 0.88, 0.95)
+	grab.border_width_left = 2
+	grab.border_width_top = 2
+	grab.border_width_right = 2
+	grab.border_width_bottom = 2
+	grab.shadow_color = Color(0.05, 0.1, 0.1, 0.35)
+	grab.shadow_size = 4
+	grab.shadow_offset = Vector2(0, 2)
+
+	var grab_hi := grab.duplicate()
+	grab_hi.bg_color = Color(0.55, 0.92, 0.82, 1)
+
+	slider.add_theme_stylebox_override("slider", track)
+	slider.add_theme_stylebox_override("grabber_area", fill)
+	slider.add_theme_stylebox_override("grabber_area_highlight", fill)
+	slider.add_theme_stylebox_override("grabber", grab)
+	slider.add_theme_stylebox_override("grabber_highlight", grab_hi)
+	slider.add_theme_constant_override("center_grabber", 1)
+
+
 static func style_chip(btn: Button, selected: bool, free_chip: bool = false) -> void:
 	var style := StyleBoxFlat.new()
 	if selected:
@@ -181,16 +229,17 @@ static func style_chip(btn: Button, selected: bool, free_chip: bool = false) -> 
 		style.border_width_top = 1
 		style.border_width_right = 1
 		style.border_width_bottom = 1
-	style.corner_radius_top_left = 18
-	style.corner_radius_top_right = 18
-	style.corner_radius_bottom_right = 18
-	style.corner_radius_bottom_left = 18
-	style.content_margin_left = 12
-	style.content_margin_right = 12
+	style.corner_radius_top_left = 20
+	style.corner_radius_top_right = 20
+	style.corner_radius_bottom_right = 20
+	style.corner_radius_bottom_left = 20
+	style.content_margin_left = 16
+	style.content_margin_right = 16
 	style.content_margin_top = 10
 	style.content_margin_bottom = 10
 	_apply_btn_styles(btn, style, Color(0.94, 0.97, 1, 1))
 	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	btn.clip_text = false
 
 
 static func style_player_controls_panel(panel: PanelContainer) -> void:

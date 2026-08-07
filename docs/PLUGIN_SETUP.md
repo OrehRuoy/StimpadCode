@@ -44,8 +44,14 @@ Events are wired in `scripts/autoload/analytics_service.gd` via the `FirebaseIOS
    - `sound_play` — params: `sound_id`, `sound_name`, `category`, `tier`, `mode`
    - `select_content` — GA4 recommended; params: `content_type=sound`, `item_id` (= sound id)
    - `sound_stop` — params include `duration_sec`
+   - `purchase` / `plus_unlocked` — StimPad Plus (for Google Ads conversions)
 3. In GA4: **Reports → Engagement → Events** → `sound_play` → break down by `sound_id` / `sound_name`. Or Explorations → free-form.
 4. Use **DebugView** while testing (events can take hours to appear in standard reports).
+
+### Google Ads + Firebase (campaign optimization)
+1. Link the Firebase / GA4 property to your **Google Ads** account (Firebase → Project settings → Integrations, or Ads → linked accounts).
+2. In GA4, mark key events as conversions (at least `purchase`; optionally `sound_play`, `plus_unlocked`, `enjoy_yes`).
+3. Import those conversions into Google Ads for in-app action bidding. No extra SDK is required beyond Firebase Analytics (already in the iOS CI build).
 
 ## IAP — StimPad Plus ($4.99)
 Product ID: `com.stimpad.soundboard.plus` (non-consumable)
@@ -56,8 +62,25 @@ Product ID: `com.stimpad.soundboard.plus` (non-consumable)
 
 Create matching products in App Store Connect and Google Play Console before testing purchases.
 
+## In-app review (Enjoy StimPad → Yes)
+Wired end-to-end:
+1. `EnjoyPromptService` shows “Are you enjoying StimPad?”
+2. **Yes** → `ReviewService.request_review()` (`scripts/ui/enjoy_prompt.gd`)
+3. **No** → feedback form
+
+**iOS native path (CI builds):** GodotApplePlugins StoreKit is installed by `ios-testflight.yml`. `ReviewService` calls `StoreKitManager.request_review` / `requestReview` when present (same stack as IAP). Optional [cengiz-pz In-app Review](https://github.com/cengiz-pz/godot-ios-inapp-review-plugin) also auto-binds if you add it later.
+
+**Fallbacks:** store write-review URL once `ReviewService.IOS_APP_STORE_ID` is set; Android uses Play URL / plugin when available.
+
+Without a device plugin, editor/desktop builds print a stub (dev menu can force the enjoy prompt).
+
+## Feedback (Web3Forms)
+`FeedbackService` posts to `https://api.web3forms.com/submit` (access key in that script). Settings → Feedback and the enjoy-prompt **No** path open the same form (OS, version/build, message, optional email, optional sound requests).
+
 ## Editor testing
 Without plugins, desktop/editor builds use stub implementations:
 - IAP simulates purchase after delay
 - Ads show banner placeholder UI only
 - Analytics prints to console
+- Dev menu on Home (debug builds only): Unpaid / Paid / Force enjoy prompt
+- Review prints a stub; Feedback still POSTs to Web3Forms when online

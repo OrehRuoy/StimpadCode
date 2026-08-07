@@ -44,21 +44,39 @@ jobs:
           grep -q 'name="iOS (TestFlight IPA)"' export_presets.cfg
           grep -q 'application/bundle_identifier="com.stimpad.soundboard"' export_presets.cfg
           grep -q 'plugins/AdmobPlugin=true' export_presets.cfg
+          grep -q 'application/app_store_team_id="9WRNQYQZTB"' export_presets.cfg
           UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
-          if [ "$UUID" = "PASTE_PROFILE_UUID_HERE" ]; then
-            echo "::error::Replace PASTE_PROFILE_UUID_HERE in export_presets.cfg"
+          if [ -z "$UUID" ] || [ "$UUID" = "PASTE_PROFILE_UUID_HERE" ]; then
+            echo "::error::Missing release provisioning profile UUID in export_presets.cfg"
             exit 1
           fi
+          # Apple UUIDs look like 8-4-4-4-12 hex
+          if ! echo "$UUID" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+            echo "::error::Provisioning UUID looks invalid: $UUID"
+            exit 1
+          fi
+          echo "Release profile UUID: $UUID"
           test -f assets/branding/icon_1024.png
           test -f ios/plugins/AdmobPlugin.gdip
           test -f ios/plugins/AdmobPlugin.release.xcframework/ios-arm64/AdmobPlugin.a
+          test -d ios/framework/GoogleMobileAds.xcframework
+          test -d ios/framework/UserMessagingPlatform.xcframework
+          test -f addons/AdmobPlugin/plugin.cfg
+          test -f addons/AdmobPlugin/ios_export.cfg
+          test -f scripts/setup_ios_firebase.sh
+          grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot
+          grep -q 'res://addons/GodotFirebaseiOS/plugin.cfg' project.godot
           if grep -nE '^\s*#' ios/plugins/*.gdip 2>/dev/null; then
             echo "::error::Remove # comments from .gdip files"
             exit 1
           fi
+          if grep -q 'plugins/exported=' export_presets.cfg; then
+            echo "::error::Do not use plugins/exported= — use plugins/AdmobPlugin=true"
+            exit 1
+          fi
           chmod +x scripts/setup_ios_admob_frameworks.sh scripts/verify_ios_ipa_plugins.sh
           ./scripts/setup_ios_admob_frameworks.sh
-          grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot || echo "::warning::Enable AdmobPlugin in project.godot editor_plugins after first open"
+          echo "Preflight OK: AdMob binaries + UUID + Firebase editor plugin entry present"
 
   build-ios:
     needs: preflight

@@ -69,6 +69,8 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+scroll_deadzone = 8
 
 [node name="Content" type="VBoxContainer" parent="Margin/VBox/Scroll"]
 layout_mode = 2
@@ -96,6 +98,88 @@ theme_override_colors/font_color = Color(0.37, 0.81, 0.69, 1)
 text = "StimPad Plus: Not purchased"
 horizontal_alignment = 1
 
+[node name="VolumeLabel" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.94, 0.97, 1, 1)
+text = "Volume  ·  100%"
+
+[node name="VolumeSlider" type="HSlider" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+min_value = 0.0
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="VolumeHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "App sound level (separate from your phone’s volume buttons)."
+autowrap_mode = 3
+
+[node name="RepeatBtn" type="CheckButton" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+text = "Repeat Short Sounds"
+
+[node name="RepeatHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "Keeps replaying short one-shot sounds until you press Stop. Native loop sounds already repeat."
+autowrap_mode = 3
+
+[node name="HeadFlossBtn" type="CheckButton" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+text = "Head Flossing"
+
+[node name="HeadFlossHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "Gently pans sound left ↔ right in headphones (~every few seconds). Applies to all sounds while playing."
+autowrap_mode = 3
+
+[node name="HapticsBtn" type="CheckButton" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+button_pressed = true
+text = "Haptic Feedback"
+
+[node name="HapticsHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "Short vibration when you tap sounds or play."
+autowrap_mode = 3
+
+[node name="PitchSpeedBtn" type="CheckButton" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+text = "Show Pitch & Speed"
+
+[node name="PitchSpeedHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "Adds a slider on each sound page. Lower = deeper and slower."
+autowrap_mode = 3
+
+[node name="TapRipplesBtn" type="CheckButton" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 54)
+layout_mode = 2
+text = "Tap Ripples"
+
+[node name="TapRipplesHint" type="Label" parent="Margin/VBox/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.65, 0.72, 0.8, 1)
+text = "Soft expanding ripples where you tap (optional visual stim)."
+autowrap_mode = 3
+
 [node name="RestoreBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
@@ -105,6 +189,11 @@ text = "Restore Purchases"
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "Privacy Policy"
+
+[node name="FeedbackBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Feedback"
 
 [node name="AdPrivacyBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
 visible = false

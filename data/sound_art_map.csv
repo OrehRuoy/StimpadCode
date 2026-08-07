@@ -47,33 +47,33 @@ rain,"Rain",rain.mp3,rain.png,free,Water
 thunder,"Thunder Storm",thunder.wav,thunder.png,plus,Water
 tv_static,"Analog TV Static",tv_static.wav,tv_static.png,plus,Noise
 brown_noise,"Brown Noise Deep",brown_noise.wav,brown_noise.png,plus,Noise
-pink_noise,"Pink Noise Soft",pink_noise.wav,pink_noise.png,plus,Noise
-white_noise,"White Noise Hiss",white_noise.wav,white_noise.png,free,Noise
-campfire,"Campfire Crackles",campfire.mp3,campfire.png,free,Nature
-morning_birds,"Morning Birdsong",morning_birds.mp3,morning_birds.png,plus,Nature
-night_crickets,"Night Cricket Ambience",night_crickets.mp3,night_crickets.png,plus,Nature
+pink_noise,"Pink Noise",pink_noise.wav,pink_noise.png,plus,Noise
+white_noise,"White Noise",white_noise.wav,white_noise.png,free,Noise
+campfire,"Campfire Crackles",campfire.wav,campfire.png,free,Nature
+morning_birds,"Dawn Bird Chorus",morning_birds.mp3,morning_birds.png,plus,Nature
+night_crickets,"Night Cricket Ambience",night_crickets.wav,night_crickets.png,plus,Nature
 forest_insects,"Night Forest Insects",forest_insects.mp3,forest_insects.png,plus,Nature
-cat_purr,"Cat Long Purr",cat_purr.mp3,cat_purr.png,plus,Animals
-dog_bark,"Dog Bark Twice",dog_bark.mp3,dog_bark.png,plus,Animals
-cat_meow,"Sweet Cat Meow",cat_meow.mp3,cat_meow.png,free,Animals
-chainsaw,"Chainsaw Cutting",chainsaw.mp3,chainsaw.png,plus,Tools
-construction_site,"Construction Site Ambience",construction_site.mp3,construction_site.png,plus,Tools
-electric_drill,"Electric Drill Whirr",electric_drill.mp3,electric_drill.png,plus,Tools
+cat_purr,"Cat Purr",cat_purr.wav,cat_purr.png,plus,Animals
+dog_bark,"Dog Bark",dog_bark.wav,dog_bark.png,plus,Animals
+cat_meow,"Cat Meow",cat_meow.wav,cat_meow.png,free,Animals
+chainsaw,"Chainsaw",chainsaw.wav,chainsaw.png,plus,Tools
+construction_site,"Construction Site",construction_site.mp3,construction_site.png,plus,Tools
+electric_drill,"Electric Drill",electric_drill.wav,electric_drill.png,plus,Tools
 retro_game_notify,"8-Bit Notify Beep",retro_game_notify.mp3,retro_game_notify.png,plus,Retro
 arcade_boot_jingle,"Arcade Cabinet Boot",arcade_boot_jingle.wav,arcade_boot_jingle.png,plus,Retro
-arcade_notify,"Arcade Cabinet Chime",arcade_notify.mp3,arcade_notify.png,plus,Retro
+arcade_notify,"Arcade Cabinet Chime",arcade_notify.wav,arcade_notify.png,plus,Retro
 coin_drop,"Arcade Coin Drop",coin_drop.mp3,coin_drop.png,free,Retro
 arcade_game_over,"Arcade Game-Over Tone",arcade_game_over.mp3,arcade_game_over.png,plus,Retro
-cassette_deck,"Cassette Deck Play",cassette_deck.mp3,cassette_deck.png,plus,Retro
-ui_boot_start,"Device Power-On UI",ui_boot_start.mp3,ui_boot_start.png,plus,Retro
+cassette_deck,"Cassette Deck",cassette_deck.wav,cassette_deck.png,plus,Retro
+ui_boot_start,"PC Power On",ui_boot_start.wav,ui_boot_start.png,plus,Retro
 disc_console_boot,"Disc Console Startup",disc_console_boot.wav,disc_console_boot.png,plus,Retro
-unlock_chime,"Disc Console Unlock",unlock_chime.mp3,unlock_chime.png,plus,Retro
+unlock_chime,"Disc Tray Open",unlock_chime.wav,unlock_chime.png,plus,Retro
 handheld_boot,"Handheld Console Boot",handheld_boot.wav,handheld_boot.png,plus,Retro
 home_console_boot,"Home Console Startup",home_console_boot.wav,home_console_boot.png,plus,Retro
-os_loading_hum,"OS Boot Loading Hum",os_loading_hum.mp3,os_loading_hum.png,plus,Retro
+os_loading_hum,"PC Fan Hum",os_loading_hum.wav,os_loading_hum.png,plus,Retro
 paper_crinkle,"Crumpled Paper",paper_crinkle.mp3,paper_crinkle.png,plus,Misc
 ice_crunch,"Crunching Ice Cubes",ice_crunch.mp3,ice_crunch.png,plus,Misc
-triangle_ting,"Orchestra Triangle",triangle_ting.wav,triangle_ting.png,plus,Misc
+triangle_ting,"Triangle",triangle_ting.wav,triangle_ting.png,plus,Misc
 dial_tone,"Phone Dial Tone",dial_tone.mp3,dial_tone.png,plus,Misc
 popcorn_pop,"Popcorn Kernel Pop",popcorn_pop.mp3,popcorn_pop.png,plus,Misc
 restaurant_crowd,"Restaurant Crowd Chatter",restaurant_crowd.mp3,restaurant_crowd.png,plus,Misc
@@ -83,3 +83,14 @@ heartbeat_slow,"Slow Heartbeat",heartbeat_slow.mp3,heartbeat_slow.png,plus,Misc
 xylophone,"Toy Xylophone Notes",xylophone.mp3,xylophone.png,plus,Misc
 clock_tick,"Wall Clock Tick-Tock",clock_tick.mp3,clock_tick.png,free,Misc
 metronome,"Wooden Metronome Tick",metronome.mp3,metronome.png,plus,Misc
+modem_dial,"Dial-Up Modem",modem_dial.wav,modem_dial.png,plus,Retro
+keyboard_thock,"Thocky Keyboard",keyboard_thock.wav,keyboard_thock.png,plus,Clicks
+relay_click,"Relay Click",relay_click.wav,relay_click.png,plus,Clicks
+circuit_breaker,"Circuit Breaker",circuit_breaker.wav,circuit_breaker.png,plus,Clicks
+rotary_selector,"Rotary Selector",rotary_selector.wav,rotary_selector.png,plus,Clicks
+magnetic_fidget,"Magnetic Fidget",magnetic_fidget.wav,magnetic_fidget.png,plus,Clicks
+magsafe_snap,"Magnetic Charger Snap",magsafe_snap.wav,magsafe_snap.png,plus,Clicks
+rain_metal_roof,"Rain on Metal Roof",rain_metal_roof.wav,rain_metal_roof.png,plus,Water
+nails_glass,"Nails on Glass",nails_glass.wav,nails_glass.png,plus,Clicks
+nails_plastic,"Nails on Plastic",nails_plastic.wav,nails_plastic.png,plus,Clicks
+nails_wood,"Nails on Wood",nails_wood.wav,nails_wood.png,plus,Clicks

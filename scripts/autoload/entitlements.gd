@@ -114,10 +114,26 @@ func save_state() -> void:
 func _on_purchase_completed(product_id: String) -> void:
 	if product_id == PRODUCT_ID:
 		grant_plus()
+		## GA4 / Google Ads conversion signals (link Firebase ↔ Google Ads in console).
+		AnalyticsService.log_event("purchase", {
+			"currency": "USD",
+			"value": 4.99,
+			"transaction_id": "plus_%d" % int(Time.get_unix_time_from_system()),
+			"item_id": PRODUCT_ID,
+			"item_name": "StimPad Plus",
+		})
+		AnalyticsService.log_event("plus_unlocked", {
+			"product_id": PRODUCT_ID,
+			"source": "purchase",
+		})
 
 
 func _on_purchase_restored(product_ids: Array) -> void:
 	for product_id in product_ids:
 		if str(product_id) == PRODUCT_ID:
 			grant_plus()
+			AnalyticsService.log_event("plus_unlocked", {
+				"product_id": PRODUCT_ID,
+				"source": "restore",
+			})
 			return

@@ -5,11 +5,18 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/player_screen.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_screen.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/ui/paywall_screen.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/ui/feedback_screen.tscn" id="6"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
-bg_color = Color(0.12, 0.15, 0.2, 0.96)
-corner_radius_top_left = 12
-corner_radius_top_right = 12
+bg_color = Color(0.14, 0.18, 0.26, 0.92)
+border_width_top = 2
+border_color = Color(0.37, 0.81, 0.69, 0.55)
+corner_radius_top_left = 14
+corner_radius_top_right = 14
+content_margin_left = 8
+content_margin_top = 8
+content_margin_right = 8
+content_margin_bottom = 8
 
 [node name="Main" type="Control" groups=["main_nav"]]
 layout_mode = 3
@@ -64,6 +71,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="FeedbackScreen" parent="Screens" instance=ExtResource("6")]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
 [node name="BannerPlaceholder" type="PanelContainer" parent="."]
 layout_mode = 1
 anchors_preset = 12
@@ -77,6 +93,8 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
 
 [node name="Label" type="Label" parent="BannerPlaceholder"]
 layout_mode = 2
-text = "Ad banner area (free tier)"
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.75, 0.84, 0.9, 1)
+text = "Ad banner area (preview)"
 horizontal_alignment = 1
 vertical_alignment = 1
