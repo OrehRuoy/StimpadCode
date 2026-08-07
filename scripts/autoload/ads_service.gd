@@ -217,8 +217,9 @@ func _initialize_ads() -> void:
 	_admob.auto_configure_on_initialize = false
 	_admob.banner_position = LoadAdRequest.AdPosition.BOTTOM
 	_admob.banner_anchor_to_safe_area = true
-	## Unity Ads via AdMob mediation (SDK pulled at export by AdmobPlugin).
-	_admob.enabled_networks = MediationNetwork.Flag.UNITY
+	## Unity Ads mediation: off for now — adapter pods must be verified in the IPA.
+	## Enabling without the adapter linked can crash MobileAds.initialize() on device.
+	_admob.enabled_networks = 0
 	## iOS — real App ID in both slots (Google wants your App ID even with demo units).
 	_admob.ios_debug_application_id = PROD_APP_ID_IOS
 	_admob.ios_real_application_id = PROD_APP_ID_IOS
@@ -260,17 +261,20 @@ func _initialize_ads() -> void:
 	if not _admob.is_node_ready():
 		await _admob.ready
 	await get_tree().process_frame
+	## Let the home screen settle before ATT / SDK work (cold-launch race).
+	await get_tree().create_timer(1.5).timeout
 	if _admob == null:
 		return
 	if not Engine.has_singleton("AdmobPlugin"):
 		push_error("AdMob: AdmobPlugin singleton missing — enable plugins/AdmobPlugin in export preset")
 		return
 
-	## Order: ATT (iOS) → UMP consent → Mobile Ads initialize → load ads. Never load ads earlier.
+	## Order (W4D / Circuit Sort): ATT → Mobile Ads initialize() → UMP → load ads.
+	## Never call UMP or load ads before initialize().
 	if OS.get_name() == "iOS" and not _att_resolved:
 		await _request_ios_tracking_authorization()
 		return
-	_start_ump_consent_flow()
+	_begin_mobile_ads_initialization()
 
 
 func _request_ios_tracking_authorization() -> void:
@@ -299,12 +303,17 @@ func _on_att_resolved() -> void:
 		return
 	_att_resolved = true
 	_att_pending = false
-	_start_ump_consent_flow()
+	## Apple 5.1.2: no tracking SDK init before ATT response.
+	_begin_mobile_ads_initialization()
 
 
 func _start_ump_consent_flow() -> void:
-	## UMP before Mobile Ads init / any ad load.
-	if _admob == null or _sdk_ready or _ump_started:
+	## UMP only AFTER Mobile Ads initialize() (W4D / Circuit Sort order).
+	if _admob == null or _sdk_ready:
+		return
+	if not _mobile_ads_init_started and not _admob_ready:
+		return
+	if _ump_started:
 		return
 	_ump_started = true
 	_consent_form_pending = false
@@ -316,18 +325,18 @@ func _start_ump_consent_flow() -> void:
 
 
 func _on_consent_startup_timeout() -> void:
-	if _sdk_ready or _mobile_ads_init_started:
+	if _sdk_ready:
 		return
-	push_warning("AdMob UMP: consent startup timed out — fail-open NPA, then init SDK")
+	push_warning("AdMob UMP: consent startup timed out — fail-open NPA, then serve ads")
 	_consent_form_pending = false
 	_privacy_settings_request = false
-	_fail_open_and_init_sdk()
+	_fail_open_and_serve_ads()
 
 
 func _on_consent_info_updated() -> void:
 	if _admob == null:
-		if not _sdk_ready and not _mobile_ads_init_started:
-			_fail_open_and_init_sdk()
+		if not _sdk_ready:
+			_fail_open_and_serve_ads()
 		return
 	## Settings re-open of privacy options.
 	if _privacy_settings_request and _sdk_ready:
@@ -340,22 +349,22 @@ func _on_consent_info_updated() -> void:
 		return
 	var consent := _admob.get_consent_status()
 	var need_form := false
-	if consent != null and consent.status == UserConsent.Status.REQUIRED and not _mobile_ads_init_started:
+	if consent != null and consent.status == UserConsent.Status.REQUIRED and not _sdk_ready:
 		need_form = true
 	if need_form:
 		_consent_form_pending = true
 		_admob.load_consent_form()
 		var form_fallback: SceneTreeTimer = get_tree().create_timer(8.0)
 		form_fallback.timeout.connect(func() -> void:
-			if _consent_form_pending and not _mobile_ads_init_started:
+			if _consent_form_pending and not _sdk_ready:
 				push_warning("AdMob UMP: consent form timed out — fail-open NPA")
 				_consent_form_pending = false
-				_fail_open_and_init_sdk()
+				_fail_open_and_serve_ads()
 		, CONNECT_ONE_SHOT)
 		return
 	_emit_privacy_choices_availability()
-	if not _mobile_ads_init_started:
-		_finish_consent_then_init_sdk()
+	if not _sdk_ready:
+		_finish_consent_then_serve_ads()
 
 
 func _on_consent_info_update_failed(_err: FormError) -> void:
@@ -364,7 +373,7 @@ func _on_consent_info_update_failed(_err: FormError) -> void:
 		_privacy_settings_request = false
 		_emit_privacy_choices_availability()
 		return
-	_fail_open_and_init_sdk()
+	_fail_open_and_serve_ads()
 
 
 func _on_consent_form_loaded() -> void:
@@ -379,7 +388,7 @@ func _on_consent_form_failed_to_load(_err: FormError) -> void:
 		_privacy_settings_request = false
 		_emit_privacy_choices_availability()
 		return
-	_fail_open_and_init_sdk()
+	_fail_open_and_serve_ads()
 
 
 func _on_consent_form_dismissed(_err: FormError) -> void:
@@ -389,7 +398,7 @@ func _on_consent_form_dismissed(_err: FormError) -> void:
 		_apply_mediation_and_request_config()
 		_privacy_settings_request = false
 		return
-	_finish_consent_then_init_sdk()
+	_finish_consent_then_serve_ads()
 
 
 func _consent_resolved() -> bool:
@@ -421,27 +430,27 @@ func _apply_request_config_before_ad_load() -> void:
 	_apply_mediation_and_request_config()
 
 
-func _fail_open_and_init_sdk() -> void:
+func _fail_open_and_serve_ads() -> void:
 	## Network / form failure: continue with non-personalized ads rather than blocking forever.
-	if _sdk_ready or _mobile_ads_init_started:
+	if _sdk_ready:
 		return
 	if _admob != null:
 		_admob.personalization_state = AdmobConfig.PersonalizationState.DISABLED
 		_apply_mediation_and_request_config()
-	_begin_mobile_ads_initialization()
+	_serve_ads_now()
 
 
-func _finish_consent_then_init_sdk() -> void:
-	if _sdk_ready or _mobile_ads_init_started:
+func _finish_consent_then_serve_ads() -> void:
+	if _sdk_ready:
 		return
 	if not _consent_resolved() and _admob != null:
 		_admob.personalization_state = AdmobConfig.PersonalizationState.DISABLED
 	_apply_mediation_and_request_config()
-	_begin_mobile_ads_initialization()
+	_serve_ads_now()
 
 
 func _begin_mobile_ads_initialization() -> void:
-	## Only after ATT + UMP. Ads load in _finish_mobile_ads_startup after init completes.
+	## Only after ATT. UMP + ad loads happen after initialization_completed.
 	if _admob == null or _mobile_ads_init_started:
 		return
 	_mobile_ads_init_started = true
@@ -455,10 +464,10 @@ func _begin_mobile_ads_initialization() -> void:
 func _on_mobile_ads_init_timeout() -> void:
 	if _admob_init_cb_fired:
 		return
-	push_warning("AdMob: Mobile Ads SDK init timed out — serving ads if allowed")
+	push_warning("AdMob: Mobile Ads SDK init timed out — continuing to UMP / ads if allowed")
 	_admob_init_cb_fired = true
 	_admob_ready = true
-	_finish_mobile_ads_startup()
+	_on_mobile_ads_ready_for_ump()
 
 
 func _on_admob_initialized(_status) -> void:
@@ -466,10 +475,15 @@ func _on_admob_initialized(_status) -> void:
 		return
 	_admob_init_cb_fired = true
 	_admob_ready = true
-	_finish_mobile_ads_startup()
+	_on_mobile_ads_ready_for_ump()
 
 
-func _finish_mobile_ads_startup() -> void:
+func _on_mobile_ads_ready_for_ump() -> void:
+	## SDK is up — now UMP, then load ads.
+	_start_ump_consent_flow()
+
+
+func _serve_ads_now() -> void:
 	if _sdk_ready:
 		return
 	_sdk_ready = true
@@ -477,6 +491,11 @@ func _finish_mobile_ads_startup() -> void:
 	ensure_banner_mounted()
 	_preload_interstitial()
 	_preload_rewarded()
+
+
+func _finish_mobile_ads_startup() -> void:
+	## Legacy name kept for any callers — redirect to UMP-then-serve path.
+	_on_mobile_ads_ready_for_ump()
 
 
 func _emit_privacy_choices_availability() -> void:

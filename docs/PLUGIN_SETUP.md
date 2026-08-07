@@ -10,18 +10,9 @@ Use **AdmobPlugin Multi v6.0** (same as OrehRuoy/Whats4dinnerCode):
 4. Run `scripts/setup_ios_admob_frameworks.sh` before iOS export (CI does this)
 5. Production unit IDs live in `scripts/autoload/ads_service.gd` (`PROD_*`). Debug device builds still use Google demo units; release uses production (`is_real = not OS.is_debug_build()`).
 
-**Consent init order (iOS + Android):** ATT (iOS) → UMP consent form if required → `MobileAds.initialize()` → load ads. No ads are requested before ATT + UMP finish. Implemented in `scripts/autoload/ads_service.gd`. ATT + app IDs for export: `addons/AdmobPlugin/ios_export.cfg` and `android_export.cfg`. Settings → **Manage Ad Consent** re-opens the UMP privacy options form when Google requires an entry point for the user’s region.
+**Consent init order (iOS + Android):** ATT (iOS) → `MobileAds.initialize()` → UMP consent form if required → load ads. Never call UMP or request ads before `initialize()`. Implemented in `scripts/autoload/ads_service.gd`. ATT + app IDs for export: `addons/AdmobPlugin/ios_export.cfg` and `android_export.cfg`. Settings → **Manage Ad Consent** re-opens the UMP privacy options form when Google requires an entry point for the user’s region.
 
-**AdMob Privacy & messaging (console):** create GDPR (and IDFA / US state messages if applicable) under AdMob → Privacy & messaging so UMP forms actually appear in-region.
-
-**iOS AdMob (configured):**
-- App ID: `ca-app-pub-5356882403986713~1231581339`
-- Banner / interstitial / rewarded unit IDs in `ads_service.gd`
-- Mediation: Unity Ads (`enabled_networks` includes `unity` in `ios_export.cfg` — CocoaPods pulls `GoogleMobileAdsMediationUnity` on export)
-
-**Android AdMob:** not configured yet — keep Google demo IDs until the Android app + units exist in AdMob.
-
-**Unity Ads mediation (AdMob-controlled):** enable Unity as an ad source in AdMob Mediation, create matching placements in the Unity Ads dashboard, then map them in AdMob mediation groups. Do not add a separate Unity Ads plugin — AdmobPlugin mediation handles the SDK.
+**Unity Ads mediation:** currently **disabled** in runtime + `ios_export.cfg` until the mediation adapter is verified in the IPA (missing adapters can crash `initialize()` on device). Re-enable `MediationNetwork.Flag.UNITY` + `enabled_networks=PackedStringArray("unity")` after a clean TestFlight run.
 
 Enable in `export_presets.cfg`: `plugins/AdmobPlugin=true` (checkbox key, not `plugins/exported=`)
 
