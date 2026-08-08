@@ -8,6 +8,12 @@ APP=$(find "$TMP/Payload" -maxdepth 1 -name '*.app' | head -1)
 BIN="$APP/$(basename "$APP" .app)"
 strings "$BIN" > "$TMP/strings.txt"
 grep -q 'AdmobPlugin' "$TMP/strings.txt" || { echo 'AdmobPlugin not found in binary'; exit 1; }
+# Soft-check Unity mediation adapter (present when pods linked).
+if grep -qE 'UnityAds|GADMediationAdapterUnity|UMSUnity' "$TMP/strings.txt"; then
+  echo "Unity Ads mediation symbols present in binary"
+else
+  echo "::warning::Unity Ads mediation strings not found — check Podfile / workspace archive"
+fi
 # Firebase Analytics (GodotFirebaseiOS) — soft check; plist must be in the app bundle.
 if [ -f "$APP/GoogleService-Info.plist" ]; then
   echo "GoogleService-Info.plist present in app bundle"

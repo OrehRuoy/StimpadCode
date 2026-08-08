@@ -12,7 +12,7 @@ Use **AdmobPlugin Multi v6.0** (same as OrehRuoy/Whats4dinnerCode):
 
 **Consent init order (iOS + Android):** ATT (iOS) → `MobileAds.initialize()` → UMP consent form if required → load ads. Never call UMP or request ads before `initialize()`. Implemented in `scripts/autoload/ads_service.gd`. ATT + app IDs for export: `addons/AdmobPlugin/ios_export.cfg` and `android_export.cfg`. Settings → **Manage Ad Consent** re-opens the UMP privacy options form when Google requires an entry point for the user’s region.
 
-**Unity Ads mediation:** currently **disabled** in runtime + `ios_export.cfg` until the mediation adapter is verified in the IPA (missing adapters can crash `initialize()` on device). Re-enable `MediationNetwork.Flag.UNITY` + `enabled_networks=PackedStringArray("unity")` after a clean TestFlight run.
+**Unity Ads mediation:** enabled via `MediationNetwork.Flag.UNITY` + `ios_export.cfg` `enabled_networks=PackedStringArray("unity")`. Export generates a Podfile and runs `pod install` on macOS CI (opens `.xcworkspace`). AdMob console still needs a Unity mediation group + Game ID linked for Unity demand to fill.
 
 Enable in `export_presets.cfg`: `plugins/AdmobPlugin=true` (checkbox key, not `plugins/exported=`)
 

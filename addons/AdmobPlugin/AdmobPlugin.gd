@@ -206,9 +206,10 @@ class IosExportPlugin extends EditorExportPlugin:
 		var __result = Error.OK
 		var __podfile_path = a_project_dir.path_join("Podfile")
 
-		# Generate Podfile content
+		# CDN serves podspecs over HTTP; Specs.git forces a multi-GB full clone in CI.
+		# Same trunk — matches Circuit Sort (re-apply if AdmobPlugin is updated).
 		var __pod_content = """
-source 'https://github.com/CocoaPods/Specs.git'
+source 'https://cdn.cocoapods.org/'
 use_frameworks!
 
 project '%s.xcodeproj'

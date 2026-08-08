@@ -170,6 +170,15 @@ jobs:
       - name: Set build number
         run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg
 
+      - name: Ensure CocoaPods (Unity mediation)
+        run: |
+          if ! command -v pod >/dev/null 2>&1; then
+            sudo gem install cocoapods
+          fi
+          pod --version
+          # Warm CDN index a bit; AdmobPlugin runs pod install during Godot export.
+          pod repo update --silent || true
+
       - name: Export iOS Xcode project
         run: |
           mkdir -p build
@@ -186,6 +195,14 @@ jobs:
           fi
           test -d "build/StimPad/frameworks"
           test -f "build/StimPad.xcodeproj/project.pbxproj"
+          # Unity mediation must produce a workspace (Podfile + pod install during export).
+          if [[ ! -d build/StimPad.xcworkspace ]]; then
+            echo "ERROR: StimPad.xcworkspace missing — Unity mediation pods did not install"
+            ls -la build/ || true
+            test -f build/Podfile && cat build/Podfile || echo "No Podfile"
+            exit 1
+          fi
+          echo "Unity mediation workspace OK"
           chmod +x tools/ios/inject_firebase_force_load.sh tools/ios/patch_xcode_signing.py tools/ios/ensure_admob_info_plist.sh
           tools/ios/ensure_admob_info_plist.sh build "ca-app-pub-5356882403986713~1231581339"
           tools/ios/inject_firebase_force_load.sh StimPad build

@@ -263,9 +263,10 @@ func _initialize_ads() -> void:
 	_admob.auto_configure_on_initialize = false
 	_admob.banner_position = LoadAdRequest.AdPosition.BOTTOM
 	_admob.banner_anchor_to_safe_area = true
-	## Unity Ads mediation: off for now — adapter pods must be verified in the IPA.
-	## Enabling without the adapter linked can crash MobileAds.initialize() on device.
-	_admob.enabled_networks = 0
+	## Unity Ads mediation — same as Circuit Sort (pods via AdmobPlugin ios_export.cfg).
+	_admob.enabled_networks = MediationNetwork.Flag.UNITY
+	## Teen rating widens fill vs G without allowing mature ads (Circuit Sort note).
+	_admob.max_ad_content_rating = AdmobConfig.ContentRating.T
 	## iOS — real App ID in both slots (Google wants your App ID even with demo units).
 	_admob.ios_debug_application_id = PROD_APP_ID_IOS
 	_admob.ios_real_application_id = PROD_APP_ID_IOS
@@ -463,6 +464,9 @@ func _apply_mediation_and_request_config() -> void:
 	var privacy := NetworkPrivacySettings.new()
 	privacy.set_has_gdpr_consent(gdpr_ok)
 	privacy.set_has_ccpa_sale_consent(gdpr_ok)
+	## Forward consent flags to Unity / mediation adapters before the first ad request.
+	if privacy.has_method("set_enabled_networks"):
+		privacy.set_enabled_networks(MediationNetwork.get_all_enabled_tags(_admob.enabled_networks))
 	_admob.set_mediation_privacy_settings(privacy)
 	var cfg := _admob.create_request_configuration()
 	if gdpr_ok:
