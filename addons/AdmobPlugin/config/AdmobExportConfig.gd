@@ -46,7 +46,7 @@ func load_export_config_from_file() -> Error:
 
 		if __config_file.has_section(CONFIG_FILE_SECTION_MEDIATION):
 			if __config_file.has_section_key(CONFIG_FILE_SECTION_MEDIATION, CONFIG_FILE_KEY_ENABLED_NETWORKS):
-				var __network_array: Array[String] = __config_file.get_value(CONFIG_FILE_SECTION_MEDIATION, CONFIG_FILE_KEY_ENABLED_NETWORKS)
+				var __network_array: PackedStringArray = __config_file.get_value(CONFIG_FILE_SECTION_MEDIATION, CONFIG_FILE_KEY_ENABLED_NETWORKS)
 
 				for __network in __network_array:
 					if MediationNetwork.is_valid_tag(__network):
