@@ -44,9 +44,10 @@ func _setup_boot_overlay() -> void:
 	if _boot_image:
 		_boot_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_boot_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		## Same art as engine splash — cover fill so no letterbox bars between boot and home.
+		## Match Godot engine splash (aspect fit / centered). Cover mode caused the
+		## "full → bars → full" flash vs the engine letterbox step.
 		_boot_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_boot_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		_boot_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
 			_boot_image.texture = load("res://assets/branding/boot_splash.png")
 

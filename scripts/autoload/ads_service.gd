@@ -21,9 +21,9 @@ const ATT_TEXT := (
 	+ "You can change this anytime in Settings."
 )
 
-## When false, AdMob does not init on cold start (isolates post-home crash).
-## Rewarded unlock can still lazy-init when the paywall opens.
-const ENABLE_COLD_START_ADS := false
+## Cold-start ads on after splash/home ready (W4D/Circuit Sort: ATT → initialize → UMP).
+## Still gated behind notify_ui_ready() so we never init during the texture spike.
+const ENABLE_COLD_START_ADS := true
 
 var _ads_enabled: bool = true
 ## True only after ATT (iOS) + UMP consent + Mobile Ads init — ads must not load before this.
@@ -307,8 +307,8 @@ func _initialize_ads() -> void:
 	if not _admob.is_node_ready():
 		await _admob.ready
 	await get_tree().process_frame
-	## Short settle after splash fade before ATT.
-	await get_tree().create_timer(0.8).timeout
+	## Settle after splash fade before ATT (playbook: never fire ATT/init during boot spike).
+	await get_tree().create_timer(1.2).timeout
 	if _admob == null:
 		return
 	if not Engine.has_singleton("AdmobPlugin"):
