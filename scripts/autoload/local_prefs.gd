@@ -40,6 +40,9 @@ var enjoy_prompt_last_shown_unix: int = 0
 
 func _ready() -> void:
 	load_prefs()
+	## AudioController boots before prefs — re-apply saved volume once disk values are loaded.
+	if AudioController != null:
+		AudioController.apply_sfx_volume(sfx_volume)
 
 
 func load_prefs() -> void:

@@ -64,12 +64,17 @@ func _style_controls() -> void:
 	UiLook.style_settings_row(_repeat_btn)
 	UiLook.style_back(_back_btn)
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	_scroll.scroll_deadzone = 8
+	## High deadzone so finger slides on toggles don't steal the tap into a scroll.
+	_scroll.scroll_deadzone = 56
 	var vbar := _scroll.get_v_scroll_bar()
 	if vbar:
 		vbar.modulate.a = 0.0
 		vbar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	UiLook.style_hslider(_volume_slider)
+	## Prefer release-to-toggle so a short drag doesn't cancel the flip.
+	for toggle in [_head_floss_btn, _haptics_btn, _pitch_speed_btn, _tap_ripples_btn, _repeat_btn]:
+		toggle.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+		toggle.mouse_filter = Control.MOUSE_FILTER_STOP
 
 
 func _apply_responsive_layout() -> void:

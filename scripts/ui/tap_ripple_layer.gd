@@ -23,6 +23,8 @@ func spawn_at_global(global_pos: Vector2) -> void:
 		return
 	var r := Ripple.new()
 	r.pos = get_global_transform_with_canvas().affine_inverse() * global_pos
+	r.max_radius = 72.0
+	r.life = 0.7
 	_ripples.append(r)
 	queue_redraw()
 

@@ -21,8 +21,8 @@ const ATT_TEXT := (
 	+ "You can change this anytime in Settings."
 )
 
-## When false, AdMob never initializes on cold start (isolates TestFlight crash after home).
-## Re-enable after GADApplicationIdentifier is confirmed in the IPA Info.plist.
+## When false, AdMob does not init on cold start (isolates post-home crash).
+## Rewarded unlock can still lazy-init when the paywall opens.
 const ENABLE_COLD_START_ADS := false
 
 var _ads_enabled: bool = true
@@ -115,7 +115,20 @@ func can_offer_rewarded() -> bool:
 	## Desktop/editor: simulate rewarded unlock for testing.
 	if not OS.has_feature("mobile"):
 		return true
-	return _has_mobile_ads() and _sdk_ready
+	## Show Watch Ad even before SDK init (_admob may still be null).
+	return (
+		Engine.has_singleton("AdmobPlugin")
+		or ResourceLoader.exists("res://addons/AdmobPlugin/Admob.gd")
+	)
+
+
+func ensure_initialized_for_rewarded() -> void:
+	## Safe path: only start AdMob once home UI is up and user hit a locked sound.
+	if _sdk_ready or _admob_setup_started:
+		return
+	if not _ui_ready:
+		_ui_ready = true
+	call_deferred("_initialize_ads")
 
 
 func ensure_banner_mounted() -> void:
@@ -167,13 +180,29 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 	if Entitlements.has_plus() or Entitlements.is_temp_unlocked(sound_id):
 		rewarded_unlock_completed.emit(sound_id)
 		return
-	if not OS.has_feature("mobile") or _admob == null or not _sdk_ready:
+	if not OS.has_feature("mobile"):
 		## Editor / desktop: grant immediately so paywall flow is testable.
 		Entitlements.grant_temp_unlock(sound_id)
 		rewarded_unlock_completed.emit(sound_id)
 		return
 	if _playback_active:
 		rewarded_unlock_failed.emit("Stop playback first.")
+		return
+	if not _sdk_ready:
+		ensure_initialized_for_rewarded()
+		_pending_reward_sound_id = sound_id
+		_reward_earned_pending = false
+		var waited := 0.0
+		while not _sdk_ready and waited < 12.0:
+			await get_tree().create_timer(0.4).timeout
+			waited += 0.4
+		if not _sdk_ready or _admob == null:
+			rewarded_unlock_failed.emit("Ads aren't ready yet — try again in a moment.")
+			return
+		if _pending_reward_sound_id != sound_id:
+			return
+	if _admob == null:
+		rewarded_unlock_failed.emit("Ads aren't ready yet — try again in a moment.")
 		return
 	_pending_reward_sound_id = sound_id
 	_reward_earned_pending = false

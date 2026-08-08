@@ -9,7 +9,8 @@ signal pressed
 @onready var _hint: Label = $Root/VBox/HintLabel
 @onready var _art_frame: PanelContainer = $Root/VBox/ArtFrame
 
-const DRAG_CANCEL_PX := 10.0
+const DRAG_CANCEL_PX := 28.0
+const SCROLL_DAMP := 0.55
 
 var _sound: Dictionary = {}
 var _unlocked: bool = true
@@ -79,7 +80,7 @@ func _cache_parent_scroll() -> void:
 	while node:
 		if node is ScrollContainer:
 			_parent_scroll = node
-			_parent_scroll.scroll_deadzone = 8
+			_parent_scroll.scroll_deadzone = 24
 			return
 		node = node.get_parent()
 
@@ -100,7 +101,7 @@ func _gui_input(event: InputEvent) -> void:
 			_play_press_squash(false)
 		if _dragged and _parent_scroll:
 			_parent_scroll.scroll_vertical = int(
-				_parent_scroll.scroll_vertical - sd.relative.y
+				_parent_scroll.scroll_vertical - sd.relative.y * SCROLL_DAMP
 			)
 			accept_event()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -117,7 +118,7 @@ func _gui_input(event: InputEvent) -> void:
 				_play_press_squash(false)
 			if _dragged and _parent_scroll:
 				_parent_scroll.scroll_vertical = int(
-					_parent_scroll.scroll_vertical - mm.relative.y
+					_parent_scroll.scroll_vertical - mm.relative.y * SCROLL_DAMP
 				)
 				accept_event()
 

@@ -72,7 +72,7 @@ func _ready() -> void:
 	_style_top_buttons()
 	_setup_dev_menu()
 	_refresh_features_banner()
-	_scroll.scroll_deadzone = 8
+	_scroll.scroll_deadzone = 24
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_hide_scroll_bar(_scroll.get_v_scroll_bar())
 	_rebuild_filters()

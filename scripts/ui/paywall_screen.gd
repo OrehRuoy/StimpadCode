@@ -48,6 +48,9 @@ func _ready() -> void:
 
 func open_for_sound(sound: Dictionary = {}) -> void:
 	_focus_sound = sound
+	## Kick AdMob only when a locked sound needs the Watch Ad button — not on cold start.
+	if not sound.is_empty() and not Entitlements.has_plus():
+		AdsService.ensure_initialized_for_rewarded()
 	_refresh()
 
 

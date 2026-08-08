@@ -44,9 +44,9 @@ func _setup_boot_overlay() -> void:
 	if _boot_image:
 		_boot_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_boot_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		## Fill the screen completely (no letterbox bars). Slight crop/stretch beats black bars.
+		## Same art as engine splash — cover fill so no letterbox bars between boot and home.
 		_boot_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_boot_image.stretch_mode = TextureRect.STRETCH_SCALE
+		_boot_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
 			_boot_image.texture = load("res://assets/branding/boot_splash.png")
 

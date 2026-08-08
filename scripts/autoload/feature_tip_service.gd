@@ -9,8 +9,8 @@ const HOME_SETTLE_SEC := 1.8
 const MIN_SESSION_SOUND_OPENS := 3
 ## First launch is for exploring — tips start on the 2nd app open.
 const MIN_APP_OPENS := 2
-## Long gap between different tips so they never feel spammy.
-const SNOOZE_BETWEEN_TIPS_SEC := 60 * 60 * 24 * 7
+## At least one calendar day between different tips.
+const SNOOZE_BETWEEN_TIPS_SEC := 60 * 60 * 24
 
 const TIPS: Array[Dictionary] = [
 	{
@@ -44,6 +44,8 @@ var _delay_timer: SceneTreeTimer = null
 var _force_next := false
 var _session_sound_opens: int = 0
 var _pending_tip_id: String = ""
+## Never show two tips in one app session.
+var _shown_this_session: bool = false
 
 
 func note_sound_opened() -> void:
@@ -79,6 +81,8 @@ func force_show_now() -> void:
 func _should_offer() -> bool:
 	if _force_next:
 		return true
+	if _shown_this_session:
+		return false
 	if LocalPrefs.feature_tips_done:
 		return false
 	## Don't interrupt the first session — wait until they've opened the app again.
@@ -179,6 +183,7 @@ func _show_tip() -> void:
 	_pending_tip_id = tip_id
 	## Mark seen as soon as we show it — no re-reminders later.
 	_mark_tip_seen(tip_id)
+	_shown_this_session = true
 	LocalPrefs.feature_tip_snooze_until = int(Time.get_unix_time_from_system()) + SNOOZE_BETWEEN_TIPS_SEC
 	LocalPrefs.save_prefs()
 	if _tip.has_signal("closed"):

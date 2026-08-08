@@ -24,6 +24,7 @@ var _sound: Dictionary = {}
 var _is_playing: bool = false
 var _breathe_tween: Tween
 var _press_tween: Tween
+var _play_ripple_timer: Timer
 
 
 func _ready() -> void:
@@ -41,6 +42,11 @@ func _ready() -> void:
 	resized.connect(_apply_responsive_layout)
 	get_viewport().size_changed.connect(_apply_responsive_layout)
 	_fx_layer.visible = false
+	_play_ripple_timer = Timer.new()
+	_play_ripple_timer.wait_time = 1.15
+	_play_ripple_timer.one_shot = false
+	_play_ripple_timer.timeout.connect(_on_play_ripple_tick)
+	add_child(_play_ripple_timer)
 	_style_controls()
 	_apply_responsive_layout()
 	_refresh_rate_controls()
@@ -121,6 +127,18 @@ func open_sound(sound: Dictionary) -> void:
 	_stop_breathe()
 	_set_play_stop_visual(false)
 	_apply_art_frame(false)
+	## Soundboard UX: start playback as soon as the player opens.
+	call_deferred("_autoplay_opened_sound")
+
+
+func _autoplay_opened_sound() -> void:
+	if _sound.is_empty() or not visible:
+		return
+	if AudioController.is_playing() and AudioController.get_current_sound_id() == str(_sound.get("id", "")):
+		return
+	HapticsService.play()
+	_spawn_ripple_on_control(_play_stop_btn)
+	AudioController.play_sound(_sound)
 
 
 func _refresh_rate_controls() -> void:
@@ -155,6 +173,7 @@ func _on_repeat_toggle() -> void:
 	LocalPrefs.repeat_oneshots = not LocalPrefs.repeat_oneshots
 	LocalPrefs.save_prefs()
 	HapticsService.tap()
+	_spawn_ripple_on_control(_repeat_btn)
 	_refresh_repeat_btn()
 	## If already playing a oneshot, restart so loop flags apply.
 	if _is_playing and not _sound.is_empty():
@@ -219,6 +238,34 @@ func _spawn_ripple_on_control(ctrl: Control) -> void:
 		layer.call("spawn_at_global", ctrl.get_global_rect().get_center())
 
 
+func _on_play_ripple_tick() -> void:
+	if not _is_playing or not LocalPrefs.tap_ripples_enabled:
+		return
+	_spawn_ripple_on_control(_art_frame)
+
+
+func _on_playback_started(sound_id: String) -> void:
+	if sound_id != str(_sound.get("id", "")):
+		return
+	_set_play_stop_visual(true)
+	_apply_art_frame(true)
+	_start_breathe()
+	if LocalPrefs.tap_ripples_enabled and _play_ripple_timer:
+		_play_ripple_timer.start()
+
+
+func _on_playback_stopped(_sound_id: String = "") -> void:
+	if _sound.is_empty():
+		return
+	if _sound_id != "" and _sound_id != str(_sound.get("id", "")):
+		return
+	_set_play_stop_visual(false)
+	_apply_art_frame(false)
+	_stop_breathe()
+	if _play_ripple_timer:
+		_play_ripple_timer.stop()
+
+
 func _on_back() -> void:
 	AudioController.stop()
 	get_tree().get_first_node_in_group("main_nav").call("show_home")
@@ -228,6 +275,7 @@ func _on_favorite_toggle() -> void:
 	var sound_id := str(_sound.get("id", ""))
 	LocalPrefs.toggle_favorite(sound_id)
 	HapticsService.tap()
+	_spawn_ripple_on_control(_favorite_btn)
 	_refresh_favorite_icon()
 
 
@@ -271,21 +319,3 @@ func _stop_breathe() -> void:
 	_art.scale = Vector2.ONE
 	_fx_layer.color = Color(0.37, 0.81, 0.69, 0.0)
 	_fx_layer.visible = false
-
-
-func _on_playback_started(sound_id: String) -> void:
-	if sound_id != str(_sound.get("id", "")):
-		return
-	_set_play_stop_visual(true)
-	_apply_art_frame(true)
-	_start_breathe()
-
-
-func _on_playback_stopped(_sound_id: String = "") -> void:
-	if _sound.is_empty():
-		return
-	if _sound_id != "" and _sound_id != str(_sound.get("id", "")):
-		return
-	_set_play_stop_visual(false)
-	_apply_art_frame(false)
-	_stop_breathe()

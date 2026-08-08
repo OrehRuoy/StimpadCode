@@ -113,6 +113,7 @@ static func style_secondary_slate(btn: Button) -> void:
 
 static func style_settings_row(btn: Button) -> void:
 	## Taller settings list rows with mint left accent.
+	## Same chrome for every state — CheckButton on/off glyph is the only visual change.
 	var style := round_flat(Color(0.13, 0.17, 0.24, 0.9), 18, 16)
 	style.border_color = Color(0.37, 0.81, 0.69, 0.55)
 	style.border_width_left = 4
@@ -126,17 +127,15 @@ static func style_settings_row(btn: Button) -> void:
 	style.content_margin_right = 20
 	style.content_margin_top = 16
 	style.content_margin_bottom = 16
-	_apply_btn_styles(btn, style, Color(0.94, 0.97, 1, 1))
+	for state in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
+		btn.add_theme_stylebox_override(state, style)
+	btn.add_theme_color_override("font_color", Color(0.94, 0.97, 1, 1))
+	btn.add_theme_color_override("font_hover_color", Color(0.94, 0.97, 1, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(0.94, 0.97, 1, 1))
+	btn.add_theme_color_override("font_disabled_color", Color(0.94, 0.97, 1, 0.5))
 	btn.add_theme_font_size_override("font_size", 17)
 	btn.custom_minimum_size = Vector2(btn.custom_minimum_size.x, maxf(btn.custom_minimum_size.y, 54.0))
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var hover := style.duplicate()
-	hover.bg_color = Color(0.18, 0.24, 0.32, 0.95)
-	hover.border_color = Color(0.5, 0.9, 0.8, 0.75)
-	btn.add_theme_stylebox_override("hover", hover)
-	var pressed := style.duplicate()
-	pressed.bg_color = Color(0.11, 0.14, 0.2, 0.98)
-	btn.add_theme_stylebox_override("pressed", pressed)
 
 
 static func style_ghost(btn: Button) -> void:
