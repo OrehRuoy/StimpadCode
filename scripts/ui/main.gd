@@ -131,6 +131,8 @@ func _show_screen(screen: Control) -> void:
 	for child in _screens.get_children():
 		child.visible = child == screen
 	_current_screen = screen
+	## Same native banner on every screen — show only, never reload.
+	AdsService.keep_banner_visible()
 
 
 func _on_banner_visibility_changed(_visible: bool) -> void:
@@ -138,16 +140,22 @@ func _on_banner_visibility_changed(_visible: bool) -> void:
 
 
 func _update_banner_inset() -> void:
-	## Always reserve bottom space on free tier so you can see where the banner sits
-	## (editor + device), even before AdMob is ready. Plus hides it.
+	## Reserve bottom space on free tier so app UI does not sit under the native banner.
+	## On device the spacer must be empty — an opaque “Ad banner area” panel can cover
+	## the native AdMob view and produce requests with 0 impressions.
 	var reserve := not Entitlements.has_plus()
-	var banner_h := 0.0
-	if reserve:
-		banner_h = 64.0 if Responsive.is_tablet(get_viewport_rect().size) else 52.0
+	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
 	_screens.offset_bottom = -banner_h
 	_banner_placeholder.offset_top = -banner_h
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
 	_banner_placeholder.visible = reserve
+	var preview := reserve and (not OS.has_feature("mobile") or OS.is_debug_build())
+	if preview:
+		_banner_placeholder.remove_theme_stylebox_override("panel")
+	else:
+		_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	_banner_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var label := _banner_placeholder.get_node_or_null("Label") as Label
 	if label:
+		label.visible = preview
 		label.text = "Ad banner area" if AdsService.should_show_banner() else "Ad banner area (preview)"

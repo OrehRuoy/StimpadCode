@@ -41,23 +41,23 @@ steam_train,"Steam Train Passing",steam_train.wav,steam_train.png,plus,Vehicles
 subway_rumble,"Subway Train Pass",subway_rumble.wav,subway_rumble.png,plus,Vehicles
 shower,"Bathroom Shower Spray",shower.wav,shower.png,plus,Water
 tap_drip,"Faucet Water Drip",tap_drip.wav,tap_drip.png,plus,Water
-flowing_water,"Flowing Stream",flowing_water.mp3,flowing_water.png,plus,Water
+flowing_water,"Flowing Stream",flowing_water.ogg,flowing_water.png,plus,Water
 ocean_waves,"Ocean Waves",ocean_waves.mp3,ocean_waves.png,free,Water
-rain,"Rain",rain.mp3,rain.png,free,Water
+rain,"Rain",rain.ogg,rain.png,free,Water
 thunder,"Thunder Storm",thunder.wav,thunder.png,plus,Water
 tv_static,"Analog TV Static",tv_static.wav,tv_static.png,plus,Noise
 brown_noise,"Brown Noise Deep",brown_noise.wav,brown_noise.png,plus,Noise
 pink_noise,"Pink Noise",pink_noise.wav,pink_noise.png,plus,Noise
 white_noise,"White Noise",white_noise.wav,white_noise.png,free,Noise
 campfire,"Campfire Crackles",campfire.wav,campfire.png,free,Nature
-morning_birds,"Dawn Bird Chorus",morning_birds.mp3,morning_birds.png,plus,Nature
+morning_birds,"Dawn Bird Chorus",morning_birds.ogg,morning_birds.png,plus,Nature
 night_crickets,"Night Cricket Ambience",night_crickets.wav,night_crickets.png,plus,Nature
-forest_insects,"Night Forest Insects",forest_insects.mp3,forest_insects.png,plus,Nature
+forest_insects,"Night Forest Insects",forest_insects.ogg,forest_insects.png,plus,Nature
 cat_purr,"Cat Purr",cat_purr.wav,cat_purr.png,plus,Animals
 dog_bark,"Dog Bark",dog_bark.wav,dog_bark.png,plus,Animals
 cat_meow,"Cat Meow",cat_meow.wav,cat_meow.png,free,Animals
 chainsaw,"Chainsaw",chainsaw.wav,chainsaw.png,plus,Tools
-construction_site,"Construction Site",construction_site.mp3,construction_site.png,plus,Tools
+construction_site,"Construction Site",construction_site.ogg,construction_site.png,plus,Tools
 electric_drill,"Electric Drill",electric_drill.wav,electric_drill.png,plus,Tools
 retro_game_notify,"8-Bit Notify Beep",retro_game_notify.mp3,retro_game_notify.png,plus,Retro
 arcade_boot_jingle,"Arcade Cabinet Boot",arcade_boot_jingle.wav,arcade_boot_jingle.png,plus,Retro
@@ -76,7 +76,7 @@ ice_crunch,"Crunching Ice Cubes",ice_crunch.mp3,ice_crunch.png,plus,Misc
 triangle_ting,"Triangle",triangle_ting.wav,triangle_ting.png,plus,Misc
 dial_tone,"Phone Dial Tone",dial_tone.mp3,dial_tone.png,plus,Misc
 popcorn_pop,"Popcorn Kernel Pop",popcorn_pop.mp3,popcorn_pop.png,plus,Misc
-restaurant_crowd,"Restaurant Crowd Chatter",restaurant_crowd.mp3,restaurant_crowd.png,plus,Misc
+restaurant_crowd,"Restaurant Crowd Chatter",restaurant_crowd.ogg,restaurant_crowd.png,plus,Misc
 old_phone_ring,"Rotary Phone Ring",old_phone_ring.mp3,old_phone_ring.png,plus,Misc
 scissors_snip,"Scissors Snip",scissors_snip.mp3,scissors_snip.png,plus,Misc
 heartbeat_slow,"Slow Heartbeat",heartbeat_slow.mp3,heartbeat_slow.png,plus,Misc
