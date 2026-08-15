@@ -71,6 +71,8 @@ const INTERSTITIAL_MIN_INTERVAL_SEC := 90.0
 ## Keep the same native banner on screen. New creatives come from AdMob auto-refresh
 ## (set the banner unit to 60s in AdMob). This timer only re-shows; it does not loadAd.
 const BANNER_KEEP_ALIVE_SEC := 60.0
+## Extra Godot UI inset above the native banner so sliders / tiles are not flush on the ad.
+const BANNER_UI_GAP := 20.0
 
 var _safe_exit_count: int = 0
 var _last_interstitial_unix: float = -99999.0
@@ -129,9 +131,10 @@ func is_native_banner_showing() -> bool:
 func banner_reserved_height() -> float:
 	if Entitlements.has_plus() or not _ads_enabled:
 		return 0.0
+	var ad_h := 64.0 if Responsive.is_tablet(get_viewport().get_visible_rect().size) else 50.0
 	if _banner_measured_height >= 40.0:
-		return clampf(_banner_measured_height, 50.0, 120.0)
-	return 64.0 if Responsive.is_tablet(get_viewport().get_visible_rect().size) else 50.0
+		ad_h = clampf(_banner_measured_height, 50.0, 120.0)
+	return ad_h + BANNER_UI_GAP
 
 
 func can_show_interstitial() -> bool:
@@ -325,7 +328,9 @@ func _initialize_ads() -> void:
 	_admob.remove_banner_ads_after_scene = false
 	_admob.remove_interstitial_ads_after_displayed = true
 	_admob.banner_position = LoadAdRequest.AdPosition.BOTTOM
-	_admob.banner_anchor_to_safe_area = true
+	## Pin to the physical bottom so the ad covers the home-indicator strip.
+	## Safe-area anchoring left a gray gap under the banner.
+	_admob.banner_anchor_to_safe_area = false
 	## Anchored adaptive fills much better than a fixed 320×50 on modern phones.
 	_admob.banner_size = LoadAdRequest.RequestedAdSize.ADAPTIVE
 	## Unity Ads mediation — same as Circuit Sort (pods via AdmobPlugin ios_export.cfg).

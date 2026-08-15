@@ -63,6 +63,7 @@ func _style_controls() -> void:
 	_rate_slider.min_value = 0.5
 	_rate_slider.max_value = 1.5
 	_rate_slider.step = 0.05
+	_rate_slider.custom_minimum_size = Vector2(0, 36)
 	UiLook.style_hslider(_rate_slider)
 	_title.add_theme_color_override("font_color", Color(0.86, 0.9, 0.94, 0.92))
 
@@ -92,7 +93,11 @@ func _apply_responsive_layout() -> void:
 	_margin.add_theme_constant_override("margin_left", int(margins.x))
 	_margin.add_theme_constant_override("margin_top", int(top))
 	_margin.add_theme_constant_override("margin_right", int(margins.z))
-	_margin.add_theme_constant_override("margin_bottom", int(margins.w))
+	## Extra floor when pitch is on so the slider is not sitting on the banner.
+	var bottom := margins.w
+	if LocalPrefs.show_pitch_speed:
+		bottom += 16.0 if tablet else 20.0
+	_margin.add_theme_constant_override("margin_bottom", int(bottom))
 	_vbox.add_theme_constant_override("separation", 14 if tablet else 10)
 	_title.add_theme_font_size_override("font_size", Responsive.title_font_size(vs))
 	_art_frame.custom_minimum_size = Vector2(0, Responsive.player_art_min_height(vs))
@@ -146,6 +151,7 @@ func _refresh_rate_controls() -> void:
 	var rate := AudioController.get_playback_rate()
 	_rate_slider.set_value_no_signal(rate)
 	_update_rate_label(rate)
+	_apply_responsive_layout()
 
 
 func _update_rate_label(rate: float) -> void:
