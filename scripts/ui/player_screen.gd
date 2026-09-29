@@ -25,6 +25,8 @@ var _is_playing: bool = false
 var _breathe_tween: Tween
 var _press_tween: Tween
 var _play_ripple_timer: Timer
+var _timer_row: HFlowContainer
+var _timer_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -47,10 +49,12 @@ func _ready() -> void:
 	_play_ripple_timer.one_shot = false
 	_play_ripple_timer.timeout.connect(_on_play_ripple_tick)
 	add_child(_play_ripple_timer)
+	_build_timer_chips()
 	_style_controls()
 	_apply_responsive_layout()
 	_refresh_rate_controls()
 	_refresh_repeat_btn()
+	_refresh_timer_chips()
 	_set_play_stop_visual(false)
 
 
@@ -110,6 +114,9 @@ func _apply_responsive_layout() -> void:
 	_favorite_btn.add_theme_constant_override("icon_max_width", int(btn_h + 4.0))
 	_repeat_btn.custom_minimum_size = Vector2(140 if tablet else 120, 44 if tablet else 40)
 	_repeat_btn.add_theme_font_size_override("font_size", 15 if tablet else 14)
+	for seconds in _timer_buttons:
+		var chip: Button = _timer_buttons[seconds]
+		chip.add_theme_font_size_override("font_size", 14 if tablet else 13)
 
 
 func open_sound(sound: Dictionary) -> void:
@@ -123,11 +130,23 @@ func open_sound(sound: Dictionary) -> void:
 	_refresh_favorite_icon()
 	_refresh_rate_controls()
 	_refresh_repeat_btn()
+	_refresh_timer_chips()
 	_art.rotation_degrees = 0
 	_art.scale = Vector2.ONE
 	_art.position = Vector2.ZERO
 	_art.modulate = Color.WHITE
 	_play_stop_btn.scale = Vector2.ONE
+	var already := (
+		AudioController.is_playing()
+		and AudioController.get_current_sound_id() == str(sound.get("id", ""))
+	)
+	if already:
+		_set_play_stop_visual(true)
+		_apply_art_frame(true)
+		_start_breathe()
+		if LocalPrefs.tap_ripples_enabled and _play_ripple_timer:
+			_play_ripple_timer.start()
+		return
 	_fx_layer.visible = false
 	_stop_breathe()
 	_set_play_stop_visual(false)
@@ -173,6 +192,50 @@ func _refresh_repeat_btn() -> void:
 		if on
 		else "Turn on to replay short sounds automatically"
 	)
+
+
+func _build_timer_chips() -> void:
+	_timer_row = HFlowContainer.new()
+	_timer_row.name = "TimerRow"
+	_timer_row.alignment = FlowContainer.ALIGNMENT_CENTER
+	_timer_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_timer_row.add_theme_constant_override("h_separation", 6)
+	_timer_row.add_theme_constant_override("v_separation", 6)
+	var specs: Array[Dictionary] = [
+		{"sec": AudioController.DURATION_UNTIL_STOP, "label": "Until I stop"},
+		{"sec": 15 * 60, "label": "15 min"},
+		{"sec": 30 * 60, "label": "30 min"},
+		{"sec": 60 * 60, "label": "60 min"},
+	]
+	for spec in specs:
+		var btn := Button.new()
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		btn.text = str(spec["label"])
+		btn.custom_minimum_size = Vector2(0, 40)
+		var seconds: int = int(spec["sec"])
+		btn.pressed.connect(_on_timer_chip.bind(seconds))
+		_timer_row.add_child(btn)
+		_timer_buttons[seconds] = btn
+	var controls := $Margin/VBox/ControlsPanel/Controls as VBoxContainer
+	controls.add_child(_timer_row)
+	controls.move_child(_timer_row, _repeat_btn.get_index() + 1)
+
+
+func _refresh_timer_chips() -> void:
+	var selected := AudioController.get_session_duration()
+	for seconds in _timer_buttons:
+		var chip: Button = _timer_buttons[seconds]
+		var on := int(seconds) == selected
+		UiLook.style_chip(chip, on)
+		chip.custom_minimum_size = Vector2(0, 40)
+
+
+func _on_timer_chip(seconds: int) -> void:
+	AudioController.set_session_duration(seconds)
+	HapticsService.tap()
+	_spawn_ripple_on_control(_timer_buttons[seconds])
+	_refresh_timer_chips()
 
 
 func _on_repeat_toggle() -> void:
@@ -273,7 +336,6 @@ func _on_playback_stopped(_sound_id: String = "") -> void:
 
 
 func _on_back() -> void:
-	AudioController.stop()
 	get_tree().get_first_node_in_group("main_nav").call("show_home")
 
 

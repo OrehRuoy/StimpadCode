@@ -1,11 +1,12 @@
 extends Node
 ## Schedules the “Are you enjoying StimPad?” prompt and owns the overlay instance.
 ##
-## Timing (best mood, least annoyance):
-## - Eligible only from ~3rd day onward
+## Timing:
+## - Eligible from the 3rd app open (no extra day wait — most people never return)
 ## - Never on cold launch / idle home wait
 ## - After the user has opened 2 sound tiles this session, then returns to Home
 ##   (natural pause — not mid-listen)
+## Apple still rate-limits the actual review sheet.
 ##
 ## IMPORTANT: do not preload enjoy_prompt.tscn here — that scene’s script
 ## references this autoload and would create a circular load failure.
@@ -15,8 +16,8 @@ signal prompt_visibility_changed(visible: bool)
 const PROMPT_SCENE_PATH := "res://scenes/ui/enjoy_prompt.tscn"
 ## Brief beat after returning home so the grid settles (and ads can clear).
 const HOME_SETTLE_SEC := 1.4
-## Never on day 1–2 — offer starting around the user’s 3rd day.
-const MIN_AGE_SEC := 60 * 60 * 24 * 2
+## Ask on the 3rd launch. Apple already limits how often the sheet can appear.
+const MIN_APP_OPENS := 3
 ## Need this many sound-tile opens in the current session before asking.
 const MIN_SESSION_SOUND_OPENS := 2
 ## After dismissing with X, wait before asking again.
@@ -69,10 +70,7 @@ func _should_offer() -> bool:
 	var now := Time.get_unix_time_from_system()
 	if LocalPrefs.enjoy_prompt_snooze_until > now:
 		return false
-	if LocalPrefs.first_open_unix <= 0:
-		return false
-	## Require ~3rd day of use (48h+ since first open).
-	if (now - LocalPrefs.first_open_unix) < MIN_AGE_SEC:
+	if LocalPrefs.app_open_count < MIN_APP_OPENS:
 		return false
 	return true
 

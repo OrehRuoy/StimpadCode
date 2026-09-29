@@ -5,8 +5,8 @@ extends Node
 
 signal review_requested(method: String)
 
-## Set once the App Store listing exists (numeric id). Empty = skip URL fallback.
-const IOS_APP_STORE_ID := ""
+## Numeric App Store id. Used for the Settings "Rate" row and the in-app-review fallback.
+const IOS_APP_STORE_ID := "6796806236"
 const ANDROID_PACKAGE := "com.stimpad.soundboard"
 
 var _inapp_review: Node = null
@@ -15,6 +15,12 @@ var _busy := false
 
 func _ready() -> void:
 	call_deferred("_try_bind_plugin")
+
+
+## Explicit Rate action. Always opens the store write-review page.
+## Apple's in-app sheet is quota-limited and must not be tied to a button.
+func open_write_review() -> void:
+	_fallback_store_url()
 
 
 func request_review() -> void:
@@ -112,10 +118,10 @@ func _launch_inapp_review_plugin() -> bool:
 
 func _fallback_store_url() -> void:
 	var url := ""
-	if OS.has_feature("ios") and not IOS_APP_STORE_ID.is_empty():
+	if OS.has_feature("android"):
+		url = "https://play.google.com/store/apps/details?id=%s" % ANDROID_PACKAGE
+	elif not IOS_APP_STORE_ID.is_empty():
 		url = "https://apps.apple.com/app/id%s?action=write-review" % IOS_APP_STORE_ID
-	elif OS.has_feature("android"):
-		url = "market://details?id=%s" % ANDROID_PACKAGE
 	if url.is_empty():
 		print("[ReviewService] No store URL fallback available")
 		review_requested.emit("unavailable")

@@ -12,13 +12,24 @@ signal banner_visibility_changed(visible: bool) ## unused; kept for scene group
 @onready var _boot_overlay: ColorRect = $BootOverlay
 @onready var _boot_image: TextureRect = $BootOverlay/SplashImage
 
+const NOW_PLAYING_H := 58.0
+const ICON_STOP := "res://assets/ui/icon_stop.png"
+
 var _current_screen: Control
 var _ripple_layer: Control
 var _boot_dismissed: bool = false
+var _now_playing: PanelContainer
+var _now_title: Button
+var _now_stop: Button
+var _now_hint: Label
 
 
 func _ready() -> void:
 	AudioController.set_session_duration(LocalPrefs.session_duration_sec)
+	_build_now_playing()
+	AudioController.playback_started.connect(_on_now_playing_changed)
+	AudioController.playback_stopped.connect(_on_now_playing_changed)
+	AudioController.playback_finished.connect(_on_now_playing_changed)
 	_setup_boot_overlay()
 	_ensure_ripple_layer()
 	_show_screen(_home)
@@ -100,8 +111,13 @@ func show_player(sound: Dictionary) -> void:
 	if not SoundCatalog.is_sound_unlocked(sound):
 		show_paywall(sound)
 		return
-	EnjoyPromptService.note_sound_opened()
-	FeatureTipService.note_sound_opened()
+	var reopening := (
+		AudioController.is_playing()
+		and AudioController.get_current_sound_id() == str(sound.get("id", ""))
+	)
+	if not reopening:
+		EnjoyPromptService.note_sound_opened()
+		FeatureTipService.note_sound_opened()
 	_show_screen(_player)
 	_player.call("open_sound", sound)
 	AnalyticsService.log_screen("player")
@@ -133,6 +149,7 @@ func _show_screen(screen: Control) -> void:
 	_current_screen = screen
 	## Same native banner on every screen — show only, never reload.
 	AdsService.keep_banner_visible()
+	_refresh_now_playing()
 
 
 func _on_banner_visibility_changed(_visible: bool) -> void:
@@ -145,10 +162,15 @@ func _update_banner_inset() -> void:
 	## the native AdMob view and produce requests with 0 impressions.
 	var reserve := not Entitlements.has_plus()
 	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
-	_screens.offset_bottom = -banner_h
+	var bar_h := NOW_PLAYING_H if _now_playing_visible() else 0.0
+	_screens.offset_bottom = -(banner_h + bar_h)
 	_banner_placeholder.offset_top = -banner_h
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
 	_banner_placeholder.visible = reserve
+	if _now_playing != null:
+		_now_playing.offset_bottom = -banner_h
+		_now_playing.offset_top = -(banner_h + NOW_PLAYING_H)
+		_now_playing.visible = bar_h > 0.0
 	var preview := reserve and (not OS.has_feature("mobile") or OS.is_debug_build())
 	if preview:
 		_banner_placeholder.remove_theme_stylebox_override("panel")
@@ -159,3 +181,121 @@ func _update_banner_inset() -> void:
 	if label:
 		label.visible = preview
 		label.text = "Ad banner area" if AdsService.should_show_banner() else "Ad banner area (preview)"
+
+
+func _build_now_playing() -> void:
+	_now_playing = PanelContainer.new()
+	_now_playing.name = "NowPlaying"
+	_now_playing.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_now_playing.offset_bottom = 0
+	_now_playing.offset_top = -NOW_PLAYING_H
+	_now_playing.mouse_filter = Control.MOUSE_FILTER_STOP
+	_now_playing.visible = false
+	_now_playing.z_index = 30
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.14, 0.2, 0.96)
+	style.border_color = Color(0.37, 0.81, 0.69, 0.7)
+	style.border_width_top = 2
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	_now_playing.add_theme_stylebox_override("panel", style)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_now_playing.add_child(row)
+	_now_title = Button.new()
+	_now_title.flat = true
+	_now_title.focus_mode = Control.FOCUS_NONE
+	_now_title.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_now_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_now_title.clip_text = true
+	_now_title.add_theme_font_size_override("font_size", 16)
+	_now_title.add_theme_color_override("font_color", Color(0.94, 0.97, 1, 1))
+	_now_title.add_theme_color_override("font_hover_color", Color(0.94, 0.97, 1, 1))
+	_now_title.add_theme_color_override("font_pressed_color", Color(0.72, 0.95, 0.88, 1))
+	_now_title.pressed.connect(_on_now_playing_open)
+	row.add_child(_now_title)
+	_now_hint = Label.new()
+	_now_hint.add_theme_font_size_override("font_size", 13)
+	_now_hint.add_theme_color_override("font_color", Color(0.65, 0.78, 0.74, 1))
+	_now_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(_now_hint)
+	_now_stop = Button.new()
+	_now_stop.focus_mode = Control.FOCUS_NONE
+	_now_stop.custom_minimum_size = Vector2(72, 40)
+	_now_stop.tooltip_text = "Stop"
+	_now_stop.pressed.connect(_on_now_playing_stop)
+	if ResourceLoader.exists(ICON_STOP):
+		_now_stop.icon = load(ICON_STOP)
+		_now_stop.expand_icon = true
+		_now_stop.add_theme_constant_override("icon_max_width", 28)
+		_now_stop.text = ""
+	else:
+		_now_stop.text = "Stop"
+	UiLook.style_chip(_now_stop, true)
+	row.add_child(_now_stop)
+	add_child(_now_playing)
+	if _boot_overlay != null:
+		move_child(_now_playing, _boot_overlay.get_index())
+
+
+func _now_playing_visible() -> bool:
+	if not AudioController.is_playing():
+		return false
+	return _current_screen != _player
+
+
+func _on_now_playing_changed(_sound_id: String = "") -> void:
+	_refresh_now_playing()
+
+
+func _refresh_now_playing() -> void:
+	if _now_playing == null:
+		return
+	var show := _now_playing_visible()
+	if show:
+		var sound := AudioController.get_current_sound()
+		var name := str(sound.get("name", "Playing"))
+		_now_title.text = name
+		_now_title.tooltip_text = "Open %s" % name
+		var left := AudioController.get_stop_seconds_left()
+		if left < 0:
+			_now_hint.text = ""
+			_now_hint.visible = false
+		else:
+			_now_hint.visible = true
+			_now_hint.text = _format_remaining(left)
+	_update_banner_inset()
+
+
+func _process(_delta: float) -> void:
+	if _now_playing == null or not _now_playing.visible:
+		return
+	var left := AudioController.get_stop_seconds_left()
+	if left < 0:
+		if _now_hint.visible:
+			_now_hint.visible = false
+			_now_hint.text = ""
+		return
+	var text := _format_remaining(left)
+	if _now_hint.text != text:
+		_now_hint.visible = true
+		_now_hint.text = text
+
+
+func _format_remaining(seconds: int) -> String:
+	var s := maxi(seconds, 0)
+	return "%d:%02d" % [int(s / 60.0), s % 60]
+
+
+func _on_now_playing_open() -> void:
+	var sound := AudioController.get_current_sound()
+	if sound.is_empty():
+		return
+	show_player(sound)
+
+
+func _on_now_playing_stop() -> void:
+	HapticsService.tap()
+	AudioController.stop()

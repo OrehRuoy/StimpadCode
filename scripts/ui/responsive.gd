@@ -44,9 +44,10 @@ static func top_button_min_height(viewport_size: Vector2) -> float:
 
 
 static func player_art_min_height(viewport_size: Vector2) -> float:
+	## Room under the art for the stop-timer chips.
 	if is_tablet(viewport_size):
-		return maxf(400.0, viewport_size.y * 0.48)
-	return maxf(280.0, viewport_size.y * 0.40)
+		return maxf(340.0, viewport_size.y * 0.42)
+	return maxf(200.0, viewport_size.y * 0.32)
 
 
 static func title_font_size(viewport_size: Vector2) -> int:

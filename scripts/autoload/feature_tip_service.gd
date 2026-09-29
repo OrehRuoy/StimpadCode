@@ -1,13 +1,17 @@
 extends Node
 ## One-time feature tips. Each tip is shown at most once; never re-reminded.
-## Tips start on the 2nd app open (not first login), and skip features already in use.
+## Head Floss is the first-session tip. Later tips start on the 2nd app open.
+## Tips skip features the user already turned on.
 
 signal tip_visibility_changed(visible: bool)
 
 const TIP_SCENE_PATH := "res://scenes/ui/feature_tip.tscn"
 const HOME_SETTLE_SEC := 1.8
 const MIN_SESSION_SOUND_OPENS := 3
-## First launch is for exploring — tips start on the 2nd app open.
+## Head Floss only: show after the first sound, on the first launch.
+const HEAD_FLOSS_MIN_APP_OPENS := 1
+const HEAD_FLOSS_MIN_SOUND_OPENS := 1
+## Later tips wait until the user has come back.
 const MIN_APP_OPENS := 2
 ## At least one calendar day between different tips.
 const SNOOZE_BETWEEN_TIPS_SEC := 60 * 60 * 24
@@ -65,7 +69,7 @@ func on_returned_home() -> void:
 		return
 	if not _should_offer():
 		return
-	if not _force_next and _session_sound_opens < MIN_SESSION_SOUND_OPENS:
+	if not _force_next and _session_sound_opens < _required_sound_opens():
 		return
 	_cancel_delay()
 	_delay_timer = get_tree().create_timer(HOME_SETTLE_SEC)
@@ -85,8 +89,7 @@ func _should_offer() -> bool:
 		return false
 	if LocalPrefs.feature_tips_done:
 		return false
-	## Don't interrupt the first session — wait until they've opened the app again.
-	if LocalPrefs.app_open_count < MIN_APP_OPENS:
+	if LocalPrefs.app_open_count < _required_app_opens():
 		return false
 	var now := int(Time.get_unix_time_from_system())
 	if LocalPrefs.feature_tip_snooze_until > now:
@@ -100,7 +103,7 @@ func _on_settle_elapsed() -> void:
 	_delay_timer = null
 	if not _should_offer():
 		return
-	if not _force_next and _session_sound_opens < MIN_SESSION_SOUND_OPENS:
+	if not _force_next and _session_sound_opens < _required_sound_opens():
 		return
 	var nav := get_tree().get_first_node_in_group("main_nav")
 	if nav == null:
@@ -110,6 +113,30 @@ func _on_settle_elapsed() -> void:
 	if EnjoyPromptService.is_showing():
 		return
 	_show_tip()
+
+
+func _pending_tip_id() -> String:
+	for tip in TIPS:
+		var tip_id := str(tip.get("id", ""))
+		if _is_tip_seen(tip_id):
+			continue
+		var pref_key := str(tip.get("pref_on", ""))
+		if not pref_key.is_empty() and _pref_enabled(pref_key):
+			continue
+		return tip_id
+	return ""
+
+
+func _required_app_opens() -> int:
+	if _pending_tip_id() == "head_floss":
+		return HEAD_FLOSS_MIN_APP_OPENS
+	return MIN_APP_OPENS
+
+
+func _required_sound_opens() -> int:
+	if _pending_tip_id() == "head_floss":
+		return HEAD_FLOSS_MIN_SOUND_OPENS
+	return MIN_SESSION_SOUND_OPENS
 
 
 func _is_tip_seen(tip_id: String) -> bool:

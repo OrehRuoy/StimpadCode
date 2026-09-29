@@ -6,7 +6,8 @@ var favorites: Array[String] = []
 var recent_sound_ids: Array[String] = [] ## newest first
 var last_scope: String = "All" ## All | Free | Favorites | Recent
 var last_sound_category: String = "All" ## All | Alarms | Bells | ...
-var session_duration_sec: int = 60
+## 0 = play until Stop. Otherwise 15 / 30 / 60 minutes, in seconds.
+var session_duration_sec: int = 0
 
 ## Head Flossing (bilateral pan) — global listening mode
 var head_floss_enabled: bool = false
@@ -57,7 +58,7 @@ func load_prefs() -> void:
 		return
 	favorites = _to_string_array(parsed.get("favorites", []))
 	recent_sound_ids = _to_string_array(parsed.get("recent_sound_ids", []))
-	session_duration_sec = int(parsed.get("session_duration_sec", 60))
+	session_duration_sec = _migrate_session_duration(int(parsed.get("session_duration_sec", 0)))
 	head_floss_enabled = bool(parsed.get("head_floss_enabled", false))
 	head_floss_pan_speed = float(parsed.get("head_floss_pan_speed", 0.4))
 	## First ship used 1.0 Hz (EMDR click pace) — too busy for continuous sounds.
@@ -195,6 +196,13 @@ func note_recent_sound(sound_id: String) -> void:
 	while recent_sound_ids.size() > RECENT_MAX:
 		recent_sound_ids.pop_back()
 	save_prefs()
+
+
+func _migrate_session_duration(raw: int) -> int:
+	## Current chips. Anything else is the old unused second-based default.
+	if raw == 15 * 60 or raw == 30 * 60 or raw == 60 * 60:
+		return raw
+	return 0
 
 
 func _to_string_array(value: Variant) -> Array[String]:

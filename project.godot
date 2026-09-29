@@ -25,7 +25,10 @@ config/build="1"
 [audio]
 
 buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"
-general/ios/session_category=2
+; Playback: ignore the ringer switch and mix under other apps.
+; Godot 4.6 still stops the audio driver when the app backgrounds, so lock-screen
+; playback needs an engine change. Do not add UIBackgroundModes audio until then.
+general/ios/session_category=3
 general/ios/mix_with_others=true
 
 [autoload]

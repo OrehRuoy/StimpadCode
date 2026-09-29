@@ -3,6 +3,7 @@ extends Control
 @onready var _restore_btn: Button = $Margin/VBox/Scroll/Content/RestoreBtn
 @onready var _privacy_btn: Button = $Margin/VBox/Scroll/Content/PrivacyBtn
 @onready var _feedback_btn: Button = $Margin/VBox/Scroll/Content/FeedbackBtn
+@onready var _rate_btn: Button = $Margin/VBox/Scroll/Content/RateBtn
 @onready var _ad_privacy_btn: Button = $Margin/VBox/Scroll/Content/AdPrivacyBtn
 @onready var _head_floss_btn: CheckButton = $Margin/VBox/Scroll/Content/HeadFlossBtn
 @onready var _haptics_btn: CheckButton = $Margin/VBox/Scroll/Content/HapticsBtn
@@ -25,6 +26,7 @@ func _ready() -> void:
 	_restore_btn.pressed.connect(_on_restore)
 	_privacy_btn.pressed.connect(_on_privacy)
 	_feedback_btn.pressed.connect(_on_feedback)
+	_rate_btn.pressed.connect(_on_rate)
 	_ad_privacy_btn.pressed.connect(_on_ad_privacy)
 	_head_floss_btn.toggled.connect(_on_head_floss_toggled)
 	_haptics_btn.toggled.connect(_on_haptics_toggled)
@@ -56,6 +58,7 @@ func _style_controls() -> void:
 	UiLook.style_settings_row(_restore_btn)
 	UiLook.style_settings_row(_privacy_btn)
 	UiLook.style_settings_row(_feedback_btn)
+	UiLook.style_settings_row(_rate_btn)
 	UiLook.style_settings_row(_ad_privacy_btn)
 	UiLook.style_settings_row(_head_floss_btn)
 	UiLook.style_settings_row(_haptics_btn)
@@ -159,6 +162,10 @@ func _on_privacy() -> void:
 
 func _on_feedback() -> void:
 	get_tree().get_first_node_in_group("main_nav").call("show_feedback", true)
+
+
+func _on_rate() -> void:
+	ReviewService.open_write_review()
 
 
 func _on_ad_privacy() -> void:

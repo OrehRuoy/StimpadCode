@@ -61,7 +61,7 @@ Wired end-to-end:
 
 **iOS native path (CI builds):** GodotApplePlugins StoreKit is installed by `ios-testflight.yml`. `ReviewService` calls `StoreKitManager.request_review` / `requestReview` when present (same stack as IAP). Optional [cengiz-pz In-app Review](https://github.com/cengiz-pz/godot-ios-inapp-review-plugin) also auto-binds if you add it later.
 
-**Fallbacks:** store write-review URL once `ReviewService.IOS_APP_STORE_ID` is set; Android uses Play URL / plugin when available.
+**Fallbacks:** store write-review URL (`ReviewService.IOS_APP_STORE_ID` = `6796806236`). Settings → **Rate StimPad** always opens that page. Android uses the Play URL when the build is Android.
 
 Without a device plugin, editor/desktop builds print a stub (dev menu can force the enjoy prompt).
 

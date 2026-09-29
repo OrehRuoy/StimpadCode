@@ -195,6 +195,11 @@ custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 text = "Feedback"
 
+[node name="RateBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+text = "Rate StimPad"
+
 [node name="AdPrivacyBtn" type="Button" parent="Margin/VBox/Scroll/Content"]
 visible = false
 custom_minimum_size = Vector2(0, 50)

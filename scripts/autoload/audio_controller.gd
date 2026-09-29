@@ -3,13 +3,18 @@ extends Node
 signal playback_started(sound_id: String)
 signal playback_stopped(sound_id: String)
 signal playback_finished(sound_id: String)
+signal session_duration_changed(seconds: int)
 
-const DURATION_PRESETS := [30, 60, 300]
+## 0 = until the user hits Stop. Other values are minutes, stored in seconds.
+const DURATION_UNTIL_STOP := 0
+const DURATION_PRESETS := [0, 15 * 60, 30 * 60, 60 * 60]
 
 var _player: AudioStreamPlayer
 var _current_sound: Dictionary = {}
-var _session_duration_sec: int = 60
+var _session_duration_sec: int = 0
 var _session_timer: Timer
+## Wall-clock deadline so a lock/unlock still ends the session if the Timer was paused.
+var _stop_at_unix: int = 0
 var _stop_after_loop: bool = false
 var _loop_pass_pending: bool = false
 var _play_started_msec: int = 0
@@ -27,7 +32,17 @@ func _ready() -> void:
 	_session_timer.one_shot = true
 	_session_timer.timeout.connect(_on_session_timer_timeout)
 	add_child(_session_timer)
+	set_process(true)
 	apply_sfx_volume(LocalPrefs.sfx_volume)
+
+
+func _process(_delta: float) -> void:
+	_check_stop_deadline()
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_check_stop_deadline()
 
 
 func apply_sfx_volume(linear_01: float) -> void:
@@ -47,12 +62,28 @@ func apply_sfx_volume(linear_01: float) -> void:
 
 
 func set_session_duration(seconds: int) -> void:
-	if seconds in DURATION_PRESETS:
-		_session_duration_sec = seconds
+	if not (seconds in DURATION_PRESETS):
+		seconds = DURATION_UNTIL_STOP
+	_session_duration_sec = seconds
+	if LocalPrefs.session_duration_sec != seconds:
+		LocalPrefs.session_duration_sec = seconds
+		LocalPrefs.save_prefs()
+	if is_playing() and _sound_holds_open():
+		_arm_stop_timer()
+	else:
+		_clear_stop_timer()
+	session_duration_changed.emit(seconds)
 
 
 func get_session_duration() -> int:
 	return _session_duration_sec
+
+
+## Seconds until the stop timer fires, or -1 when the sound plays until Stop.
+func get_stop_seconds_left() -> int:
+	if _stop_at_unix <= 0 or not is_playing():
+		return -1
+	return maxi(0, _stop_at_unix - int(Time.get_unix_time_from_system()))
 
 
 func is_playing() -> bool:
@@ -90,10 +121,9 @@ func play_sound(sound: Dictionary) -> void:
 		_enable_stream_loop(stream)
 		_stop_after_loop = false
 		_loop_pass_pending = false
-		## Loops / repeat play until the user hits Stop (no duration chips).
-		_session_timer.stop()
+		_arm_stop_timer()
 	else:
-		_session_timer.stop()
+		_clear_stop_timer()
 		_stop_after_loop = false
 	_player.play()
 	_player.pitch_scale = clampf(LocalPrefs.playback_rate, 0.5, 1.5)
@@ -143,7 +173,7 @@ func stop() -> void:
 	if _play_started_msec > 0:
 		duration_sec = float(Time.get_ticks_msec() - _play_started_msec) / 1000.0
 	_player.stop()
-	_session_timer.stop()
+	_clear_stop_timer()
 	_stop_after_loop = false
 	_loop_pass_pending = false
 	_play_started_msec = 0
@@ -151,6 +181,34 @@ func stop() -> void:
 	if not stopped_id.is_empty():
 		AnalyticsService.log_sound_stop(stopped, duration_sec)
 	playback_stopped.emit(stopped_id)
+
+
+func _sound_holds_open() -> bool:
+	var mode := str(_current_sound.get("mode", ""))
+	return mode == "loop" or LocalPrefs.repeat_oneshots
+
+
+func _arm_stop_timer() -> void:
+	_clear_stop_timer()
+	if _session_duration_sec <= 0:
+		return
+	_stop_at_unix = int(Time.get_unix_time_from_system()) + _session_duration_sec
+	_session_timer.wait_time = float(_session_duration_sec)
+	_session_timer.start()
+
+
+func _clear_stop_timer() -> void:
+	_session_timer.stop()
+	_stop_at_unix = 0
+
+
+func _check_stop_deadline() -> void:
+	if _stop_at_unix <= 0 or not is_playing():
+		return
+	if int(Time.get_unix_time_from_system()) >= _stop_at_unix:
+		_stop_at_unix = 0
+		_session_timer.stop()
+		_on_session_timer_timeout()
 
 
 func _on_session_timer_timeout() -> void:
