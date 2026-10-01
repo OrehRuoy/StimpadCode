@@ -1,0 +1,1626 @@
+{
+  "%s · one-time": {
+    "de": "%s · einmalig",
+    "es": "%s · un solo pago",
+    "fr": "%s · une fois",
+    "pt_BR": "%s · único",
+    "ja": "%s · 1回"
+  },
+  "%s unlocked until midnight. Buy Plus for everything, no ads.": {
+    "de": "%s ist bis Mitternacht frei. Hol Plus für alles, ohne Werbung.",
+    "es": "%s está libre hasta medianoche. Compra Plus para todo, sin anuncios.",
+    "fr": "%s est débloqué jusqu’à minuit. Prenez Plus pour tout, sans pub.",
+    "pt_BR": "%s está livre até meia-noite. Compre o Plus para tudo, sem anúncios.",
+    "ja": "%s は深夜0時まで解除されています。Plus ですべて、広告なし。"
+  },
+  "← Back": {
+    "de": "← Zurück",
+    "es": "← Atrás",
+    "fr": "← Retour",
+    "pt_BR": "← Voltar",
+    "ja": "← 戻る"
+  },
+  "$4.99 · one-time": {
+    "de": "4,99 $ · einmalig",
+    "es": "4,99 $ · un solo pago",
+    "fr": "4,99 $ · une fois",
+    "pt_BR": "US$ 4,99 · único",
+    "ja": "$4.99 · 1回"
+  },
+  "15 min": {
+    "de": "15 Min.",
+    "es": "15 min",
+    "fr": "15 min",
+    "pt_BR": "15 min",
+    "ja": "15分"
+  },
+  "30 min": {
+    "de": "30 Min.",
+    "es": "30 min",
+    "fr": "30 min",
+    "pt_BR": "30 min",
+    "ja": "30分"
+  },
+  "60 min": {
+    "de": "60 Min.",
+    "es": "60 min",
+    "fr": "60 min",
+    "pt_BR": "60 min",
+    "ja": "60分"
+  },
+  "8-Bit Notify Beep": {
+    "de": "8-Bit-Piep",
+    "es": "Bip de 8 bits",
+    "fr": "Bip 8 bits",
+    "pt_BR": "Bipe 8 bits",
+    "ja": "8ビット通知音"
+  },
+  "A quick check-in helps us keep the sounds calm, useful, and fun.": {
+    "de": "Eine kurze Rückmeldung hilft uns, die Sounds ruhig, nützlich und schön zu halten.",
+    "es": "Una respuesta rápida nos ayuda a mantener los sonidos tranquilos, útiles y agradables.",
+    "fr": "Un petit mot nous aide à garder des sons calmes, utiles et agréables.",
+    "pt_BR": "Uma resposta rápida nos ajuda a manter os sons calmos, úteis e gostosos.",
+    "ja": "ひとこともらえると、音を落ち着いて、役に立って、楽しく保てます。"
+  },
+  "Ad banner area": {
+    "de": "Werbefläche",
+    "es": "Zona de anuncio",
+    "fr": "Zone de pub",
+    "pt_BR": "Área do anúncio",
+    "ja": "広告エリア"
+  },
+  "Ad banner area (preview)": {
+    "de": "Werbefläche (Vorschau)",
+    "es": "Zona de anuncio (vista previa)",
+    "fr": "Zone de pub (aperçu)",
+    "pt_BR": "Área do anúncio (prévia)",
+    "ja": "広告エリア（プレビュー）"
+  },
+  "Ad is still loading — try again in a moment.": {
+    "de": "Die Werbung lädt noch — gleich noch einmal versuchen.",
+    "es": "El anuncio aún se carga. Prueba en un momento.",
+    "fr": "La pub charge encore — réessayez dans un instant.",
+    "pt_BR": "O anúncio ainda está carregando — tente de novo em instantes.",
+    "ja": "広告を読み込み中です。少ししてからもう一度。"
+  },
+  "Add to favorites": {
+    "de": "Zu Favoriten",
+    "es": "Añadir a favoritos",
+    "fr": "Ajouter aux favoris",
+    "pt_BR": "Adicionar aos favoritos",
+    "ja": "お気に入りに追加"
+  },
+  "Adds a slider on each sound page. Lower = deeper and slower.": {
+    "de": "Zeigt auf jeder Sound-Seite einen Regler. Niedriger = tiefer und langsamer.",
+    "es": "Añade un control en cada sonido. Más bajo = más grave y más lento.",
+    "fr": "Ajoute un curseur sur chaque son. Plus bas = plus grave et plus lent.",
+    "pt_BR": "Adiciona um controle em cada som. Mais baixo = mais grave e mais lento.",
+    "ja": "各サウンド画面にスライダーを追加します。下げると低く、遅くなります。"
+  },
+  "Ads aren't ready yet — try again in a moment.": {
+    "de": "Werbung ist noch nicht bereit — gleich noch einmal versuchen.",
+    "es": "Los anuncios aún no están listos. Prueba en un momento.",
+    "fr": "Les pubs ne sont pas encore prêtes — réessayez dans un instant.",
+    "pt_BR": "Os anúncios ainda não estão prontos — tente de novo em instantes.",
+    "ja": "広告の準備ができていません。少ししてからもう一度。"
+  },
+  "Alarms": {
+    "de": "Alarme",
+    "es": "Alarmas",
+    "fr": "Alarmes",
+    "pt_BR": "Alarmes",
+    "ja": "警報"
+  },
+  "All": {
+    "de": "Alle",
+    "es": "Todo",
+    "fr": "Tout",
+    "pt_BR": "Tudo",
+    "ja": "すべて"
+  },
+  "All categories": {
+    "de": "Alle Kategorien",
+    "es": "Todas las categorías",
+    "fr": "Toutes les catégories",
+    "pt_BR": "Todas as categorias",
+    "ja": "すべてのカテゴリ"
+  },
+  "All sounds · No ads · One purchase": {
+    "de": "Alle Sounds · Keine Werbung · Einmal kaufen",
+    "es": "Todos los sonidos · Sin anuncios · Una compra",
+    "fr": "Tous les sons · Sans pub · Un achat",
+    "pt_BR": "Todos os sons · Sem anúncios · Uma compra",
+    "ja": "すべての音 · 広告なし · 1回の購入"
+  },
+  "Already sending…": {
+    "de": "Wird schon gesendet…",
+    "es": "Ya se está enviando…",
+    "fr": "Envoi déjà en cours…",
+    "pt_BR": "Já está enviando…",
+    "ja": "すでに送信中です…"
+  },
+  "Ambulance Yelp Siren": {
+    "de": "Yelp-Sirene",
+    "es": "Sirena de ambulancia",
+    "fr": "Sirène d’ambulance",
+    "pt_BR": "Sirene de ambulância",
+    "ja": "救急車サイレン"
+  },
+  "Analog TV Static": {
+    "de": "TV-Rauschen",
+    "es": "Estática de TV",
+    "fr": "Neige TV",
+    "pt_BR": "Chiado de TV",
+    "ja": "アナログTVノイズ"
+  },
+  "Animals": {
+    "de": "Tiere",
+    "es": "Animales",
+    "fr": "Animaux",
+    "pt_BR": "Animais",
+    "ja": "動物"
+  },
+  "App sound level (separate from your phone’s volume buttons).": {
+    "de": "Lautstärke in der App (unabhängig von den Lautstärketasten).",
+    "es": "Volumen de la app (aparte de los botones de volumen del teléfono).",
+    "fr": "Volume de l’app (distinct des boutons du téléphone).",
+    "pt_BR": "Volume do app (separado dos botões de volume do celular).",
+    "ja": "アプリ内の音量（本体の音量ボタンとは別です）。"
+  },
+  "App Store not ready yet": {
+    "de": "App Store ist noch nicht bereit",
+    "es": "App Store aún no está listo",
+    "fr": "L’App Store n’est pas encore prêt",
+    "pt_BR": "A App Store ainda não está pronta",
+    "ja": "App Storeの準備ができていません"
+  },
+  "Arcade Cabinet Boot": {
+    "de": "Arcade-Start",
+    "es": "Arranque arcade",
+    "fr": "Démarrage arcade",
+    "pt_BR": "Boot do arcade",
+    "ja": "アーケード起動"
+  },
+  "Arcade Cabinet Chime": {
+    "de": "Arcade-Glocke",
+    "es": "Campanilla arcade",
+    "fr": "Carillon arcade",
+    "pt_BR": "Sino do arcade",
+    "ja": "アーケードの音"
+  },
+  "Arcade Coin Drop": {
+    "de": "Arcade-Münze",
+    "es": "Moneda arcade",
+    "fr": "Pièce d’arcade",
+    "pt_BR": "Moeda do arcade",
+    "ja": "アーケードのコイン"
+  },
+  "Arcade Game-Over Tone": {
+    "de": "Arcade Game Over",
+    "es": "Game over arcade",
+    "fr": "Game over arcade",
+    "pt_BR": "Game over arcade",
+    "ja": "アーケードゲームオーバー"
+  },
+  "Are you enjoying StimPad?": {
+    "de": "Gefällt dir StimPad?",
+    "es": "¿Te está gustando StimPad?",
+    "fr": "Vous aimez StimPad ?",
+    "pt_BR": "Está gostando do StimPad?",
+    "ja": "StimPadを楽しんでいますか？"
+  },
+  "Ballpoint Pen Click": {
+    "de": "Kugelschreiber-Klick",
+    "es": "Clic de bolígrafo",
+    "fr": "Clic de stylo",
+    "pt_BR": "Clique de caneta",
+    "ja": "ボールペンのカチッ"
+  },
+  "Bathroom Shower Spray": {
+    "de": "Dusche",
+    "es": "Ducha",
+    "fr": "Douche",
+    "pt_BR": "Chuveiro",
+    "ja": "シャワー"
+  },
+  "Beeping Alarm Clock": {
+    "de": "Piepsender Wecker",
+    "es": "Despertador",
+    "fr": "Réveil qui bipe",
+    "pt_BR": "Despertador",
+    "ja": "目覚まし時計"
+  },
+  "Bells": {
+    "de": "Glocken",
+    "es": "Campanas",
+    "fr": "Cloches",
+    "pt_BR": "Sinos",
+    "ja": "ベル"
+  },
+  "Bike Handlebar Bell": {
+    "de": "Fahrradklingel",
+    "es": "Timbre de bici",
+    "fr": "Sonnette de vélo",
+    "pt_BR": "Campainha de bike",
+    "ja": "自転車のベル"
+  },
+  "Blow Dryer Whine": {
+    "de": "Föhn-Heulen",
+    "es": "Secador de pelo",
+    "fr": "Sèche-cheveux",
+    "pt_BR": "Secador de cabelo",
+    "ja": "ドライヤー"
+  },
+  "Brown Noise Deep": {
+    "de": "Tiefes braunes Rauschen",
+    "es": "Ruido marrón",
+    "fr": "Bruit brun",
+    "pt_BR": "Ruído marrom",
+    "ja": "ブラウンノイズ"
+  },
+  "Bubble Wrap Pop": {
+    "de": "Luftpolsterfolie",
+    "es": "Plástico de burbujas",
+    "fr": "Papier bulle",
+    "pt_BR": "Plástico bolha",
+    "ja": "プチプチ"
+  },
+  "Camera Shutter Click": {
+    "de": "Kameraauslöser",
+    "es": "Obturador",
+    "fr": "Déclencheur",
+    "pt_BR": "Obturador",
+    "ja": "カメラのシャッター"
+  },
+  "Campfire Crackles": {
+    "de": "Lagerfeuer",
+    "es": "Hoguera",
+    "fr": "Feu de camp",
+    "pt_BR": "Fogueira",
+    "ja": "焚き火"
+  },
+  "Car Horn": {
+    "de": "Autohupe",
+    "es": "Claxon",
+    "fr": "Klaxon",
+    "pt_BR": "Buzina",
+    "ja": "クラクション"
+  },
+  "Cassette Deck": {
+    "de": "Kassettendeck",
+    "es": "Casete",
+    "fr": "Lecteur cassette",
+    "pt_BR": "Toca-fitas",
+    "ja": "カセットデッキ"
+  },
+  "Cat Meow": {
+    "de": "Katzenmiauen",
+    "es": "Maullido",
+    "fr": "Miaulement",
+    "pt_BR": "Miado",
+    "ja": "猫の鳴き声"
+  },
+  "Cat Purr": {
+    "de": "Katzenschnurren",
+    "es": "Ronroneo",
+    "fr": "Ronronnement",
+    "pt_BR": "Ronrono",
+    "ja": "猫ののど鳴らし"
+  },
+  "Chainsaw": {
+    "de": "Kettensäge",
+    "es": "Motosierra",
+    "fr": "Tronçonneuse",
+    "pt_BR": "Motosserra",
+    "ja": "チェーンソー"
+  },
+  "Church Tower Bell": {
+    "de": "Kirchturmglocke",
+    "es": "Campana de iglesia",
+    "fr": "Cloche d’église",
+    "pt_BR": "Sino de igreja",
+    "ja": "教会の鐘"
+  },
+  "Circuit Breaker": {
+    "de": "Sicherungskasten",
+    "es": "Disyuntor",
+    "fr": "Disjoncteur",
+    "pt_BR": "Disjuntor",
+    "ja": "ブレーカー"
+  },
+  "City Bus Pass-By": {
+    "de": "Stadtbus",
+    "es": "Autobús urbano",
+    "fr": "Bus de ville",
+    "pt_BR": "Ônibus urbano",
+    "ja": "市内バス"
+  },
+  "Civil Defense Siren": {
+    "de": "Zivilschutzsirene",
+    "es": "Sirena de defensa",
+    "fr": "Sirène d’alerte",
+    "pt_BR": "Sirene de defesa",
+    "ja": "防災サイレン"
+  },
+  "Clicks": {
+    "de": "Klicks",
+    "es": "Clics",
+    "fr": "Clics",
+    "pt_BR": "Cliques",
+    "ja": "クリック"
+  },
+  "Clothes Dryer Tumbling": {
+    "de": "Wäschetrockner",
+    "es": "Secadora de ropa",
+    "fr": "Sèche-linge",
+    "pt_BR": "Secadora de roupas",
+    "ja": "衣類乾燥機"
+  },
+  "Construction Site": {
+    "de": "Baustelle",
+    "es": "Obra",
+    "fr": "Chantier",
+    "pt_BR": "Canteiro de obras",
+    "ja": "工事現場"
+  },
+  "Could not start request (%s).": {
+    "de": "Anfrage konnte nicht starten (%s).",
+    "es": "No se pudo iniciar la solicitud (%s).",
+    "fr": "Impossible de lancer la requête (%s).",
+    "pt_BR": "Não foi possível iniciar o pedido (%s).",
+    "ja": "リクエストを開始できませんでした（%s）。"
+  },
+  "Couldn't show the ad. Try again.": {
+    "de": "Die Werbung konnte nicht gezeigt werden. Bitte noch einmal.",
+    "es": "No se pudo mostrar el anuncio. Inténtalo de nuevo.",
+    "fr": "Impossible d’afficher la pub. Réessayez.",
+    "pt_BR": "Não foi possível mostrar o anúncio. Tente de novo.",
+    "ja": "広告を表示できませんでした。もう一度お試しください。"
+  },
+  "Crumpled Paper": {
+    "de": "Knitterpapier",
+    "es": "Papel arrugado",
+    "fr": "Papier froissé",
+    "pt_BR": "Papel amassado",
+    "ja": "くしゃくしゃの紙"
+  },
+  "Crunching Ice Cubes": {
+    "de": "Eiswürfel knirschen",
+    "es": "Hielo crujiente",
+    "fr": "Glaçons croquants",
+    "pt_BR": "Gelo crocante",
+    "ja": "氷を噛む音"
+  },
+  "Dawn Bird Chorus": {
+    "de": "Vogelchor am Morgen",
+    "es": "Aves al amanecer",
+    "fr": "Chœur d’oiseaux",
+    "pt_BR": "Coro de pássaros",
+    "ja": "朝の鳥のさえずり"
+  },
+  "Desk Fan Blow": {
+    "de": "Tischventilator",
+    "es": "Ventilador de mesa",
+    "fr": "Ventilateur de bureau",
+    "pt_BR": "Ventilador de mesa",
+    "ja": "デスクファン"
+  },
+  "Dial-Up Modem": {
+    "de": "Einwahlmodem",
+    "es": "Módem telefónico",
+    "fr": "Modem 56k",
+    "pt_BR": "Modem discado",
+    "ja": "ダイヤルアップ"
+  },
+  "Diesel Train Horn": {
+    "de": "Dieselzug-Horn",
+    "es": "Bocina de tren",
+    "fr": "Corne de train",
+    "pt_BR": "Buzina de trem",
+    "ja": "ディーゼル列車"
+  },
+  "Disc Console Startup": {
+    "de": "Disc-Konsole Start",
+    "es": "Consola de disco",
+    "fr": "Console disque",
+    "pt_BR": "Console de disco",
+    "ja": "ディスク機の起動"
+  },
+  "Disc Tray Open": {
+    "de": "Laufwerk öffnet",
+    "es": "Bandeja de disco",
+    "fr": "Tiroir disque",
+    "pt_BR": "Bandeja do disco",
+    "ja": "ディスクトレイ"
+  },
+  "Dishwasher Cycle": {
+    "de": "Geschirrspüler",
+    "es": "Lavavajillas",
+    "fr": "Lave-vaisselle",
+    "pt_BR": "Lava-louças",
+    "ja": "食洗機"
+  },
+  "Dismiss": {
+    "de": "Schließen",
+    "es": "Cerrar",
+    "fr": "Fermer",
+    "pt_BR": "Fechar",
+    "ja": "閉じる"
+  },
+  "Dog Bark": {
+    "de": "Hundegebell",
+    "es": "Ladrido",
+    "fr": "Aboiement",
+    "pt_BR": "Latido",
+    "ja": "犬の吠え声"
+  },
+  "e.g. fridge door, keyboard ASMR…": {
+    "de": "z. B. Kühlschranktür, Tastatur-ASMR…",
+    "es": "p. ej. puerta de la nevera, ASMR de teclado…",
+    "fr": "p. ex. porte du frigo, ASMR clavier…",
+    "pt_BR": "ex.: porta da geladeira, ASMR de teclado…",
+    "ja": "例：冷蔵庫のドア、キーボードASMR…"
+  },
+  "Electric Drill": {
+    "de": "Bohrmaschine",
+    "es": "Taladro",
+    "fr": "Perceuse",
+    "pt_BR": "Furadeira",
+    "ja": "電動ドリル"
+  },
+  "Email (optional)": {
+    "de": "E-Mail (optional)",
+    "es": "Correo (opcional)",
+    "fr": "E-mail (facultatif)",
+    "pt_BR": "E-mail (opcional)",
+    "ja": "メール（任意）"
+  },
+  "Enable Pitch & Speed in Settings to show a slider on each sound — deepen high clicks or slow loops.": {
+    "de": "Aktiviere Tonhöhe & Tempo in den Einstellungen, dann erscheint bei jedem Sound ein Regler — für tiefere Klicks oder langsamere Loops.",
+    "es": "Activa Tono y velocidad en Ajustes para ver un control en cada sonido: graves más profundos o loops más lentos.",
+    "fr": "Activez Hauteur et vitesse dans Réglages pour un curseur sur chaque son — clics plus graves ou boucles plus lentes.",
+    "pt_BR": "Ative Tom e velocidade em Ajustes para ver um controle em cada som — cliques mais graves ou loops mais lentos.",
+    "ja": "設定で音程と速度をオンにすると、各サウンドにスライダーが出ます。高いクリックを低く、ループを遅くできます。"
+  },
+  "Faucet Water Drip": {
+    "de": "Tropfender Hahn",
+    "es": "Grifo goteando",
+    "fr": "Robinet qui goutte",
+    "pt_BR": "Torneira pingando",
+    "ja": "蛇口のしずく"
+  },
+  "Favorites": {
+    "de": "Favoriten",
+    "es": "Favoritos",
+    "fr": "Favoris",
+    "pt_BR": "Favoritos",
+    "ja": "お気に入り"
+  },
+  "Feedback": {
+    "de": "Feedback",
+    "es": "Comentarios",
+    "fr": "Avis",
+    "pt_BR": "Feedback",
+    "ja": "フィードバック"
+  },
+  "Feel the taps": {
+    "de": "Taps spüren",
+    "es": "Siente los toques",
+    "fr": "Ressentez les touches",
+    "pt_BR": "Sinta os toques",
+    "ja": "タップを感じる"
+  },
+  "Fidget Clicker": {
+    "de": "Fidget-Klicker",
+    "es": "Clicker fidget",
+    "fr": "Cliqueur fidget",
+    "pt_BR": "Clicker fidget",
+    "ja": "フィジェットクリッカー"
+  },
+  "Fire Engine Siren": {
+    "de": "Feuerwehrsirene",
+    "es": "Sirena de bomberos",
+    "fr": "Sirène de pompiers",
+    "pt_BR": "Sirene de bombeiros",
+    "ja": "消防車サイレン"
+  },
+  "Flowing Stream": {
+    "de": "Bach",
+    "es": "Arroyo",
+    "fr": "Ruisseau",
+    "pt_BR": "Riacho",
+    "ja": "小川"
+  },
+  "Free": {
+    "de": "Gratis",
+    "es": "Gratis",
+    "fr": "Gratuit",
+    "pt_BR": "Grátis",
+    "ja": "無料"
+  },
+  "Front-Load Washer": {
+    "de": "Waschmaschine",
+    "es": "Lavadora",
+    "fr": "Lave-linge",
+    "pt_BR": "Máquina de lavar",
+    "ja": "洗濯機"
+  },
+  "Full library": {
+    "de": "Ganze Bibliothek",
+    "es": "Biblioteca completa",
+    "fr": "Bibliothèque complète",
+    "pt_BR": "Biblioteca completa",
+    "ja": "全ライブラリ"
+  },
+  "Gently pans sound left ↔ right in headphones (~every few seconds). Applies to all sounds while playing.": {
+    "de": "Schwenkt den Klang sanft links ↔ rechts in Kopfhörern (etwa alle paar Sekunden). Gilt für alle Sounds während der Wiedergabe.",
+    "es": "Mueve el sonido suavemente de izquierda ↔ derecha en los auriculares (cada pocos segundos). Vale para todos los sonidos.",
+    "fr": "Fait glisser le son doucement gauche ↔ droite dans le casque (toutes les quelques secondes). S’applique à tous les sons.",
+    "pt_BR": "Move o som suavemente da esquerda ↔ direita no fone (a cada poucos segundos). Vale para todos os sons.",
+    "ja": "ヘッドホンで音を左右にゆっくり動かします（数秒ごと）。再生中のすべての音に適用されます。"
+  },
+  "Got it": {
+    "de": "Verstanden",
+    "es": "Entendido",
+    "fr": "Compris",
+    "pt_BR": "Entendi",
+    "ja": "わかった"
+  },
+  "Handheld Console Boot": {
+    "de": "Handheld-Start",
+    "es": "Consola portátil",
+    "fr": "Console portable",
+    "pt_BR": "Console portátil",
+    "ja": "携帯機の起動"
+  },
+  "Haptic Feedback": {
+    "de": "Vibration",
+    "es": "Respuesta háptica",
+    "fr": "Retour haptique",
+    "pt_BR": "Resposta tátil",
+    "ja": "触覚フィードバック"
+  },
+  "Haptic feedback vibrates your phone when you tap sounds. Toggle it anytime in Settings.": {
+    "de": "Die Vibration lässt das Telefon kurz zittern, wenn du Sounds antippst. Du kannst sie jederzeit in den Einstellungen ändern.",
+    "es": "La vibración hace temblar el teléfono al tocar sonidos. Puedes cambiarla cuando quieras en Ajustes.",
+    "fr": "La vibration fait frémir le téléphone quand vous touchez un son. Vous pouvez la changer dans Réglages.",
+    "pt_BR": "A vibração faz o celular tremer ao tocar nos sons. Você pode mudar isso quando quiser em Ajustes.",
+    "ja": "触覚フィードバックは、音をタップしたときにスマホを振動させます。設定でいつでも切り替えられます。"
+  },
+  "Head Flossing": {
+    "de": "Stereo-Schwenk",
+    "es": "Balanceo estéreo",
+    "fr": "Balayage stéréo",
+    "pt_BR": "Varredura estéreo",
+    "ja": "ステレオパン"
+  },
+  "Helicopter Close Engine": {
+    "de": "Helikopter nah",
+    "es": "Helicóptero cerca",
+    "fr": "Hélicoptère proche",
+    "pt_BR": "Helicóptero perto",
+    "ja": "近いヘリコプター"
+  },
+  "Home Console Startup": {
+    "de": "Heimkonsole Start",
+    "es": "Consola de salón",
+    "fr": "Console de salon",
+    "pt_BR": "Console de casa",
+    "ja": "据え置き機の起動"
+  },
+  "Home Doorbell Chime": {
+    "de": "Türklingel",
+    "es": "Timbre de casa",
+    "fr": "Sonnette de porte",
+    "pt_BR": "Campainha de casa",
+    "ja": "玄関のチャイム"
+  },
+  "Household": {
+    "de": "Haushalt",
+    "es": "Hogar",
+    "fr": "Maison",
+    "pt_BR": "Casa",
+    "ja": "家庭"
+  },
+  "IAP not linked for this platform yet": {
+    "de": "Käufe sind auf dieser Plattform noch nicht verbunden.",
+    "es": "Las compras aún no están conectadas en esta plataforma.",
+    "fr": "Les achats ne sont pas encore liés sur cette plateforme.",
+    "pt_BR": "As compras ainda não estão ligadas nesta plataforma.",
+    "ja": "このプラットフォームでは購入がまだ接続されていません。"
+  },
+  "In Settings, turn on Head Flossing to gently pan sounds left ↔ right in headphones.": {
+    "de": "Aktiviere in den Einstellungen den Stereo-Schwenk, damit Sounds im Kopfhörer sanft links ↔ rechts wandern.",
+    "es": "En Ajustes, activa el balanceo estéreo para mover los sonidos suavemente de izquierda ↔ derecha en los auriculares.",
+    "fr": "Dans Réglages, activez le balayage stéréo pour faire glisser les sons gauche ↔ droite dans le casque.",
+    "pt_BR": "Em Ajustes, ative a varredura estéreo para mover os sons suavemente da esquerda ↔ direita no fone.",
+    "ja": "設定でステレオパンをオンにすると、ヘッドホンで音が左右にゆっくり動きます。"
+  },
+  "Jacket Zipper Pull": {
+    "de": "Reißverschluss",
+    "es": "Cremallera",
+    "fr": "Fermeture éclair",
+    "pt_BR": "Zíper",
+    "ja": "ジッパー"
+  },
+  "Keeps replaying short one-shot sounds until you press Stop. Native loop sounds already repeat.": {
+    "de": "Spielt kurze Einzelsounds weiter, bis du auf Stopp tippst. Loop-Sounds wiederholen sich schon von selbst.",
+    "es": "Sigue reproduciendo los sonidos cortos hasta que pulses Detener. Los loops ya se repiten solos.",
+    "fr": "Rejoue les sons courts jusqu’à Stop. Les boucles se répètent déjà toutes seules.",
+    "pt_BR": "Continua os sons curtos até você tocar em Parar. Os loops já se repetem sozinhos.",
+    "ja": "短い単発音を、停止するまで繰り返します。ループ音は最初から繰り返されます。"
+  },
+  "Kitchen Blender Whirr": {
+    "de": "Mixer-Surren",
+    "es": "Batidora",
+    "fr": "Mixeur",
+    "pt_BR": "Liquidificador",
+    "ja": "ミキサー"
+  },
+  "Kitchen Oven Ding": {
+    "de": "Ofen-Ding",
+    "es": "Ding del horno",
+    "fr": "Ding du four",
+    "pt_BR": "Ding do forno",
+    "ja": "オーブンの音"
+  },
+  "Lawn Mower Engine": {
+    "de": "Rasenmäher",
+    "es": "Cortacésped",
+    "fr": "Tondeuse",
+    "pt_BR": "Cortador de grama",
+    "ja": "芝刈り機"
+  },
+  "Loading ad…": {
+    "de": "Werbung wird geladen…",
+    "es": "Cargando anuncio…",
+    "fr": "Chargement de la pub…",
+    "pt_BR": "Carregando anúncio…",
+    "ja": "広告を読み込み中…"
+  },
+  "Magnetic Charger Snap": {
+    "de": "Magnet-Ladegerät",
+    "es": "Cargador magnético",
+    "fr": "Chargeur magnétique",
+    "pt_BR": "Carregador magnético",
+    "ja": "マグネット充電"
+  },
+  "Magnetic Fidget": {
+    "de": "Magnet-Fidget",
+    "es": "Fidget magnético",
+    "fr": "Fidget magnétique",
+    "pt_BR": "Fidget magnético",
+    "ja": "マグネットフィジェット"
+  },
+  "Manage Ad Consent": {
+    "de": "Werbe-Einwilligung",
+    "es": "Gestionar consentimiento de anuncios",
+    "fr": "Gérer le consentement pub",
+    "pt_BR": "Gerenciar consentimento de anúncios",
+    "ja": "広告の同意を管理"
+  },
+  "Manual Fire Whistle": {
+    "de": "Feuerwehrpfeife",
+    "es": "Silbato de incendio",
+    "fr": "Sifflet d’incendie",
+    "pt_BR": "Apito de incêndio",
+    "ja": "消防の笛"
+  },
+  "Mechanical Keyboard": {
+    "de": "Mechanische Tastatur",
+    "es": "Teclado mecánico",
+    "fr": "Clavier mécanique",
+    "pt_BR": "Teclado mecânico",
+    "ja": "メカニカルキーボード"
+  },
+  "Metal Wind Chimes": {
+    "de": "Windspiel",
+    "es": "Campanillas de viento",
+    "fr": "Carillon à vent",
+    "pt_BR": "Sino dos ventos",
+    "ja": "風鈴"
+  },
+  "Microwave Hum": {
+    "de": "Mikrowellen-Brummen",
+    "es": "Microondas",
+    "fr": "Micro-ondes",
+    "pt_BR": "Micro-ondas",
+    "ja": "電子レンジ"
+  },
+  "Misc": {
+    "de": "Sonstiges",
+    "es": "Varios",
+    "fr": "Divers",
+    "pt_BR": "Outros",
+    "ja": "その他"
+  },
+  "Motorcycle Engine Idle": {
+    "de": "Motorrad im Leerlauf",
+    "es": "Moto al ralentí",
+    "fr": "Moto au ralenti",
+    "pt_BR": "Moto em marcha lenta",
+    "ja": "バイクのアイドリング"
+  },
+  "Nails on Glass": {
+    "de": "Nägel auf Glas",
+    "es": "Uñas en cristal",
+    "fr": "Ongles sur verre",
+    "pt_BR": "Unhas no vidro",
+    "ja": "ガラスの爪"
+  },
+  "Nails on Plastic": {
+    "de": "Nägel auf Plastik",
+    "es": "Uñas en plástico",
+    "fr": "Ongles sur plastique",
+    "pt_BR": "Unhas no plástico",
+    "ja": "プラスチックの爪"
+  },
+  "Nails on Wood": {
+    "de": "Nägel auf Holz",
+    "es": "Uñas en madera",
+    "fr": "Ongles sur bois",
+    "pt_BR": "Unhas na madeira",
+    "ja": "木の爪"
+  },
+  "Nature": {
+    "de": "Natur",
+    "es": "Naturaleza",
+    "fr": "Nature",
+    "pt_BR": "Natureza",
+    "ja": "自然"
+  },
+  "Night Cricket Ambience": {
+    "de": "Grillen bei Nacht",
+    "es": "Grillos de noche",
+    "fr": "Grillons la nuit",
+    "pt_BR": "Grilos à noite",
+    "ja": "夜のコオロギ"
+  },
+  "Night Forest Insects": {
+    "de": "Waldinsekten",
+    "es": "Insectos del bosque",
+    "fr": "Insectes de forêt",
+    "pt_BR": "Insetos da floresta",
+    "ja": "夜の森の虫"
+  },
+  "No ad available right now — try again in a bit.": {
+    "de": "Gerade keine Werbung da — später noch einmal versuchen.",
+    "es": "No hay anuncio ahora. Prueba un poco más tarde.",
+    "fr": "Pas de pub pour le moment — réessayez bientôt.",
+    "pt_BR": "Não há anúncio agora — tente de novo daqui a pouco.",
+    "ja": "今は広告がありません。少しあとでもう一度。"
+  },
+  "No ads": {
+    "de": "Keine Werbung",
+    "es": "Sin anuncios",
+    "fr": "Sans pub",
+    "pt_BR": "Sem anúncios",
+    "ja": "広告なし"
+  },
+  "No favorites yet.\nTap the heart on a sound to save it here.": {
+    "de": "Noch keine Favoriten.\nTippe auf das Herz bei einem Sound, um ihn hier zu speichern.",
+    "es": "Aún no hay favoritos.\nToca el corazón de un sonido para guardarlo aquí.",
+    "fr": "Pas encore de favoris.\nTouchez le cœur d’un son pour l’enregistrer ici.",
+    "pt_BR": "Ainda não há favoritos.\nToque no coração de um som para salvá-lo aqui.",
+    "ja": "お気に入りはまだありません。\n音のハートをタップすると、ここに保存されます。"
+  },
+  "No free sounds in this category.": {
+    "de": "Keine kostenlosen Sounds in dieser Kategorie.",
+    "es": "No hay sonidos gratis en esta categoría.",
+    "fr": "Aucun son gratuit dans cette catégorie.",
+    "pt_BR": "Não há sons grátis nesta categoria.",
+    "ja": "このカテゴリに無料の音はありません。"
+  },
+  "No purchases found to restore.": {
+    "de": "Keine Käufe zum Wiederherstellen gefunden.",
+    "es": "No hay compras para restaurar.",
+    "fr": "Aucun achat à restaurer.",
+    "pt_BR": "Não há compras para restaurar.",
+    "ja": "復元できる購入が見つかりません。"
+  },
+  "No recent sounds yet.\nPlay something and it will show up here.": {
+    "de": "Noch keine zuletzt gespielten Sounds.\nSpiel etwas ab, dann erscheint es hier.",
+    "es": "Aún no hay sonidos recientes.\nReproduce algo y aparecerá aquí.",
+    "fr": "Pas encore de sons récents.\nLancez-en un et il apparaîtra ici.",
+    "pt_BR": "Ainda não há sons recentes.\nToque algo e ele aparece aqui.",
+    "ja": "最近の音はまだありません。\n再生すると、ここに表示されます。"
+  },
+  "No sound selected.": {
+    "de": "Kein Sound ausgewählt.",
+    "es": "Ningún sonido seleccionado.",
+    "fr": "Aucun son sélectionné.",
+    "pt_BR": "Nenhum som selecionado.",
+    "ja": "音が選ばれていません。"
+  },
+  "No sounds in this filter.": {
+    "de": "Keine Sounds in diesem Filter.",
+    "es": "No hay sonidos en este filtro.",
+    "fr": "Aucun son dans ce filtre.",
+    "pt_BR": "Não há sons neste filtro.",
+    "ja": "このフィルターに音はありません。"
+  },
+  "Noise": {
+    "de": "Rauschen",
+    "es": "Ruido",
+    "fr": "Bruit",
+    "pt_BR": "Ruído",
+    "ja": "ノイズ"
+  },
+  "Not really": {
+    "de": "Eher nicht",
+    "es": "No mucho",
+    "fr": "Pas vraiment",
+    "pt_BR": "Nem tanto",
+    "ja": "あまり"
+  },
+  "Ocean Waves": {
+    "de": "Meereswellen",
+    "es": "Olas del mar",
+    "fr": "Vagues",
+    "pt_BR": "Ondas do mar",
+    "ja": "波"
+  },
+  "Open %s": {
+    "de": "%s öffnen",
+    "es": "Abrir %s",
+    "fr": "Ouvrir %s",
+    "pt_BR": "Abrir %s",
+    "ja": "%sを開く"
+  },
+  "Open Settings": {
+    "de": "Einstellungen öffnen",
+    "es": "Abrir Ajustes",
+    "fr": "Ouvrir Réglages",
+    "pt_BR": "Abrir Ajustes",
+    "ja": "設定を開く"
+  },
+  "OS": {
+    "de": "System",
+    "es": "Sistema",
+    "fr": "Système",
+    "pt_BR": "Sistema",
+    "ja": "OS"
+  },
+  "Owned": {
+    "de": "Gekauft",
+    "es": "Comprado",
+    "fr": "Acheté",
+    "pt_BR": "Comprado",
+    "ja": "購入済み"
+  },
+  "PC Fan Hum": {
+    "de": "PC-Lüfter",
+    "es": "Ventilador de PC",
+    "fr": "Ventilo de PC",
+    "pt_BR": "Ventoinha do PC",
+    "ja": "PCファン"
+  },
+  "PC Power On": {
+    "de": "PC einschalten",
+    "es": "Encendido de PC",
+    "fr": "Allumage PC",
+    "pt_BR": "PC ligando",
+    "ja": "PCの電源オン"
+  },
+  "Phone Dial Tone": {
+    "de": "Wählton",
+    "es": "Tono de marcar",
+    "fr": "Tonalité",
+    "pt_BR": "Tom de discagem",
+    "ja": "発信音"
+  },
+  "Pink Noise": {
+    "de": "Rosa Rauschen",
+    "es": "Ruido rosa",
+    "fr": "Bruit rose",
+    "pt_BR": "Ruído rosa",
+    "ja": "ピンクノイズ"
+  },
+  "Pitch & Speed  ·  %.0f%%": {
+    "de": "Tonhöhe & Tempo  ·  %.0f %%",
+    "es": "Tono y velocidad  ·  %.0f %%",
+    "fr": "Hauteur et vitesse  ·  %.0f %%",
+    "pt_BR": "Tom e velocidade  ·  %.0f%%",
+    "ja": "音程と速度  ·  %.0f%%"
+  },
+  "Pitch & Speed  ·  100%": {
+    "de": "Tonhöhe & Tempo  ·  100 %",
+    "es": "Tono y velocidad  ·  100 %",
+    "fr": "Hauteur et vitesse  ·  100 %",
+    "pt_BR": "Tom e velocidade  ·  100%",
+    "ja": "音程と速度  ·  100%"
+  },
+  "Play": {
+    "de": "Abspielen",
+    "es": "Reproducir",
+    "fr": "Lire",
+    "pt_BR": "Reproduzir",
+    "ja": "再生"
+  },
+  "Playing": {
+    "de": "Wiedergabe",
+    "es": "Reproduciendo",
+    "fr": "Lecture",
+    "pt_BR": "Reproduzindo",
+    "ja": "再生中"
+  },
+  "Please enter some feedback.": {
+    "de": "Bitte schreib etwas Feedback.",
+    "es": "Escribe algún comentario.",
+    "fr": "Écrivez un avis.",
+    "pt_BR": "Escreva um feedback.",
+    "ja": "フィードバックを入力してください。"
+  },
+  "Police Wail Siren": {
+    "de": "Polizeisirene",
+    "es": "Sirena policial",
+    "fr": "Sirène de police",
+    "pt_BR": "Sirene policial",
+    "ja": "警察サイレン"
+  },
+  "Popcorn Kernel Pop": {
+    "de": "Popcorn",
+    "es": "Palomitas",
+    "fr": "Pop-corn",
+    "pt_BR": "Pipoca",
+    "ja": "ポップコーン"
+  },
+  "Privacy Policy": {
+    "de": "Datenschutz",
+    "es": "Política de privacidad",
+    "fr": "Politique de confidentialité",
+    "pt_BR": "Política de privacidade",
+    "ja": "プライバシーポリシー"
+  },
+  "Product unavailable in App Store": {
+    "de": "Produkt im App Store nicht verfügbar",
+    "es": "Producto no disponible en App Store",
+    "fr": "Produit indisponible sur l’App Store",
+    "pt_BR": "Produto indisponível na App Store",
+    "ja": "App Storeでこの商品は利用できません"
+  },
+  "Purchase canceled": {
+    "de": "Kauf abgebrochen",
+    "es": "Compra cancelada",
+    "fr": "Achat annulé",
+    "pt_BR": "Compra cancelada",
+    "ja": "購入をキャンセルしました"
+  },
+  "Purchase failed": {
+    "de": "Kauf fehlgeschlagen",
+    "es": "La compra falló",
+    "fr": "Achat échoué",
+    "pt_BR": "A compra falhou",
+    "ja": "購入に失敗しました"
+  },
+  "Purchase failed: %s": {
+    "de": "Kauf fehlgeschlagen: %s",
+    "es": "La compra falló: %s",
+    "fr": "Achat échoué : %s",
+    "pt_BR": "A compra falhou: %s",
+    "ja": "購入に失敗しました：%s"
+  },
+  "Purchase restored.": {
+    "de": "Kauf wiederhergestellt.",
+    "es": "Compra restaurada.",
+    "fr": "Achat restauré.",
+    "pt_BR": "Compra restaurada.",
+    "ja": "購入を復元しました。"
+  },
+  "Rain": {
+    "de": "Regen",
+    "es": "Lluvia",
+    "fr": "Pluie",
+    "pt_BR": "Chuva",
+    "ja": "雨"
+  },
+  "Rain on Metal Roof": {
+    "de": "Regen auf Blechdach",
+    "es": "Lluvia en tejado",
+    "fr": "Pluie sur toit métal",
+    "pt_BR": "Chuva no telhado",
+    "ja": "トタン屋根の雨"
+  },
+  "Rate StimPad": {
+    "de": "StimPad bewerten",
+    "es": "Valorar StimPad",
+    "fr": "Noter StimPad",
+    "pt_BR": "Avaliar o StimPad",
+    "ja": "StimPadを評価"
+  },
+  "Recent": {
+    "de": "Zuletzt",
+    "es": "Recientes",
+    "fr": "Récents",
+    "pt_BR": "Recentes",
+    "ja": "最近"
+  },
+  "Refrigerator Hum": {
+    "de": "Kühlschrank-Brummen",
+    "es": "Nevera",
+    "fr": "Frigo",
+    "pt_BR": "Geladeira",
+    "ja": "冷蔵庫"
+  },
+  "Relay Click": {
+    "de": "Relais-Klick",
+    "es": "Clic de relé",
+    "fr": "Clic de relais",
+    "pt_BR": "Clique de relé",
+    "ja": "リレーのカチッ"
+  },
+  "Remove favorite": {
+    "de": "Favorit entfernen",
+    "es": "Quitar de favoritos",
+    "fr": "Retirer des favoris",
+    "pt_BR": "Remover dos favoritos",
+    "ja": "お気に入りから外す"
+  },
+  "Repeat  Off": {
+    "de": "Wiederholen  Aus",
+    "es": "Repetir  No",
+    "fr": "Répéter  Non",
+    "pt_BR": "Repetir  Não",
+    "ja": "リピート  オフ"
+  },
+  "Repeat  On": {
+    "de": "Wiederholen  An",
+    "es": "Repetir  Sí",
+    "fr": "Répéter  Oui",
+    "pt_BR": "Repetir  Sim",
+    "ja": "リピート  オン"
+  },
+  "Repeat Short Sounds": {
+    "de": "Kurze Sounds wiederholen",
+    "es": "Repetir sonidos cortos",
+    "fr": "Répéter les sons courts",
+    "pt_BR": "Repetir sons curtos",
+    "ja": "短い音をリピート"
+  },
+  "Replay short sounds until you stop": {
+    "de": "Kurze Sounds wiederholen, bis du stoppst",
+    "es": "Repite sonidos cortos hasta que pares",
+    "fr": "Rejoue les sons courts jusqu’à l’arrêt",
+    "pt_BR": "Repete sons curtos até você parar",
+    "ja": "停止するまで短い音を繰り返します"
+  },
+  "Restaurant Crowd Chatter": {
+    "de": "Restaurant-Gemurmel",
+    "es": "Murmullo de restaurante",
+    "fr": "Brouhaha de resto",
+    "pt_BR": "Burburinho do restaurante",
+    "ja": "レストランのざわめき"
+  },
+  "Restore not supported": {
+    "de": "Wiederherstellen nicht möglich",
+    "es": "Restaurar no está disponible",
+    "fr": "Restauration non prise en charge",
+    "pt_BR": "Restaurar não é suportado",
+    "ja": "復元には対応していません"
+  },
+  "Restore Purchases": {
+    "de": "Käufe wiederherstellen",
+    "es": "Restaurar compras",
+    "fr": "Restaurer les achats",
+    "pt_BR": "Restaurar compras",
+    "ja": "購入を復元"
+  },
+  "Retro": {
+    "de": "Retro",
+    "es": "Retro",
+    "fr": "Rétro",
+    "pt_BR": "Retrô",
+    "ja": "レトロ"
+  },
+  "Rotary Phone Ring": {
+    "de": "Wählscheiben-Klingeln",
+    "es": "Teléfono de disco",
+    "fr": "Téléphone à cadran",
+    "pt_BR": "Telefone de disco",
+    "ja": "黒電話の呼び出し"
+  },
+  "Rotary Selector": {
+    "de": "Drehschalter",
+    "es": "Selector giratorio",
+    "fr": "Sélecteur rotatif",
+    "pt_BR": "Seletor giratório",
+    "ja": "ロータリースイッチ"
+  },
+  "School Hall Bell": {
+    "de": "Schulklingel",
+    "es": "Timbre de escuela",
+    "fr": "Sonnerie d’école",
+    "pt_BR": "Sino da escola",
+    "ja": "学校のベル"
+  },
+  "Scissors Snip": {
+    "de": "Scheren-Schnipp",
+    "es": "Tijeras",
+    "fr": "Ciseaux",
+    "pt_BR": "Tesoura",
+    "ja": "はさみ"
+  },
+  "Send failed (HTTP %d).": {
+    "de": "Senden fehlgeschlagen (HTTP %d).",
+    "es": "Error al enviar (HTTP %d).",
+    "fr": "Échec de l’envoi (HTTP %d).",
+    "pt_BR": "Falha ao enviar (HTTP %d).",
+    "ja": "送信に失敗しました（HTTP %d）。"
+  },
+  "Send feedback": {
+    "de": "Feedback senden",
+    "es": "Enviar comentarios",
+    "fr": "Envoyer",
+    "pt_BR": "Enviar feedback",
+    "ja": "送信"
+  },
+  "Sending…": {
+    "de": "Wird gesendet…",
+    "es": "Enviando…",
+    "fr": "Envoi…",
+    "pt_BR": "Enviando…",
+    "ja": "送信中…"
+  },
+  "Settings": {
+    "de": "Einstellungen",
+    "es": "Ajustes",
+    "fr": "Réglages",
+    "pt_BR": "Ajustes",
+    "ja": "設定"
+  },
+  "Short sounds keep replaying until you stop": {
+    "de": "Kurze Sounds laufen weiter, bis du stoppst",
+    "es": "Los sonidos cortos siguen hasta que pares",
+    "fr": "Les sons courts continuent jusqu’à l’arrêt",
+    "pt_BR": "Os sons curtos continuam até você parar",
+    "ja": "短い音は停止するまで続きます"
+  },
+  "Short vibration when you tap sounds or play.": {
+    "de": "Kurze Vibration, wenn du Sounds antippst oder abspielst.",
+    "es": "Una vibración breve al tocar o reproducir sonidos.",
+    "fr": "Courte vibration quand vous touchez un son ou lancez la lecture.",
+    "pt_BR": "Uma vibração curta ao tocar ou reproduzir sons.",
+    "ja": "音をタップしたときや再生時に、短く振動します。"
+  },
+  "Show Pitch & Speed": {
+    "de": "Tonhöhe & Tempo anzeigen",
+    "es": "Mostrar tono y velocidad",
+    "fr": "Afficher hauteur et vitesse",
+    "pt_BR": "Mostrar tom e velocidade",
+    "ja": "音程と速度を表示"
+  },
+  "Slow Heartbeat": {
+    "de": "Langsamer Herzschlag",
+    "es": "Latido lento",
+    "fr": "Battement lent",
+    "pt_BR": "Batimento lento",
+    "ja": "ゆっくり心拍"
+  },
+  "Smoke Detector Beep": {
+    "de": "Rauchmelder-Piep",
+    "es": "Pitido de detector",
+    "fr": "Bip de détecteur",
+    "pt_BR": "Bipe do detector",
+    "ja": "煙感知器の音"
+  },
+  "Soft expanding ripples where you tap (optional visual stim).": {
+    "de": "Sanfte Wellen dort, wo du tippst (optionaler visueller Stim).",
+    "es": "Ondas suaves donde tocas (estímulo visual opcional).",
+    "fr": "Ondes douces là où vous touchez (stim visuel facultatif).",
+    "pt_BR": "Ondas suaves onde você toca (estímulo visual opcional).",
+    "ja": "タップした場所に広がる柔らかい波紋（任意の視覚刺激）。"
+  },
+  "Something went wrong. Please try again.": {
+    "de": "Etwas ist schiefgelaufen. Bitte noch einmal versuchen.",
+    "es": "Algo salió mal. Inténtalo de nuevo.",
+    "fr": "Un problème est survenu. Réessayez.",
+    "pt_BR": "Algo deu errado. Tente de novo.",
+    "ja": "問題が起きました。もう一度お試しください。"
+  },
+  "Sound": {
+    "de": "Sound",
+    "es": "Sonido",
+    "fr": "Son",
+    "pt_BR": "Som",
+    "ja": "サウンド"
+  },
+  "Sounds to add (optional)": {
+    "de": "Sounds zum Hinzufügen (optional)",
+    "es": "Sonidos para añadir (opcional)",
+    "fr": "Sons à ajouter (facultatif)",
+    "pt_BR": "Sons para adicionar (opcional)",
+    "ja": "追加してほしい音（任意）"
+  },
+  "Steam Train Passing": {
+    "de": "Dampfzug",
+    "es": "Tren de vapor",
+    "fr": "Train à vapeur",
+    "pt_BR": "Trem a vapor",
+    "ja": "蒸気機関車"
+  },
+  "StimPad Plus": {
+    "de": "StimPad Plus",
+    "es": "StimPad Plus",
+    "fr": "StimPad Plus",
+    "pt_BR": "StimPad Plus",
+    "ja": "StimPad Plus"
+  },
+  "StimPad Plus: Active": {
+    "de": "StimPad Plus: Aktiv",
+    "es": "StimPad Plus: Activo",
+    "fr": "StimPad Plus : actif",
+    "pt_BR": "StimPad Plus: ativo",
+    "ja": "StimPad Plus：有効"
+  },
+  "StimPad Plus: Not purchased": {
+    "de": "StimPad Plus: Nicht gekauft",
+    "es": "StimPad Plus: Sin comprar",
+    "fr": "StimPad Plus : non acheté",
+    "pt_BR": "StimPad Plus: não comprado",
+    "ja": "StimPad Plus：未購入"
+  },
+  "StimPad uses this to show more relevant ads on the free tier. You can change this anytime in Settings.": {
+    "de": "StimPad nutzt das, um in der Gratis-Version passendere Werbung zu zeigen. Du kannst das jederzeit in den Einstellungen ändern.",
+    "es": "StimPad usa esto para mostrar anuncios más relevantes en la versión gratis. Puedes cambiarlo cuando quieras en Ajustes.",
+    "fr": "StimPad s’en sert pour des pubs plus pertinentes dans la version gratuite. Vous pouvez changer cela dans Réglages.",
+    "pt_BR": "O StimPad usa isso para mostrar anúncios mais relevantes na versão grátis. Você pode mudar isso quando quiser em Ajustes.",
+    "ja": "StimPadは無料版でより関連する広告を表示するためにこれを使います。設定でいつでも変更できます。"
+  },
+  "StimPad v%s": {
+    "de": "StimPad v%s",
+    "es": "StimPad v%s",
+    "fr": "StimPad v%s",
+    "pt_BR": "StimPad v%s",
+    "ja": "StimPad v%s"
+  },
+  "StimPad v1.0.0": {
+    "de": "StimPad v1.0.0",
+    "es": "StimPad v1.0.0",
+    "fr": "StimPad v1.0.0",
+    "pt_BR": "StimPad v1.0.0",
+    "ja": "StimPad v1.0.0"
+  },
+  "Stop": {
+    "de": "Stopp",
+    "es": "Detener",
+    "fr": "Stop",
+    "pt_BR": "Parar",
+    "ja": "停止"
+  },
+  "Stop playback first.": {
+    "de": "Stoppe zuerst die Wiedergabe.",
+    "es": "Detén primero la reproducción.",
+    "fr": "Arrêtez d’abord la lecture.",
+    "pt_BR": "Pare a reprodução primeiro.",
+    "ja": "先に再生を停止してください。"
+  },
+  "Store not available": {
+    "de": "Store nicht verfügbar",
+    "es": "Tienda no disponible",
+    "fr": "Boutique indisponible",
+    "pt_BR": "Loja indisponível",
+    "ja": "ストアを利用できません"
+  },
+  "Store not ready": {
+    "de": "Store ist nicht bereit",
+    "es": "La tienda no está lista",
+    "fr": "La boutique n’est pas prête",
+    "pt_BR": "A loja não está pronta",
+    "ja": "ストアの準備ができていません"
+  },
+  "Subway Train Pass": {
+    "de": "U-Bahn",
+    "es": "Metro",
+    "fr": "Métro",
+    "pt_BR": "Metrô",
+    "ja": "地下鉄"
+  },
+  "Tap ripples": {
+    "de": "Tipp-Wellen",
+    "es": "Ondas al tocar",
+    "fr": "Ondes au toucher",
+    "pt_BR": "Ondas ao tocar",
+    "ja": "タップの波紋"
+  },
+  "Tap Ripples": {
+    "de": "Tipp-Wellen",
+    "es": "Ondas al tocar",
+    "fr": "Ondes au toucher",
+    "pt_BR": "Ondas ao tocar",
+    "ja": "タップの波紋"
+  },
+  "Tap to unlock": {
+    "de": "Tippen zum Freischalten",
+    "es": "Toca para desbloquear",
+    "fr": "Touchez pour débloquer",
+    "pt_BR": "Toque para desbloquear",
+    "ja": "タップして解除"
+  },
+  "Thanks — your feedback was sent.": {
+    "de": "Danke — dein Feedback ist raus.",
+    "es": "Gracias, tus comentarios se enviaron.",
+    "fr": "Merci — votre avis a été envoyé.",
+    "pt_BR": "Obrigado — seu feedback foi enviado.",
+    "ja": "ありがとう。フィードバックを送信しました。"
+  },
+  "this sound": {
+    "de": "diesem Sound",
+    "es": "este sonido",
+    "fr": "ce son",
+    "pt_BR": "este som",
+    "ja": "この音"
+  },
+  "Thocky Keyboard": {
+    "de": "Thock-Tastatur",
+    "es": "Teclado thock",
+    "fr": "Clavier thock",
+    "pt_BR": "Teclado thock",
+    "ja": "タクタクキーボード"
+  },
+  "Thunder Storm": {
+    "de": "Gewitter",
+    "es": "Tormenta",
+    "fr": "Orage",
+    "pt_BR": "Trovoada",
+    "ja": "雷雨"
+  },
+  "Tip": {
+    "de": "Tipp",
+    "es": "Consejo",
+    "fr": "Astuce",
+    "pt_BR": "Dica",
+    "ja": "ヒント"
+  },
+  "Tip: Head Flossing, haptics & more live in Settings.": {
+    "de": "Tipp: Stereo-Schwenk, Vibration und mehr findest du in den Einstellungen.",
+    "es": "Consejo: el balanceo estéreo, la vibración y más están en Ajustes.",
+    "fr": "Astuce : balayage stéréo, vibrations et plus sont dans Réglages.",
+    "pt_BR": "Dica: varredura estéreo, vibração e mais estão em Ajustes.",
+    "ja": "ヒント：ステレオパンや振動などは設定にあります。"
+  },
+  "Toaster Pop": {
+    "de": "Toaster-Plopp",
+    "es": "Tostadora",
+    "fr": "Grille-pain",
+    "pt_BR": "Torradeira",
+    "ja": "トースター"
+  },
+  "Tools": {
+    "de": "Werkzeuge",
+    "es": "Herramientas",
+    "fr": "Outils",
+    "pt_BR": "Ferramentas",
+    "ja": "工具"
+  },
+  "Toy Xylophone Notes": {
+    "de": "Spielzeug-Xylophon",
+    "es": "Xilófono de juguete",
+    "fr": "Xylophone jouet",
+    "pt_BR": "Xilofone de brinquedo",
+    "ja": "おもちゃの木琴"
+  },
+  "Triangle": {
+    "de": "Triangel",
+    "es": "Triángulo",
+    "fr": "Triangle",
+    "pt_BR": "Triângulo",
+    "ja": "トライアングル"
+  },
+  "Try Head Flossing": {
+    "de": "Stereo-Schwenk ausprobieren",
+    "es": "Prueba el balanceo estéreo",
+    "fr": "Essayez le balayage stéréo",
+    "pt_BR": "Experimente a varredura estéreo",
+    "ja": "ステレオパンを試す"
+  },
+  "Tune pitch & speed": {
+    "de": "Tonhöhe & Tempo",
+    "es": "Ajusta tono y velocidad",
+    "fr": "Réglez hauteur et vitesse",
+    "pt_BR": "Ajuste tom e velocidade",
+    "ja": "音程と速度を調整"
+  },
+  "Turn on to replay short sounds automatically": {
+    "de": "Einschalten, damit kurze Sounds automatisch weiterlaufen",
+    "es": "Actívalo para repetir los sonidos cortos",
+    "fr": "Activez pour rejouer les sons courts",
+    "pt_BR": "Ative para repetir os sons curtos",
+    "ja": "オンにすると短い音を自動で繰り返します"
+  },
+  "Unknown product": {
+    "de": "Unbekanntes Produkt",
+    "es": "Producto desconocido",
+    "fr": "Produit inconnu",
+    "pt_BR": "Produto desconhecido",
+    "ja": "不明な商品"
+  },
+  "Unlock \"%s\" or go Plus": {
+    "de": "„%s“ freischalten oder Plus holen",
+    "es": "Desbloquea «%s» o pasa a Plus",
+    "fr": "Débloquez « %s » ou passez à Plus",
+    "pt_BR": "Desbloqueie “%s” ou assine o Plus",
+    "ja": "「%s」を解除するか Plus にする"
+  },
+  "Unlock 70+ stim sounds and remove ads.": {
+    "de": "Schalte über 70 Stim-Sounds frei und entferne die Werbung.",
+    "es": "Desbloquea más de 70 sonidos stim y quita los anuncios.",
+    "fr": "Débloquez plus de 70 sons stim et retirez les pubs.",
+    "pt_BR": "Desbloqueie mais de 70 sons stim e remova os anúncios.",
+    "ja": "70以上の刺激音を解除して、広告を消します。"
+  },
+  "Unlock all": {
+    "de": "Alles frei",
+    "es": "Desbloquear todo",
+    "fr": "Tout débloquer",
+    "pt_BR": "Desbloquear tudo",
+    "ja": "すべて解除"
+  },
+  "Unlock until midnight": {
+    "de": "Bis Mitternacht frei",
+    "es": "Desbloqueado hasta medianoche",
+    "fr": "Débloqué jusqu’à minuit",
+    "pt_BR": "Desbloqueado até meia-noite",
+    "ja": "深夜0時まで解除"
+  },
+  "Until I stop": {
+    "de": "Bis ich stoppe",
+    "es": "Hasta que pare",
+    "fr": "Jusqu’à l’arrêt",
+    "pt_BR": "Até eu parar",
+    "ja": "停止するまで"
+  },
+  "Upright Vacuum Hum": {
+    "de": "Staubsauger",
+    "es": "Aspiradora",
+    "fr": "Aspirateur",
+    "pt_BR": "Aspirador",
+    "ja": "掃除機"
+  },
+  "Vehicles": {
+    "de": "Fahrzeuge",
+    "es": "Vehículos",
+    "fr": "Véhicules",
+    "pt_BR": "Veículos",
+    "ja": "乗り物"
+  },
+  "Velcro Rip": {
+    "de": "Klettverschluss",
+    "es": "Velcro",
+    "fr": "Velcro",
+    "pt_BR": "Velcro",
+    "ja": "マジックテープ"
+  },
+  "Version / build": {
+    "de": "Version / Build",
+    "es": "Versión / compilación",
+    "fr": "Version / build",
+    "pt_BR": "Versão / build",
+    "ja": "バージョン / ビルド"
+  },
+  "Volume  ·  %.0f%%": {
+    "de": "Lautstärke  ·  %.0f %%",
+    "es": "Volumen  ·  %.0f %%",
+    "fr": "Volume  ·  %.0f %%",
+    "pt_BR": "Volume  ·  %.0f%%",
+    "ja": "音量  ·  %.0f%%"
+  },
+  "Volume  ·  100%": {
+    "de": "Lautstärke  ·  100 %",
+    "es": "Volumen  ·  100 %",
+    "fr": "Volume  ·  100 %",
+    "pt_BR": "Volume  ·  100%",
+    "ja": "音量  ·  100%"
+  },
+  "Wall Clock Tick-Tock": {
+    "de": "Wanduhr Tick-Tack",
+    "es": "Reloj de pared",
+    "fr": "Horloge murale",
+    "pt_BR": "Relógio de parede",
+    "ja": "壁時計"
+  },
+  "Wall Light Switch": {
+    "de": "Lichtschalter",
+    "es": "Interruptor",
+    "fr": "Interrupteur",
+    "pt_BR": "Interruptor",
+    "ja": "壁のスイッチ"
+  },
+  "Want a soft visual burst when you tap? Turn on Tap Ripples in Settings.": {
+    "de": "Möchtest du beim Tippen einen sanften visuellen Impuls? Aktiviere Tipp-Wellen in den Einstellungen.",
+    "es": "¿Quieres un destello suave al tocar? Activa Ondas al tocar en Ajustes.",
+    "fr": "Envie d’un éclat doux quand vous touchez ? Activez Ondes au toucher dans Réglages.",
+    "pt_BR": "Quer um brilho suave ao tocar? Ative Ondas ao tocar em Ajustes.",
+    "ja": "タップしたときに柔らかい光が欲しいときは、設定でタップの波紋をオンにしてください。"
+  },
+  "Watch an ad for today, or unlock everything with Plus.": {
+    "de": "Schau eine Werbung für heute, oder schalte mit Plus alles frei.",
+    "es": "Mira un anuncio para hoy, o desbloquea todo con Plus.",
+    "fr": "Regardez une pub pour aujourd’hui, ou débloquez tout avec Plus.",
+    "pt_BR": "Assista a um anúncio para hoje, ou desbloqueie tudo com o Plus.",
+    "ja": "今日だけ広告を見るか、Plus ですべて解除します。"
+  },
+  "Watch the full ad to unlock.": {
+    "de": "Schau die Werbung ganz, um freizuschalten.",
+    "es": "Mira el anuncio entero para desbloquear.",
+    "fr": "Regardez toute la pub pour débloquer.",
+    "pt_BR": "Assista ao anúncio inteiro para desbloquear.",
+    "ja": "解除するには広告を最後まで見てください。"
+  },
+  "Water": {
+    "de": "Wasser",
+    "es": "Agua",
+    "fr": "Eau",
+    "pt_BR": "Água",
+    "ja": "水"
+  },
+  "What can we improve?": {
+    "de": "Was können wir verbessern?",
+    "es": "¿Qué podemos mejorar?",
+    "fr": "Que peut-on améliorer ?",
+    "pt_BR": "O que podemos melhorar?",
+    "ja": "どこを良くできますか？"
+  },
+  "What’s working, broken, or missing — we’d love to know.": {
+    "de": "Was funktioniert, fehlt oder hakt — wir möchten es wissen.",
+    "es": "Qué funciona, falla o falta: nos encantaría saberlo.",
+    "fr": "Ce qui marche, casse ou manque — dites-le-nous.",
+    "pt_BR": "O que funciona, quebra ou falta — queremos saber.",
+    "ja": "うまくいくこと、壊れていること、足りないこと。教えてください。"
+  },
+  "White Noise": {
+    "de": "Weißes Rauschen",
+    "es": "Ruido blanco",
+    "fr": "Bruit blanc",
+    "pt_BR": "Ruído branco",
+    "ja": "ホワイトノイズ"
+  },
+  "Window AC Hum": {
+    "de": "Fenster-Klimaanlage",
+    "es": "Aire acondicionado",
+    "fr": "Climatiseur",
+    "pt_BR": "Ar-condicionado",
+    "ja": "窓用エアコン"
+  },
+  "Wooden Metronome Tick": {
+    "de": "Holzmetronom",
+    "es": "Metrónomo de madera",
+    "fr": "Métronome en bois",
+    "pt_BR": "Metrônomo de madeira",
+    "ja": "木のメトロノーム"
+  },
+  "Yes — I am": {
+    "de": "Ja",
+    "es": "Sí",
+    "fr": "Oui",
+    "pt_BR": "Sim",
+    "ja": "はい"
+  },
+  "You have StimPad Plus. All sounds unlocked, ads removed.": {
+    "de": "Du hast StimPad Plus. Alle Sounds sind frei, die Werbung ist weg.",
+    "es": "Tienes StimPad Plus. Todos los sonidos están libres y no hay anuncios.",
+    "fr": "Vous avez StimPad Plus. Tous les sons sont débloqués, sans pub.",
+    "pt_BR": "Você tem o StimPad Plus. Todos os sons estão livres, sem anúncios.",
+    "ja": "StimPad Plusを利用中です。すべての音が解除され、広告はありません。"
+  },
+  "You're all set": {
+    "de": "Alles bereit",
+    "es": "Todo listo",
+    "fr": "C’est prêt",
+    "pt_BR": "Tudo pronto",
+    "ja": "準備できました"
+  },
+  "you@example.com": {
+    "de": "du@example.com",
+    "es": "tu@example.com",
+    "fr": "vous@example.com",
+    "pt_BR": "voce@example.com",
+    "ja": "you@example.com"
+  },
+  "Your feedback": {
+    "de": "Dein Feedback",
+    "es": "Tus comentarios",
+    "fr": "Votre avis",
+    "pt_BR": "Seu feedback",
+    "ja": "フィードバック"
+  }
+}

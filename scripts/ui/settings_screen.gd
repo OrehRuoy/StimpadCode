@@ -37,7 +37,7 @@ func _ready() -> void:
 	AdsService.privacy_choices_availability_changed.connect(_refresh_ad_privacy_btn)
 	_back_btn.pressed.connect(_on_back)
 	visibility_changed.connect(_on_visibility_changed)
-	_version.text = "StimPad v%s" % AppInfo.version_line()
+	_version.text = tr("StimPad v%s") % AppInfo.version_line()
 	Entitlements.plus_changed.connect(func(_v): _refresh_plus_status())
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
@@ -91,7 +91,7 @@ func _apply_responsive_layout() -> void:
 
 
 func _refresh_plus_status() -> void:
-	_plus_status.text = "StimPad Plus: Active" if Entitlements.has_plus() else "StimPad Plus: Not purchased"
+	_plus_status.text = tr("StimPad Plus: Active") if Entitlements.has_plus() else tr("StimPad Plus: Not purchased")
 
 
 func _refresh_toggles() -> void:
@@ -105,7 +105,7 @@ func _refresh_toggles() -> void:
 
 
 func _update_volume_label(v: float) -> void:
-	_volume_label.text = "Volume  ·  %.0f%%" % (clampf(v, 0.0, 1.0) * 100.0)
+	_volume_label.text = tr("Volume  ·  %.0f%%") % (clampf(v, 0.0, 1.0) * 100.0)
 
 
 func _on_volume_changed(value: float) -> void:

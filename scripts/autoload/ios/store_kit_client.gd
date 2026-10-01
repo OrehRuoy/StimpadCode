@@ -85,7 +85,7 @@ func purchase_store_id(store_product_id: String) -> bool:
 
 func restore_purchases() -> void:
 	if _manager == null:
-		restore_finished.emit(false, "Store not available")
+		restore_finished.emit(false, tr("Store not available"))
 		return
 	if _manager.has_method("restore_purchases"):
 		_manager.restore_purchases()
@@ -94,7 +94,7 @@ func restore_purchases() -> void:
 		_manager.fetch_current_entitlements()
 		restore_finished.emit(true, "")
 		return
-	restore_finished.emit(false, "Restore not supported")
+	restore_finished.emit(false, tr("Restore not supported"))
 
 
 func refresh_entitlements() -> void:
@@ -130,9 +130,9 @@ func _on_purchase_completed(_transaction: Variant, status: int, error_message: S
 	var grant := status == _STATUS_OK
 	var reason := error_message
 	if status == _STATUS_CANCELLED or status == _STATUS_USER_CANCELLED:
-		reason = "Purchase canceled"
+		reason = tr("Purchase canceled")
 	if internal_id.is_empty():
-		purchase_settled.emit("", false, false, reason if not reason.is_empty() else "Unknown product")
+		purchase_settled.emit("", false, false, reason if not reason.is_empty() else tr("Unknown product"))
 		return
 	purchase_settled.emit(internal_id, grant, grant, reason)
 	if grant:

@@ -139,7 +139,7 @@ func _apply_responsive_layout() -> void:
 func _on_submit() -> void:
 	if FeedbackService.is_busy():
 		return
-	_status.text = "Sending…"
+	_status.text = tr("Sending…")
 	_status.add_theme_color_override("font_color", Color(0.75, 0.82, 0.9, 1))
 	_submit_btn.disabled = true
 	FeedbackService.submit(

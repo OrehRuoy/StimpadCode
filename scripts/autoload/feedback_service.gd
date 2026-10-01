@@ -23,11 +23,11 @@ func is_busy() -> bool:
 
 func submit(feedback: String, email: String = "", requested_sounds: String = "") -> void:
 	if _pending:
-		submit_finished.emit(false, "Already sending…")
+		submit_finished.emit(false, tr("Already sending…"))
 		return
 	var message := feedback.strip_edges()
 	if message.is_empty():
-		submit_finished.emit(false, "Please enter some feedback.")
+		submit_finished.emit(false, tr("Please enter some feedback."))
 		return
 
 	var payload := {
@@ -55,7 +55,7 @@ func submit(feedback: String, email: String = "", requested_sounds: String = "")
 	var err := _http.request(ENDPOINT, headers, HTTPClient.METHOD_POST, body)
 	if err != OK:
 		_pending = false
-		submit_finished.emit(false, "Could not start request (%s)." % error_string(err))
+		submit_finished.emit(false, tr("Could not start request (%s).") % error_string(err))
 		AnalyticsService.log_event("feedback_submit_fail", {"reason": "request_start"})
 
 
@@ -83,21 +83,21 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 	var text := body.get_string_from_utf8()
 	var parsed: Variant = JSON.parse_string(text) if not text.is_empty() else null
 	var success := false
-	var msg := "Something went wrong. Please try again."
+	var msg := tr("Something went wrong. Please try again.")
 	if result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300:
 		if typeof(parsed) == TYPE_DICTIONARY:
 			success = bool(parsed.get("success", true))
 			if parsed.has("message"):
 				msg = str(parsed.get("message"))
 			elif success:
-				msg = "Thanks — your feedback was sent."
+				msg = tr("Thanks — your feedback was sent.")
 		else:
 			success = true
-			msg = "Thanks — your feedback was sent."
+			msg = tr("Thanks — your feedback was sent.")
 	elif typeof(parsed) == TYPE_DICTIONARY and parsed.has("message"):
 		msg = str(parsed.get("message"))
 	elif response_code > 0:
-		msg = "Send failed (HTTP %d)." % response_code
+		msg = tr("Send failed (HTTP %d).") % response_code
 
 	if success:
 		AnalyticsService.log_event("feedback_submit_ok", {"os": AppInfo.os_label()})

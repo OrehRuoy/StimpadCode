@@ -150,7 +150,7 @@ func _set_watch_visible(on: bool) -> void:
 
 
 func _price_copy() -> String:
-	return "%s · one-time" % IAPService.get_display_price()
+	return tr("%s · one-time") % IAPService.get_display_price()
 
 
 func _on_display_price_updated(_price: String) -> void:
@@ -159,18 +159,18 @@ func _on_display_price_updated(_price: String) -> void:
 
 func _refresh() -> void:
 	var sound_id := str(_focus_sound.get("id", ""))
-	var sound_name := str(_focus_sound.get("name", "this sound"))
+	var sound_name := tr(str(_focus_sound.get("name", "this sound")))
 	var has_focus := not sound_id.is_empty()
 	var offer_rewarded := has_focus and AdsService.can_offer_rewarded()
 
 	_set_plus_title(true)
 
 	if Entitlements.has_plus():
-		_subtitle.text = "You're all set"
-		_status.text = "You have StimPad Plus. All sounds unlocked, ads removed."
+		_subtitle.text = tr("You're all set")
+		_status.text = tr("You have StimPad Plus. All sounds unlocked, ads removed.")
 		_buy_btn.disabled = true
 		_buy_wrap.modulate = Color(1, 1, 1, 0.45)
-		_price_label.text = "Owned"
+		_price_label.text = tr("Owned")
 		_set_watch_visible(false)
 		return
 
@@ -180,25 +180,28 @@ func _refresh() -> void:
 	_set_watch_visible(offer_rewarded)
 
 	if offer_rewarded:
-		_subtitle.text = "Unlock \"%s\" or go Plus" % sound_name
+		_subtitle.text = tr("Unlock \"%s\" or go Plus") % sound_name
 		if Entitlements.is_temp_unlocked(sound_id):
-			_status.text = (
-				"%s unlocked until midnight. Buy Plus for everything, no ads."
-			) % sound_name
+			_status.text = tr("%s unlocked until midnight. Buy Plus for everything, no ads.") % sound_name
 			_set_watch_visible(false)
 		else:
-			_status.text = "Watch an ad for today, or unlock everything with Plus."
-			_watch_hint.text = "Unlock until midnight"
+			_status.text = tr("Watch an ad for today, or unlock everything with Plus.")
+			_watch_hint.text = tr("Unlock until midnight")
 	else:
-		_subtitle.text = "All sounds · No ads · One purchase"
-		_status.text = "Unlock 70+ stim sounds and remove ads."
+		_subtitle.text = tr("All sounds · No ads · One purchase")
+		_status.text = tr("Unlock 70+ stim sounds and remove ads.")
 
 
 func _on_watch_ad() -> void:
 	var sound_id := str(_focus_sound.get("id", ""))
 	if sound_id.is_empty():
 		return
-	_status.text = "Loading ad…"
+	_status.text = tr("Loading ad…")
+	AnalyticsService.log_event("paywall_buy_tap", {
+		"source": "ad",
+		"sound_id": sound_id,
+		"price": IAPService.get_display_price(),
+	})
 	AnalyticsService.log_event("paywall_watch_ad_tap", {"sound_id": sound_id})
 	AdsService.try_show_rewarded_for_sound(sound_id)
 
@@ -215,7 +218,10 @@ func _on_rewarded_failed(reason: String) -> void:
 
 
 func _on_buy() -> void:
-	AnalyticsService.log_event("paywall_buy_tap", {"price": IAPService.get_display_price()})
+	AnalyticsService.log_event("paywall_buy_tap", {
+		"source": "iap",
+		"price": IAPService.get_display_price(),
+	})
 	IAPService.purchase_plus()
 
 
@@ -232,14 +238,14 @@ func _on_purchase_done(_product_id: String) -> void:
 
 func _on_restored(product_ids: Array) -> void:
 	if product_ids.is_empty():
-		_status.text = "No purchases found to restore."
+		_status.text = tr("No purchases found to restore.")
 	else:
-		_status.text = "Purchase restored."
+		_status.text = tr("Purchase restored.")
 		_refresh()
 
 
 func _on_failed(_product_id: String, reason: String) -> void:
-	_status.text = "Purchase failed: %s" % reason
+	_status.text = tr("Purchase failed: %s") % reason
 
 
 func _on_back() -> void:

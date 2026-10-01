@@ -237,7 +237,7 @@ func try_show_interstitial_on_safe_exit() -> void:
 
 func try_show_rewarded_for_sound(sound_id: String) -> void:
 	if sound_id.is_empty():
-		rewarded_unlock_failed.emit("No sound selected.")
+		rewarded_unlock_failed.emit(tr("No sound selected."))
 		return
 	if Entitlements.has_plus() or Entitlements.is_temp_unlocked(sound_id):
 		rewarded_unlock_completed.emit(sound_id)
@@ -248,7 +248,7 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 		rewarded_unlock_completed.emit(sound_id)
 		return
 	if _playback_active:
-		rewarded_unlock_failed.emit("Stop playback first.")
+		rewarded_unlock_failed.emit(tr("Stop playback first."))
 		return
 	if not _sdk_ready:
 		ensure_initialized_for_rewarded()
@@ -259,12 +259,12 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 			await get_tree().create_timer(0.4).timeout
 			waited += 0.4
 		if not _sdk_ready or _admob == null:
-			rewarded_unlock_failed.emit("Ads aren't ready yet — try again in a moment.")
+			rewarded_unlock_failed.emit(tr("Ads aren't ready yet — try again in a moment."))
 			return
 		if _pending_reward_sound_id != sound_id:
 			return
 	if _admob == null:
-		rewarded_unlock_failed.emit("Ads aren't ready yet — try again in a moment.")
+		rewarded_unlock_failed.emit(tr("Ads aren't ready yet — try again in a moment."))
 		return
 	_pending_reward_sound_id = sound_id
 	_reward_earned_pending = false
@@ -282,9 +282,9 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 	elif _rewarded_load_in_flight:
-		rewarded_unlock_failed.emit("Ad is still loading — try again in a moment.")
+		rewarded_unlock_failed.emit(tr("Ad is still loading — try again in a moment."))
 	else:
-		rewarded_unlock_failed.emit("No ad available right now — try again in a bit.")
+		rewarded_unlock_failed.emit(tr("No ad available right now — try again in a bit."))
 
 
 func privacy_choices_available() -> bool:
@@ -354,7 +354,7 @@ func _initialize_ads() -> void:
 		_admob.android_real_rewarded_id = PROD_REWARDED_ANDROID
 	if OS.get_name() == "iOS":
 		_admob.att_enabled = true
-		_admob.att_text = ATT_TEXT
+		_admob.att_text = tr(ATT_TEXT)
 	add_child(_admob)
 
 	_admob.initialization_completed.connect(_on_admob_initialized)
@@ -812,7 +812,7 @@ func _on_rewarded_dismissed(_ad_info) -> void:
 		Entitlements.grant_temp_unlock(sound_id)
 		rewarded_unlock_completed.emit(sound_id)
 	else:
-		rewarded_unlock_failed.emit("Watch the full ad to unlock.")
+		rewarded_unlock_failed.emit(tr("Watch the full ad to unlock."))
 
 
 func _on_rewarded_failed_to_load(_ad_info, error) -> void:
@@ -838,7 +838,7 @@ func _on_rewarded_failed_to_show(_ad_info, error) -> void:
 	_log_ad_error("rewarded show", error)
 	_preload_rewarded()
 	keep_banner_visible()
-	rewarded_unlock_failed.emit("Couldn't show the ad. Try again.")
+	rewarded_unlock_failed.emit(tr("Couldn't show the ad. Try again."))
 
 
 func _on_playback_started(_sound_id: String) -> void:

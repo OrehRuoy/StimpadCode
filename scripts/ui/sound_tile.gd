@@ -24,7 +24,7 @@ var _parent_scroll: ScrollContainer
 func setup(sound: Dictionary) -> void:
 	_sound = sound
 	_unlocked = SoundCatalog.is_sound_unlocked(sound)
-	_name.text = str(sound.get("name", "Sound"))
+	_name.text = tr(str(sound.get("name", "Sound")))
 	_name.visible = true
 	_plus_badge.visible = not _unlocked
 	_hint.visible = true
@@ -32,7 +32,7 @@ func setup(sound: Dictionary) -> void:
 		_hint.text = " "
 		_hint.modulate = Color(1, 1, 1, 0)
 	else:
-		_hint.text = "Tap to unlock"
+		_hint.text = tr("Tap to unlock")
 		_hint.modulate = Color(1, 1, 1, 1)
 	modulate = Color.WHITE
 	_art.modulate = Color(1, 1, 1, 1) if _unlocked else Color(0.82, 0.84, 0.88, 1)

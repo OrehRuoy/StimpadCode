@@ -228,7 +228,7 @@ func _rebuild_filters() -> void:
 	if _scope_ids.find(_selected_scope) < 0:
 		_selected_scope = "All"
 	for id in _scope_ids:
-		var btn := _make_chip(id, id == _selected_scope)
+		var btn := _make_chip(tr(id), id == _selected_scope)
 		btn.pressed.connect(_on_scope_chip_pressed.bind(id))
 		_scope_row.add_child(btn)
 		_scope_chips[id] = btn
@@ -236,10 +236,10 @@ func _rebuild_filters() -> void:
 	_category_select.clear()
 	_category_ids.clear()
 	_category_ids.append("All")
-	_category_select.add_item("All categories")
+	_category_select.add_item(tr("All categories"))
 	for category in SoundCatalog.categories:
 		_category_ids.append(category)
-		_category_select.add_item(category)
+		_category_select.add_item(tr(category))
 	if _category_ids.find(_selected_sound_category) < 0:
 		_selected_sound_category = "All"
 	var cat_idx := _category_ids.find(_selected_sound_category)
@@ -322,13 +322,13 @@ func _emit_first_home_ready() -> void:
 func _empty_message() -> String:
 	match _selected_scope:
 		"Favorites":
-			return "No favorites yet.\nTap the heart on a sound to save it here."
+			return tr("No favorites yet.\nTap the heart on a sound to save it here.")
 		"Recent":
-			return "No recent sounds yet.\nPlay something and it will show up here."
+			return tr("No recent sounds yet.\nPlay something and it will show up here.")
 		"Free":
-			return "No free sounds in this category."
+			return tr("No free sounds in this category.")
 		_:
-			return "No sounds in this filter."
+			return tr("No sounds in this filter.")
 
 
 func _filtered_sounds() -> Array[Dictionary]:

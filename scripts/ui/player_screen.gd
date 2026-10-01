@@ -121,7 +121,7 @@ func _apply_responsive_layout() -> void:
 
 func open_sound(sound: Dictionary) -> void:
 	_sound = sound
-	_title.text = str(sound.get("name", ""))
+	_title.text = tr(str(sound.get("name", "")))
 	var art_path: String = str(sound.get("art", ""))
 	if art_path != "" and ResourceLoader.exists(art_path):
 		_art.texture = load(art_path)
@@ -174,7 +174,7 @@ func _refresh_rate_controls() -> void:
 
 
 func _update_rate_label(rate: float) -> void:
-	_rate_label.text = "Pitch & Speed  ·  %.0f%%" % (rate * 100.0)
+	_rate_label.text = tr("Pitch & Speed  ·  %.0f%%") % (rate * 100.0)
 
 
 func _on_rate_changed(value: float) -> void:
@@ -185,12 +185,12 @@ func _on_rate_changed(value: float) -> void:
 
 func _refresh_repeat_btn() -> void:
 	var on := LocalPrefs.repeat_oneshots
-	_repeat_btn.text = "Repeat  On" if on else "Repeat  Off"
+	_repeat_btn.text = tr("Repeat  On") if on else tr("Repeat  Off")
 	UiLook.style_chip(_repeat_btn, on)
 	_repeat_btn.tooltip_text = (
-		"Short sounds keep replaying until you stop"
+		tr("Short sounds keep replaying until you stop")
 		if on
-		else "Turn on to replay short sounds automatically"
+		else tr("Turn on to replay short sounds automatically")
 	)
 
 
@@ -202,10 +202,10 @@ func _build_timer_chips() -> void:
 	_timer_row.add_theme_constant_override("h_separation", 6)
 	_timer_row.add_theme_constant_override("v_separation", 6)
 	var specs: Array[Dictionary] = [
-		{"sec": AudioController.DURATION_UNTIL_STOP, "label": "Until I stop"},
-		{"sec": 15 * 60, "label": "15 min"},
-		{"sec": 30 * 60, "label": "30 min"},
-		{"sec": 60 * 60, "label": "60 min"},
+		{"sec": AudioController.DURATION_UNTIL_STOP, "label": tr("Until I stop")},
+		{"sec": 15 * 60, "label": tr("15 min")},
+		{"sec": 30 * 60, "label": tr("30 min")},
+		{"sec": 60 * 60, "label": tr("60 min")},
 	]
 	for spec in specs:
 		var btn := Button.new()
@@ -354,7 +354,7 @@ func _refresh_favorite_icon() -> void:
 		_favorite_btn.icon = load(path)
 		_favorite_btn.expand_icon = true
 	_favorite_btn.text = ""
-	_favorite_btn.tooltip_text = "Remove favorite" if on else "Add to favorites"
+	_favorite_btn.tooltip_text = tr("Remove favorite") if on else tr("Add to favorites")
 
 
 func _set_play_stop_visual(playing: bool) -> void:
@@ -364,7 +364,7 @@ func _set_play_stop_visual(playing: bool) -> void:
 		_play_stop_btn.icon = load(path)
 		_play_stop_btn.expand_icon = true
 	_play_stop_btn.text = ""
-	_play_stop_btn.tooltip_text = "Stop" if playing else "Play"
+	_play_stop_btn.tooltip_text = tr("Stop") if playing else tr("Play")
 	_play_stop_btn.modulate = Color.WHITE
 
 

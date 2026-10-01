@@ -114,12 +114,12 @@ func _on_ios_product_prices_updated() -> void:
 
 func _purchase_ios() -> void:
 	if not _ready_to_purchase or not _ios_store_ready:
-		purchase_failed.emit(PRODUCT_ID, "App Store not ready yet")
+		purchase_failed.emit(PRODUCT_ID, tr("App Store not ready yet"))
 		return
 	_pending_purchase = true
 	if not _ios_store.purchase_store_id(PRODUCT_ID):
 		_pending_purchase = false
-		purchase_failed.emit(PRODUCT_ID, "Product unavailable in App Store")
+		purchase_failed.emit(PRODUCT_ID, tr("Product unavailable in App Store"))
 
 
 func _on_ios_purchase_settled(
@@ -131,14 +131,14 @@ func _on_ios_purchase_settled(
 	if internal_product_id.is_empty():
 		if _pending_purchase and not success:
 			_pending_purchase = false
-			purchase_failed.emit(PRODUCT_ID, reason if not reason.is_empty() else "Purchase failed")
+			purchase_failed.emit(PRODUCT_ID, reason if not reason.is_empty() else tr("Purchase failed"))
 		return
 	if internal_product_id != PRODUCT_ID:
 		return
 	if not success:
 		if _pending_purchase:
 			_pending_purchase = false
-			purchase_failed.emit(PRODUCT_ID, reason if not reason.is_empty() else "Purchase failed")
+			purchase_failed.emit(PRODUCT_ID, reason if not reason.is_empty() else tr("Purchase failed"))
 		return
 	if grant_rewards:
 		_pending_purchase = false
@@ -156,13 +156,13 @@ func _on_ios_restore_finished(success: bool, reason: String) -> void:
 
 func _request_purchase_native(product_id: String) -> void:
 	if not _ready_to_purchase:
-		purchase_failed.emit(product_id, "Store not ready")
+		purchase_failed.emit(product_id, tr("Store not ready"))
 		return
-	purchase_failed.emit(product_id, "IAP not linked for this platform yet")
+	purchase_failed.emit(product_id, tr("IAP not linked for this platform yet"))
 
 
 func _restore_purchases_native() -> void:
 	if not _ready_to_purchase:
-		purchase_failed.emit(PRODUCT_ID, "Store not ready")
+		purchase_failed.emit(PRODUCT_ID, tr("Store not ready"))
 		return
 	purchase_restored.emit([])

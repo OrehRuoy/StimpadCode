@@ -12,7 +12,7 @@ config_version=5
 
 config/name="StimPad"
 config/description="Audio sensory fidget soundboard for neurodivergent users."
-config/version="1.0.2"
+config/version="1.0.3"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "Mobile")
 boot_splash/bg_color=Color(0.102, 0.133, 0.188, 1)
@@ -31,8 +31,14 @@ buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"
 general/ios/session_category=3
 general/ios/mix_with_others=true
 
+[internationalization]
+
+locale/fallback="en"
+rendering/root_node_auto_translate=true
+
 [autoload]
 
+LocaleService="*res://scripts/autoload/locale_service.gd"
 SoundCatalog="*res://scripts/autoload/sound_catalog.gd"
 AudioController="*res://scripts/autoload/audio_controller.gd"
 LocalPrefs="*res://scripts/autoload/local_prefs.gd"

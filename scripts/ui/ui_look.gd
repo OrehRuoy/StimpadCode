@@ -150,7 +150,7 @@ static func style_ghost(btn: Button) -> void:
 
 static func style_back(btn: Button) -> void:
 	## Uniform back control across paywall / player / settings.
-	btn.text = "← Back"
+	btn.text = TranslationServer.translate("← Back")
 	style_ghost(btn)
 	btn.add_theme_font_size_override("font_size", 16)
 	btn.custom_minimum_size = Vector2(maxf(btn.custom_minimum_size.x, 100.0), maxf(btn.custom_minimum_size.y, 44.0))

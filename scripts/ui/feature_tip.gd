@@ -26,8 +26,8 @@ func _ready() -> void:
 
 
 func present(tip: Dictionary) -> void:
-	_title.text = str(tip.get("title", "Tip"))
-	_subtitle.text = str(tip.get("body", ""))
+	_title.text = tr(str(tip.get("title", "Tip")))
+	_subtitle.text = tr(str(tip.get("body", "")))
 	visible = true
 	modulate.a = 0.0
 	call_deferred("_animate_in")

@@ -115,7 +115,7 @@ func _on_settle_elapsed() -> void:
 	_show_tip()
 
 
-func _pending_tip_id() -> String:
+func _next_tip_id() -> String:
 	for tip in TIPS:
 		var tip_id := str(tip.get("id", ""))
 		if _is_tip_seen(tip_id):
@@ -128,13 +128,13 @@ func _pending_tip_id() -> String:
 
 
 func _required_app_opens() -> int:
-	if _pending_tip_id() == "head_floss":
+	if _next_tip_id() == "head_floss":
 		return HEAD_FLOSS_MIN_APP_OPENS
 	return MIN_APP_OPENS
 
 
 func _required_sound_opens() -> int:
-	if _pending_tip_id() == "head_floss":
+	if _next_tip_id() == "head_floss":
 		return HEAD_FLOSS_MIN_SOUND_OPENS
 	return MIN_SESSION_SOUND_OPENS
 

@@ -180,7 +180,7 @@ func _update_banner_inset() -> void:
 	var label := _banner_placeholder.get_node_or_null("Label") as Label
 	if label:
 		label.visible = preview
-		label.text = "Ad banner area" if AdsService.should_show_banner() else "Ad banner area (preview)"
+		label.text = tr("Ad banner area") if AdsService.should_show_banner() else tr("Ad banner area (preview)")
 
 
 func _build_now_playing() -> void:
@@ -224,7 +224,7 @@ func _build_now_playing() -> void:
 	_now_stop = Button.new()
 	_now_stop.focus_mode = Control.FOCUS_NONE
 	_now_stop.custom_minimum_size = Vector2(72, 40)
-	_now_stop.tooltip_text = "Stop"
+	_now_stop.tooltip_text = tr("Stop")
 	_now_stop.pressed.connect(_on_now_playing_stop)
 	if ResourceLoader.exists(ICON_STOP):
 		_now_stop.icon = load(ICON_STOP)
@@ -232,7 +232,7 @@ func _build_now_playing() -> void:
 		_now_stop.add_theme_constant_override("icon_max_width", 28)
 		_now_stop.text = ""
 	else:
-		_now_stop.text = "Stop"
+		_now_stop.text = tr("Stop")
 	UiLook.style_chip(_now_stop, true)
 	row.add_child(_now_stop)
 	add_child(_now_playing)
@@ -256,9 +256,9 @@ func _refresh_now_playing() -> void:
 	var show := _now_playing_visible()
 	if show:
 		var sound := AudioController.get_current_sound()
-		var name := str(sound.get("name", "Playing"))
+		var name := tr(str(sound.get("name", "Playing")))
 		_now_title.text = name
-		_now_title.tooltip_text = "Open %s" % name
+		_now_title.tooltip_text = tr("Open %s") % name
 		var left := AudioController.get_stop_seconds_left()
 		if left < 0:
 			_now_hint.text = ""
