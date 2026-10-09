@@ -45,6 +45,8 @@ var _scope_chips: Dictionary = {} ## id -> Button
 var _syncing_dev_menu: bool = false
 var _grid_gen: int = 0
 var _first_home_ready_emitted: bool = false
+var _play_again_scroll: ScrollContainer
+var _play_again_box: HBoxContainer
 
 enum DevMenuItem {
 	UNPAID = 0,
@@ -63,6 +65,8 @@ func _ready() -> void:
 	_features_dismiss.pressed.connect(_on_features_dismiss)
 	Entitlements.plus_changed.connect(_on_plus_changed)
 	Entitlements.temp_unlocks_changed.connect(_refresh_grid)
+	Entitlements.temp_unlocks_changed.connect(_rebuild_play_again)
+	visibility_changed.connect(_on_home_visibility_changed)
 	SoundCatalog.catalog_loaded.connect(_rebuild_filters)
 	SoundCatalog.catalog_loaded.connect(_refresh_grid)
 	resized.connect(_apply_responsive_layout)
@@ -76,6 +80,7 @@ func _ready() -> void:
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	_hide_scroll_bar(_scroll.get_v_scroll_bar())
 	_rebuild_filters()
+	_build_play_again()
 	_apply_responsive_layout()
 	if SoundCatalog.sounds.size() > 0:
 		_refresh_grid()
@@ -154,6 +159,7 @@ func _on_plus_changed(is_plus: bool) -> void:
 	_plus_btn.visible = not is_plus
 	_balance_top_bar()
 	_refresh_grid()
+	_rebuild_play_again()
 
 
 func _apply_responsive_layout() -> void:
@@ -205,6 +211,7 @@ func _style_filters(vs: Vector2) -> void:
 	var drop_font := DROPDOWN_FONT_TABLET if is_tablet else DROPDOWN_FONT_PHONE
 	var popup_font := POPUP_FONT_TABLET if is_tablet else POPUP_FONT_PHONE
 	UiLook.style_large_dropdown(_category_select, drop_h, drop_font, popup_font)
+	_rebuild_play_again()
 
 
 func _clear_row(row: HBoxContainer) -> void:
@@ -349,6 +356,129 @@ func _filtered_sounds() -> Array[Dictionary]:
 		if str(sound.get("category", "")) == _selected_sound_category:
 			filtered.append(sound)
 	return filtered
+
+
+func _on_home_visibility_changed() -> void:
+	if visible:
+		_rebuild_play_again()
+
+
+func _build_play_again() -> void:
+	_play_again_scroll = ScrollContainer.new()
+	_play_again_scroll.name = "PlayAgain"
+	_play_again_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_play_again_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_play_again_scroll.scroll_deadzone = 24
+	_play_again_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_play_again_box = HBoxContainer.new()
+	_play_again_box.add_theme_constant_override("separation", 8)
+	_play_again_scroll.add_child(_play_again_box)
+	var vbox := _category_select.get_parent()
+	vbox.add_child(_play_again_scroll)
+	vbox.move_child(_play_again_scroll, _category_select.get_index() + 1)
+	_hide_scroll_bar(_play_again_scroll.get_h_scroll_bar())
+	_hide_scroll_bar(_play_again_scroll.get_v_scroll_bar())
+	_rebuild_play_again()
+
+
+func _play_again_ok(sound: Dictionary) -> bool:
+	return not sound.is_empty() and SoundCatalog.is_sound_unlocked(sound)
+
+
+func _rebuild_play_again() -> void:
+	if _play_again_box == null:
+		return
+	for child in _play_again_box.get_children():
+		_play_again_box.remove_child(child)
+		child.queue_free()
+	var entries: Array[Dictionary] = []
+	var used := {}
+	var recents: Array[String] = LocalPrefs.recent_sound_ids
+	if not recents.is_empty():
+		var last := SoundCatalog.get_sound_by_id(recents[0])
+		if _play_again_ok(last):
+			entries.append({"sound": last, "slot": "last"})
+			used[recents[0]] = true
+	if LocalPrefs.favorites.is_empty():
+		var recent_added := 0
+		for recent_id in recents:
+			if used.has(recent_id) or recent_added >= 2:
+				continue
+			var recent_sound := SoundCatalog.get_sound_by_id(recent_id)
+			if not _play_again_ok(recent_sound):
+				continue
+			entries.append({"sound": recent_sound, "slot": "recent"})
+			used[recent_id] = true
+			recent_added += 1
+	else:
+		var ordered: Array[String] = []
+		for recent_id in recents:
+			if recent_id in LocalPrefs.favorites and not used.has(recent_id):
+				ordered.append(recent_id)
+		for i in range(LocalPrefs.favorites.size() - 1, -1, -1):
+			var fav_id := LocalPrefs.favorites[i]
+			if not used.has(fav_id) and ordered.find(fav_id) < 0:
+				ordered.append(fav_id)
+		var fav_added := 0
+		for fav_id in ordered:
+			if fav_added >= 3:
+				break
+			var fav_sound := SoundCatalog.get_sound_by_id(fav_id)
+			if not _play_again_ok(fav_sound):
+				continue
+			entries.append({"sound": fav_sound, "slot": "favorite"})
+			used[fav_id] = true
+			fav_added += 1
+	if entries.is_empty():
+		_play_again_scroll.visible = false
+		return
+	_play_again_scroll.visible = true
+	var caption := Label.new()
+	caption.text = tr("Play again")
+	caption.add_theme_font_size_override("font_size", 13)
+	caption.add_theme_color_override("font_color", Color(0.7, 0.78, 0.86, 1))
+	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_play_again_box.add_child(caption)
+	var vs := get_viewport_rect().size
+	var is_tablet := Responsive.is_tablet(vs)
+	var small_phone := vs.y < 740.0 and not is_tablet
+	var chip_h := 40.0 if small_phone else (CHIP_H_TABLET if is_tablet else CHIP_H_PHONE)
+	var font_size := 14 if small_phone else (CHIP_FONT_TABLET if is_tablet else CHIP_FONT_PHONE)
+	var min_w := 110.0 if is_tablet else 96.0
+	var max_w := 220.0 if is_tablet else 170.0
+	var position := 0
+	for entry in entries:
+		var sound: Dictionary = entry["sound"]
+		var slot := str(entry["slot"])
+		var sound_name := tr(str(sound.get("name", "")))
+		var btn := Button.new()
+		btn.text = sound_name
+		btn.clip_text = true
+		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		btn.tooltip_text = tr("Play %s") % sound_name
+		btn.focus_mode = Control.FOCUS_ALL
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		UiLook.style_chip(btn, slot == "last")
+		btn.add_theme_font_size_override("font_size", font_size)
+		var font := btn.get_theme_font("font")
+		var text_w := min_w
+		if font != null:
+			text_w = font.get_string_size(sound_name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		btn.custom_minimum_size = Vector2(clampf(text_w + 32.0, min_w, max_w), chip_h)
+		btn.pressed.connect(_on_play_again_pressed.bind(sound, slot, position))
+		_play_again_box.add_child(btn)
+		position += 1
+	_play_again_scroll.custom_minimum_size = Vector2(0, chip_h + 8.0)
+
+
+func _on_play_again_pressed(sound: Dictionary, slot: String, position: int) -> void:
+	HapticsService.tap()
+	AnalyticsService.log_event("play_again_tap", {
+		"sound_id": str(sound.get("id", "")),
+		"slot": slot,
+		"position": position,
+	})
+	get_tree().get_first_node_in_group("main_nav").call("show_player", sound)
 
 
 func _on_tile_pressed(sound: Dictionary) -> void:

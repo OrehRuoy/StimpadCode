@@ -937,6 +937,20 @@
     "pt_BR": "Reproduzir",
     "ja": "再生"
   },
+  "Play %s": {
+    "de": "%s abspielen",
+    "es": "Reproducir %s",
+    "fr": "Lire %s",
+    "pt_BR": "Reproduzir %s",
+    "ja": "%sを再生"
+  },
+  "Play again": {
+    "de": "Nochmal spielen",
+    "es": "Reproducir de nuevo",
+    "fr": "Rejouer",
+    "pt_BR": "Tocar de novo",
+    "ja": "もう一度"
+  },
   "Playing": {
     "de": "Wiedergabe",
     "es": "Reproduciendo",
