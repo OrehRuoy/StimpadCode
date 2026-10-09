@@ -27,6 +27,8 @@ var _press_tween: Tween
 var _play_ripple_timer: Timer
 var _timer_row: HFlowContainer
 var _timer_buttons: Dictionary = {}
+var _preview_mode := false
+var _preview_label: Label
 
 
 func _ready() -> void:
@@ -56,6 +58,69 @@ func _ready() -> void:
 	_refresh_repeat_btn()
 	_refresh_timer_chips()
 	_set_play_stop_visual(false)
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if not _preview_mode or _preview_label == null:
+		return
+	var left := AudioController.get_preview_seconds_left()
+	var text := tr("Preview · %s") % ("%d:%02d" % [int(left / 60), left % 60])
+	if _preview_label.text != text:
+		_preview_label.text = text
+
+
+func open_preview(sound: Dictionary) -> void:
+	close_preview()
+	_preview_mode = true
+	_sound = sound
+	_title.text = tr(str(sound.get("name", "")))
+	var art_path: String = str(sound.get("art", ""))
+	if art_path != "" and ResourceLoader.exists(art_path):
+		_art.texture = load(art_path)
+	else:
+		_art.texture = null
+	_ensure_preview_label()
+	_preview_label.visible = true
+	_favorite_btn.visible = false
+	_repeat_btn.visible = false
+	if _timer_row != null:
+		_timer_row.visible = false
+	_rate_panel.visible = false
+	_set_play_stop_visual(true)
+	_apply_art_frame(true)
+	_start_breathe()
+
+
+func close_preview() -> void:
+	if _preview_label != null:
+		_preview_label.visible = false
+	var was_preview := _preview_mode
+	_preview_mode = false
+	if not was_preview:
+		return
+	_favorite_btn.visible = true
+	_repeat_btn.visible = true
+	if _timer_row != null:
+		_timer_row.visible = true
+	_refresh_timer_chips()
+	_refresh_repeat_btn()
+	_refresh_rate_controls()
+	_refresh_favorite_icon()
+	_set_play_stop_visual(false)
+	_apply_art_frame(false)
+	_stop_breathe()
+
+
+func _ensure_preview_label() -> void:
+	if _preview_label != null:
+		return
+	_preview_label = Label.new()
+	_preview_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_preview_label.add_theme_font_size_override("font_size", 14)
+	_preview_label.add_theme_color_override("font_color", Color(0.7, 0.78, 0.86, 1))
+	_vbox.add_child(_preview_label)
+	_vbox.move_child(_preview_label, _title.get_index() + 1)
 
 
 func _style_controls() -> void:
@@ -120,6 +185,8 @@ func _apply_responsive_layout() -> void:
 
 
 func open_sound(sound: Dictionary) -> void:
+	if _preview_mode:
+		close_preview()
 	_sound = sound
 	_title.text = tr(str(sound.get("name", "")))
 	var art_path: String = str(sound.get("art", ""))
@@ -292,6 +359,10 @@ func _on_play_press_up() -> void:
 
 
 func _on_play_stop() -> void:
+	if _preview_mode:
+		HapticsService.tap()
+		AudioController.stop()
+		return
 	if _is_playing:
 		HapticsService.tap()
 		AudioController.stop()

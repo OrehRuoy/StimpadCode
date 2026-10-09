@@ -37,6 +37,8 @@ var app_open_count: int = 0
 var enjoy_prompt_completed: bool = false
 var enjoy_prompt_snooze_until: int = 0
 var enjoy_prompt_last_shown_unix: int = 0
+var preview_day: String = ""
+var previewed_ids: Array[String] = []
 
 
 func _ready() -> void:
@@ -88,6 +90,8 @@ func load_prefs() -> void:
 	enjoy_prompt_completed = bool(parsed.get("enjoy_prompt_completed", false))
 	enjoy_prompt_snooze_until = int(parsed.get("enjoy_prompt_snooze_until", 0))
 	enjoy_prompt_last_shown_unix = int(parsed.get("enjoy_prompt_last_shown_unix", 0))
+	preview_day = str(parsed.get("preview_day", ""))
+	previewed_ids = _to_string_array(parsed.get("previewed_ids", []))
 	if parsed.has("last_scope"):
 		last_scope = str(parsed.get("last_scope", "All"))
 		last_sound_category = str(parsed.get("last_sound_category", "All"))
@@ -128,12 +132,36 @@ func save_prefs() -> void:
 		"enjoy_prompt_completed": enjoy_prompt_completed,
 		"enjoy_prompt_snooze_until": enjoy_prompt_snooze_until,
 		"enjoy_prompt_last_shown_unix": enjoy_prompt_last_shown_unix,
+		"preview_day": preview_day,
+		"previewed_ids": previewed_ids,
 	}
 	var file := FileAccess.open(PREFS_PATH, FileAccess.WRITE)
 	if file == null:
 		return
 	file.store_string(JSON.stringify(data, "\t"))
 	file.close()
+
+
+func _today_key() -> String:
+	var d := Time.get_date_dict_from_system()
+	return "%04d-%02d-%02d" % [int(d.year), int(d.month), int(d.day)]
+
+
+func can_preview_today(sound_id: String) -> bool:
+	if preview_day != _today_key():
+		preview_day = _today_key()
+		previewed_ids.clear()
+		return true
+	return not (sound_id in previewed_ids)
+
+
+func mark_previewed_today(sound_id: String) -> void:
+	if preview_day != _today_key():
+		preview_day = _today_key()
+		previewed_ids.clear()
+	if not (sound_id in previewed_ids):
+		previewed_ids.append(sound_id)
+	save_prefs()
 
 
 func note_app_open() -> void:

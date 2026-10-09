@@ -22,6 +22,7 @@ var _now_playing: PanelContainer
 var _now_title: Button
 var _now_stop: Button
 var _now_hint: Label
+var _preview_started_unix: float = 0.0
 
 
 func _ready() -> void:
@@ -36,6 +37,7 @@ func _ready() -> void:
 	AdsService.banner_visibility_changed.connect(_on_banner_visibility_changed)
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
 	get_viewport().size_changed.connect(_update_banner_inset)
+	AudioController.preview_finished.connect(_on_preview_finished)
 	_update_banner_inset()
 	AnalyticsService.log_app_open()
 	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
@@ -101,6 +103,8 @@ func is_home_visible() -> bool:
 
 
 func show_home() -> void:
+	if AudioController.is_previewing():
+		AudioController.end_preview("cancel")
 	AdsService.try_show_interstitial_on_safe_exit()
 	_show_screen(_home)
 	AnalyticsService.log_screen("home")
@@ -110,7 +114,8 @@ func show_home() -> void:
 
 func show_player(sound: Dictionary) -> void:
 	if not SoundCatalog.is_sound_unlocked(sound):
-		show_paywall(sound)
+		if not _try_start_preview(sound):
+			show_paywall(sound)
 		return
 	var reopening := (
 		AudioController.is_playing()
@@ -125,6 +130,8 @@ func show_player(sound: Dictionary) -> void:
 
 
 func show_settings() -> void:
+	if AudioController.is_previewing():
+		AudioController.end_preview("cancel")
 	AdsService.try_show_interstitial_on_safe_exit()
 	_show_screen(_settings)
 	AnalyticsService.log_screen("settings")
@@ -149,6 +156,50 @@ func show_feedback(return_to_settings: bool = true) -> void:
 	if _feedback.has_method("open"):
 		_feedback.call("open", return_to_settings)
 	AnalyticsService.log_screen("feedback")
+
+
+func _try_start_preview(sound: Dictionary) -> bool:
+	if Entitlements.has_plus() or SoundCatalog.is_sound_unlocked(sound) or AudioController.is_playing():
+		return false
+	var sound_id := str(sound.get("id", ""))
+	if not LocalPrefs.can_preview_today(sound_id):
+		return false
+	LocalPrefs.mark_previewed_today(sound_id)
+	_show_screen(_player)
+	_player.call("open_preview", sound)
+	AnalyticsService.log_screen("player")
+	if not AudioController.play_preview(sound):
+		_player.call("close_preview")
+		show_paywall(sound)
+		return true
+	_preview_started_unix = Time.get_unix_time_from_system()
+	AnalyticsService.log_event("preview_started", {
+		"sound_id": sound_id,
+		"tier": str(sound.get("tier", "")),
+	})
+	return true
+
+
+func _on_preview_finished(sound_id: String, reason: String) -> void:
+	var duration := 0.0
+	if _preview_started_unix > 0.0:
+		duration = minf(float(AudioController.PREVIEW_SECONDS), Time.get_unix_time_from_system() - _preview_started_unix)
+	_preview_started_unix = 0.0
+	AnalyticsService.log_event("preview_ended", {
+		"sound_id": sound_id,
+		"reason": reason,
+		"duration_sec": snappedf(maxf(duration, 0.0), 0.1),
+	})
+	_player.call("close_preview")
+	if reason == "timeout" or reason == "stop":
+		show_paywall(SoundCatalog.get_sound_by_id(sound_id), "preview_ended")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if AudioController.is_previewing():
+			AudioController.end_preview("cancel")
+			_show_screen(_home)
 
 
 func _show_screen(screen: Control) -> void:

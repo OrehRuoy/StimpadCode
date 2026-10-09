@@ -1455,12 +1455,19 @@
     "pt_BR": "Desbloqueie “%s” ou assine o Plus",
     "ja": "「%s」を解除するか Plus にする"
   },
-  "Unlock 70+ stim sounds and remove ads.": {
-    "de": "Schalte über 70 Stim-Sounds frei und entferne die Werbung.",
-    "es": "Desbloquea más de 70 sonidos stim y quita los anuncios.",
-    "fr": "Débloquez plus de 70 sons stim et retirez les pubs.",
-    "pt_BR": "Desbloqueie mais de 70 sons stim e remova os anúncios.",
-    "ja": "70以上の刺激音を解除して、広告を消します。"
+  "Preview · %s": {
+    "de": "Vorschau · %s",
+    "es": "Vista previa · %s",
+    "fr": "Aperçu · %s",
+    "pt_BR": "Prévia · %s",
+    "ja": "プレビュー · %s"
+  },
+  "Unlock all %d sounds (%d free, %d with Plus) and remove ads.": {
+    "de": "Schalte alle %d Sounds frei (%d kostenlos, %d mit Plus) und entferne die Werbung.",
+    "es": "Desbloquea los %d sonidos (%d gratis, %d con Plus) y quita los anuncios.",
+    "fr": "Débloquez les %d sons (%d gratuits, %d avec Plus) et retirez les pubs.",
+    "pt_BR": "Desbloqueie todos os %d sons (%d grátis, %d com Plus) e remova os anúncios.",
+    "ja": "全%d音を解除（無料%d、Plusで%d）して、広告を消します。"
   },
   "Unlock all": {
     "de": "Alles frei",

@@ -189,7 +189,9 @@ func _refresh() -> void:
 			_watch_hint.text = tr("Unlock until midnight")
 	else:
 		_subtitle.text = tr("All sounds · No ads · One purchase")
-		_status.text = tr("Unlock 70+ stim sounds and remove ads.")
+		var total := SoundCatalog.sounds.size()
+		var free_count := SoundCatalog.get_free_sounds().size()
+		_status.text = tr("Unlock all %d sounds (%d free, %d with Plus) and remove ads.") % [total, free_count, total - free_count]
 
 
 func _on_watch_ad() -> void:

@@ -4,6 +4,9 @@ signal playback_started(sound_id: String)
 signal playback_stopped(sound_id: String)
 signal playback_finished(sound_id: String)
 signal session_duration_changed(seconds: int)
+signal preview_finished(sound_id: String, reason: String)
+
+const PREVIEW_SECONDS := 8
 
 ## 0 = until the user hits Stop. Other values are minutes, stored in seconds.
 const DURATION_UNTIL_STOP := 0
@@ -20,6 +23,9 @@ var _loop_pass_pending: bool = false
 var _play_started_msec: int = 0
 var _listen_accum_sec := 0.0
 var _listen_30_logged := false
+var _previewing := false
+var _preview_end_unix := 0
+var _preview_timer: Timer
 
 
 func _ready() -> void:
@@ -34,13 +40,17 @@ func _ready() -> void:
 	_session_timer.one_shot = true
 	_session_timer.timeout.connect(_on_session_timer_timeout)
 	add_child(_session_timer)
+	_preview_timer = Timer.new()
+	_preview_timer.one_shot = true
+	_preview_timer.timeout.connect(func() -> void: end_preview("timeout"))
+	add_child(_preview_timer)
 	set_process(true)
 	apply_sfx_volume(LocalPrefs.sfx_volume)
 
 
 func _process(delta: float) -> void:
 	_check_stop_deadline()
-	if _player != null and _player.playing:
+	if _player != null and _player.playing and not _previewing:
 		_listen_accum_sec += minf(delta, 0.5)
 		if not _listen_30_logged and _listen_accum_sec >= 30.0:
 			_listen_30_logged = true
@@ -111,6 +121,8 @@ func get_current_sound() -> Dictionary:
 func play_sound(sound: Dictionary) -> void:
 	if sound.is_empty():
 		return
+	if _previewing:
+		end_preview("cancel")
 	if is_playing() and str(_current_sound.get("id", "")) != str(sound.get("id", "")):
 		stop()
 	_current_sound = sound
@@ -183,7 +195,57 @@ func replay_current() -> void:
 	play_sound(_current_sound)
 
 
+func is_previewing() -> bool:
+	return _previewing
+
+
+func get_preview_seconds_left() -> int:
+	if not _previewing:
+		return 0
+	return maxi(0, _preview_end_unix - int(Time.get_unix_time_from_system()))
+
+
+func play_preview(sound: Dictionary) -> bool:
+	if is_playing() or sound.is_empty():
+		return false
+	var path: String = str(sound.get("path", ""))
+	if path.is_empty() or not ResourceLoader.exists(path):
+		return false
+	var stream: AudioStream = load(path)
+	if stream == null:
+		return false
+	if stream.has_method("duplicate"):
+		stream = stream.duplicate()
+	_current_sound = sound
+	_enable_stream_loop(stream)
+	_clear_stop_timer()
+	_player.stream = stream
+	_previewing = true
+	_preview_end_unix = int(Time.get_unix_time_from_system()) + PREVIEW_SECONDS
+	_preview_timer.start(float(PREVIEW_SECONDS))
+	_player.play()
+	_player.pitch_scale = clampf(LocalPrefs.playback_rate, 0.5, 1.5)
+	playback_started.emit(str(sound.get("id", "")))
+	return true
+
+
+func end_preview(reason: String) -> void:
+	if not _previewing:
+		return
+	var sound_id := str(_current_sound.get("id", ""))
+	_player.stop()
+	_preview_timer.stop()
+	_previewing = false
+	_preview_end_unix = 0
+	_current_sound = {}
+	playback_stopped.emit(sound_id)
+	preview_finished.emit(sound_id, reason)
+
+
 func stop() -> void:
+	if _previewing:
+		end_preview("stop")
+		return
 	if not is_playing() and _current_sound.is_empty():
 		return
 	var stopped := _current_sound.duplicate()
@@ -229,6 +291,9 @@ func _clear_stop_timer() -> void:
 
 
 func _check_stop_deadline() -> void:
+	if _previewing and int(Time.get_unix_time_from_system()) >= _preview_end_unix:
+		end_preview("timeout")
+		return
 	if _stop_at_unix <= 0 or not is_playing():
 		return
 	if int(Time.get_unix_time_from_system()) >= _stop_at_unix:
@@ -252,6 +317,8 @@ func _on_session_timer_timeout() -> void:
 
 
 func _on_player_finished() -> void:
+	if _previewing:
+		return
 	var finished_id := str(_current_sound.get("id", ""))
 	if finished_id.is_empty():
 		return
