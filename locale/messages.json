@@ -1021,6 +1021,27 @@
     "pt_BR": "Chuva no telhado",
     "ja": "トタン屋根の雨"
   },
+  "OK": {
+    "de": "OK",
+    "es": "OK",
+    "fr": "OK",
+    "pt_BR": "OK",
+    "ja": "OK"
+  },
+  "Thank you!": {
+    "de": "Danke!",
+    "es": "¡Gracias!",
+    "fr": "Merci !",
+    "pt_BR": "Obrigado!",
+    "ja": "ありがとう！"
+  },
+  "You can rate StimPad anytime in Settings > Rate StimPad.": {
+    "de": "Du kannst StimPad jederzeit unter Einstellungen > StimPad bewerten.",
+    "es": "Puedes valorar StimPad cuando quieras en Ajustes > Valorar StimPad.",
+    "fr": "Vous pouvez noter StimPad quand vous voulez dans Réglages > Noter StimPad.",
+    "pt_BR": "Você pode avaliar o StimPad quando quiser em Ajustes > Avaliar o StimPad.",
+    "ja": "StimPadの評価は、設定 > StimPadを評価 からいつでもできます。"
+  },
   "Rate StimPad": {
     "de": "StimPad bewerten",
     "es": "Valorar StimPad",

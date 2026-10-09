@@ -123,7 +123,6 @@ func show_player(sound: Dictionary) -> void:
 		and AudioController.get_current_sound_id() == str(sound.get("id", ""))
 	)
 	if not reopening:
-		EnjoyPromptService.note_sound_opened()
 		FeatureTipService.note_sound_opened()
 	_show_screen(_player)
 	_player.call("open_sound", sound)

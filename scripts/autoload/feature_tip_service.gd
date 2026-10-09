@@ -52,6 +52,10 @@ var _pending_tip_id: String = ""
 var _shown_this_session: bool = false
 
 
+func is_showing() -> bool:
+	return _tip != null and is_instance_valid(_tip)
+
+
 func note_sound_opened() -> void:
 	_session_sound_opens += 1
 

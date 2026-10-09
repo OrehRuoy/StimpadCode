@@ -2,10 +2,9 @@ extends Node
 ## Schedules the “Are you enjoying StimPad?” prompt and owns the overlay instance.
 ##
 ## Timing:
-## - Eligible from the 3rd app open (no extra day wait — most people never return)
+## - Eligible from the 2nd app open (never the first)
 ## - Never on cold launch / idle home wait
-## - After the user has opened 2 sound tiles this session, then returns to Home
-##   (natural pause — not mid-listen)
+## - After one sound has been listened to for 45 seconds, then the user returns Home
 ## Apple still rate-limits the actual review sheet.
 ##
 ## IMPORTANT: do not preload enjoy_prompt.tscn here — that scene’s script
@@ -16,10 +15,8 @@ signal prompt_visibility_changed(visible: bool)
 const PROMPT_SCENE_PATH := "res://scenes/ui/enjoy_prompt.tscn"
 ## Brief beat after returning home so the grid settles (and ads can clear).
 const HOME_SETTLE_SEC := 1.4
-## Ask on the 3rd launch. Apple already limits how often the sheet can appear.
-const MIN_APP_OPENS := 3
-## Need this many sound-tile opens in the current session before asking.
-const MIN_SESSION_SOUND_OPENS := 2
+## Ask from the 2nd launch. Never the first. Apple still limits the sheet.
+const MIN_APP_OPENS := 2
 ## After dismissing with X, wait before asking again.
 const SNOOZE_DISMISS_SEC := 60 * 60 * 24 * 5
 ## After “No” (+ feedback), wait a week — they may change their mind.
@@ -28,23 +25,21 @@ const SNOOZE_NO_SEC := 60 * 60 * 24 * 7
 var _prompt: Control = null
 var _delay_timer: SceneTreeTimer = null
 var _force_next := false
-var _session_sound_opens: int = 0
+var _qualified_listen := false
 
 
 func _ready() -> void:
 	LocalPrefs.note_app_open()
-
-
-## Call when the user opens a sound’s player (tile tap → player).
-func note_sound_opened() -> void:
-	_session_sound_opens += 1
+	AudioController.listened_enough.connect(func(_sound_id: String) -> void:
+		_qualified_listen = true
+	)
 
 
 ## Call when navigating back to Home — may show the prompt after settle delay.
 func on_returned_home() -> void:
 	if not _should_offer():
 		return
-	if not _force_next and _session_sound_opens < MIN_SESSION_SOUND_OPENS:
+	if not _force_next and not _qualified_listen:
 		return
 	_cancel_delay()
 	_delay_timer = get_tree().create_timer(HOME_SETTLE_SEC)
@@ -79,9 +74,15 @@ func _on_settle_elapsed() -> void:
 	_delay_timer = null
 	if not _should_offer():
 		return
-	if not _force_next and _session_sound_opens < MIN_SESSION_SOUND_OPENS:
+	if not _force_next and not _qualified_listen:
+		return
+	if AdsService.is_fullscreen_ad_showing() or FeatureTipService.is_showing():
 		return
 	var nav := get_tree().get_first_node_in_group("main_nav")
+	if nav != null:
+		var paywall := nav.get_node_or_null("Screens/PaywallScreen")
+		if paywall != null and paywall.visible:
+			return
 	if nav == null:
 		return
 	if nav.has_method("is_home_visible") and not nav.call("is_home_visible"):
@@ -109,7 +110,7 @@ func _show_prompt() -> void:
 	_force_next = false
 	LocalPrefs.mark_enjoy_prompt_shown()
 	AnalyticsService.log_event("enjoy_prompt_shown", {
-		"session_sound_opens": _session_sound_opens,
+		"qualified_listen": true,
 	})
 	prompt_visibility_changed.emit(true)
 

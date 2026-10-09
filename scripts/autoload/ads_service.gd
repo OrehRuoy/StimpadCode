@@ -80,6 +80,7 @@ var _banner_mounted: bool = false
 var _banner_keep_alive_armed: bool = false
 var _banner_keep_alive_gen: int = 0
 var _pending_reward_active: bool = false
+var _fullscreen_ad_since_unix: float = 0.0
 var _reward_earned_pending: bool = false
 ## Main UI (home grid) finished first paint — set via notify_ui_ready().
 var _ui_ready: bool = false
@@ -233,6 +234,7 @@ func try_show_interstitial_on_safe_exit() -> void:
 		_preload_interstitial()
 		return
 	_interstitial_ready = false
+	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 	_admob.show_interstitial_ad()
 
 
@@ -276,6 +278,7 @@ func try_show_rewarded_for_library() -> void:
 	_reward_earned_pending = false
 	_apply_request_config_before_ad_load()
 	if _rewarded_ready:
+		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 		return
@@ -285,6 +288,7 @@ func try_show_rewarded_for_library() -> void:
 	if not _pending_reward_active:
 		return
 	if loaded and _admob and _rewarded_ready:
+		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 	elif _rewarded_load_in_flight:
@@ -714,18 +718,29 @@ func _on_interstitial_failed_to_load(_ad_info, error) -> void:
 	)
 
 
+func is_fullscreen_ad_showing() -> bool:
+	if _fullscreen_ad_since_unix <= 0.0:
+		return false
+	if Time.get_unix_time_from_system() - _fullscreen_ad_since_unix > 180.0:
+		return false
+	return true
+
+
 func _on_interstitial_showed(_ad_info) -> void:
+	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 	_last_interstitial_unix = Time.get_unix_time_from_system()
 	_preload_interstitial()
 
 
 func _on_interstitial_failed_to_show(_ad_info, error) -> void:
+	_fullscreen_ad_since_unix = 0.0
 	_interstitial_ready = false
 	_log_ad_error("interstitial show", error)
 	_preload_interstitial()
 
 
 func _on_interstitial_dismissed(_ad_info) -> void:
+	_fullscreen_ad_since_unix = 0.0
 	_preload_interstitial()
 	keep_banner_visible()
 
@@ -806,6 +821,7 @@ func _on_rewarded_earned(_ad_info, _reward) -> void:
 
 
 func _on_rewarded_dismissed(_ad_info) -> void:
+	_fullscreen_ad_since_unix = 0.0
 	var active := _pending_reward_active
 	var earned := _reward_earned_pending
 	_pending_reward_active = false
@@ -839,6 +855,7 @@ func _on_rewarded_failed_to_load(_ad_info, error) -> void:
 
 
 func _on_rewarded_failed_to_show(_ad_info, error) -> void:
+	_fullscreen_ad_since_unix = 0.0
 	_pending_reward_active = false
 	_reward_earned_pending = false
 	_rewarded_ready = false

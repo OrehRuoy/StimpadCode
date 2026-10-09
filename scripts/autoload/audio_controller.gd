@@ -5,8 +5,10 @@ signal playback_stopped(sound_id: String)
 signal playback_finished(sound_id: String)
 signal session_duration_changed(seconds: int)
 signal preview_finished(sound_id: String, reason: String)
+signal listened_enough(sound_id: String)
 
 const PREVIEW_SECONDS := 8
+const LISTEN_ENOUGH_SEC := 45.0
 
 ## 0 = until the user hits Stop. Other values are minutes, stored in seconds.
 const DURATION_UNTIL_STOP := 0
@@ -23,6 +25,7 @@ var _loop_pass_pending: bool = false
 var _play_started_msec: int = 0
 var _listen_accum_sec := 0.0
 var _listen_30_logged := false
+var _listen_enough_logged := false
 var _previewing := false
 var _preview_end_unix := 0
 var _preview_timer: Timer
@@ -58,6 +61,9 @@ func _process(delta: float) -> void:
 				"sound_id": str(_current_sound.get("id", "")),
 				"mode": str(_current_sound.get("mode", "")),
 			})
+		if not _listen_enough_logged and _listen_accum_sec >= LISTEN_ENOUGH_SEC:
+			_listen_enough_logged = true
+			listened_enough.emit(str(_current_sound.get("id", "")))
 
 
 func _notification(what: int) -> void:
@@ -155,6 +161,7 @@ func play_sound(sound: Dictionary) -> void:
 	_play_started_msec = Time.get_ticks_msec()
 	_listen_accum_sec = 0.0
 	_listen_30_logged = false
+	_listen_enough_logged = false
 	playback_started.emit(str(sound.get("id", "")))
 	var sound_id := str(sound.get("id", ""))
 	if LocalPrefs.recent_sound_ids.is_empty():
@@ -263,6 +270,7 @@ func stop() -> void:
 	_play_started_msec = 0
 	_listen_accum_sec = 0.0
 	_listen_30_logged = false
+	_listen_enough_logged = false
 	_current_sound = {}
 	if not stopped_id.is_empty():
 		AnalyticsService.log_sound_stop(stopped, duration_sec)

@@ -10,11 +10,6 @@ const IOS_APP_STORE_ID := "6796806236"
 const ANDROID_PACKAGE := "com.stimpad.soundboard"
 
 var _inapp_review: Node = null
-var _busy := false
-
-
-func _ready() -> void:
-	call_deferred("_try_bind_plugin")
 
 
 ## Explicit Rate action. Always opens the store write-review page.
@@ -23,61 +18,31 @@ func open_write_review() -> void:
 	_fallback_store_url()
 
 
-func request_review() -> void:
-	if _busy:
-		return
-	_busy = true
-	AnalyticsService.log_event("review_request_attempted", {"os": AppInfo.os_label()})
-	var ok := false
+func request_review() -> bool:
 	if OS.has_feature("ios"):
-		ok = await _request_ios()
-	elif OS.has_feature("android"):
-		ok = await _request_android()
-	else:
-		print("[ReviewService] In-app review (editor/desktop stub)")
-		ok = true
-		review_requested.emit("editor_stub")
-	if not ok:
-		_fallback_store_url()
-	_busy = false
+		return _request_ios_sheet()
+	if OS.has_feature("android"):
+		var ok: bool = await _request_android()
+		if not ok:
+			_fallback_store_url()
+		return ok
+	print("[ReviewService] In-app review (editor/desktop stub)")
+	review_requested.emit("editor_stub")
+	return true
 
 
-func _try_bind_plugin() -> void:
-	if ClassDB.class_exists("InappReview"):
-		_inapp_review = ClassDB.instantiate("InappReview")
-		if _inapp_review:
-			add_child(_inapp_review)
-			print("[ReviewService] Bound InappReview plugin")
-			return
-	## Some builds expose an autoload / singleton instead of a class.
-	if Engine.has_singleton("InappReview"):
-		_inapp_review = Engine.get_singleton("InappReview")
-		print("[ReviewService] Bound InappReview singleton")
-
-
-func _request_ios() -> bool:
-	if _inapp_review != null:
-		return await _launch_inapp_review_plugin()
-	if Engine.has_singleton("RequestReview"):
-		var s = Engine.get_singleton("RequestReview")
-		if s != null and s.has_method("requestReview"):
-			s.requestReview()
-			review_requested.emit("RequestReview")
-			return true
-		if s != null and s.has_method("request_review"):
-			s.request_review()
-			review_requested.emit("RequestReview")
-			return true
-	## StoreKitManager from GodotApplePlugins — method name varies by version.
+func _request_ios_sheet() -> bool:
+	if Engine.has_singleton("InappReviewPlugin"):
+		Engine.get_singleton("InappReviewPlugin").launch_review_flow()
+		AnalyticsService.log_event("review_request_attempted", {"method": "inapp_plugin"})
+		return true
 	if ClassDB.class_exists("StoreKitManager"):
 		var mgr = ClassDB.instantiate("StoreKitManager")
-		if mgr != null:
-			for method_name in ["request_review", "requestReview", "request_app_review"]:
-				if mgr.has_method(method_name):
-					mgr.call(method_name)
-					review_requested.emit(method_name)
-					return true
-	push_warning("ReviewService: no iOS in-app review plugin — using store URL fallback if configured")
+		if mgr != null and mgr.has_method("request_review"):
+			mgr.call("request_review")
+			AnalyticsService.log_event("review_request_attempted", {"method": "storekit_manager"})
+			return true
+	AnalyticsService.log_event("review_request_unavailable", {})
 	return false
 
 

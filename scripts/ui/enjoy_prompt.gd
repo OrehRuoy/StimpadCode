@@ -109,8 +109,16 @@ func _on_yes() -> void:
 		return
 	LocalPrefs.mark_enjoy_prompt_completed()
 	AnalyticsService.log_event("enjoy_yes", {})
-	ReviewService.request_review()
-	_finish()
+	var ok: bool = await ReviewService.request_review()
+	if ok:
+		_finish()
+	else:
+		_title.text = tr("Thank you!")
+		_subtitle.text = tr("You can rate StimPad anytime in Settings > Rate StimPad.")
+		_no_btn.visible = false
+		_yes_btn.text = tr("OK")
+		_yes_btn.pressed.disconnect(_on_yes)
+		_yes_btn.pressed.connect(_finish)
 
 
 func _on_no() -> void:
