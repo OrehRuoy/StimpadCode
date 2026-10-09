@@ -38,6 +38,7 @@ func _ready() -> void:
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
 	get_viewport().size_changed.connect(_update_banner_inset)
 	AudioController.preview_finished.connect(_on_preview_finished)
+	Entitlements.library_unlock_ended.connect(_on_library_unlock_ended)
 	_update_banner_inset()
 	AnalyticsService.log_app_open()
 	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
@@ -140,7 +141,7 @@ func show_settings() -> void:
 func show_paywall(for_sound: Dictionary = {}, reason: String = "") -> void:
 	IAPService.ensure_store_started()
 	_show_screen(_paywall)
-	_paywall.call("open_for_sound", for_sound)
+	_paywall.call("open_for_sound", for_sound, reason)
 	var why := reason
 	if why.is_empty():
 		why = "locked_sound" if not for_sound.is_empty() else "plus_button"
@@ -193,6 +194,16 @@ func _on_preview_finished(sound_id: String, reason: String) -> void:
 	_player.call("close_preview")
 	if reason == "timeout" or reason == "stop":
 		show_paywall(SoundCatalog.get_sound_by_id(sound_id), "preview_ended")
+
+
+func _on_library_unlock_ended(reason: String) -> void:
+	if reason == "plus_purchased":
+		return
+	var sound := AudioController.get_current_sound()
+	if AudioController.is_playing() and not sound.is_empty() and not SoundCatalog.is_sound_unlocked(sound):
+		AudioController.stop()
+		if _current_screen == _player or _current_screen == _home or _current_screen == _paywall:
+			show_paywall(sound, "library_window_ended")
 
 
 func _notification(what: int) -> void:

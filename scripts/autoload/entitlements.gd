@@ -2,19 +2,25 @@ extends Node
 
 signal plus_changed(is_plus: bool)
 signal temp_unlocks_changed
+signal library_unlock_ended(reason: String)
 
 const ENTITLEMENTS_PATH := "user://stimpad_entitlements.json"
 const PRODUCT_ID := "com.stimpad.soundboard.plus"
+const LIBRARY_UNLOCK_SEC := 20 * 60
 
 var _has_plus: bool = false
-## sound_id -> local calendar day key "YYYY-MM-DD" (unlock lasts for that day).
-var _temp_unlocks: Dictionary = {}
 
 
 func _ready() -> void:
 	load_state()
 	IAPService.purchase_restored.connect(_on_purchase_restored)
 	IAPService.purchase_completed.connect(_on_purchase_completed)
+	if LocalPrefs.library_unlock_until_unix > 0 and int(Time.get_unix_time_from_system()) >= LocalPrefs.library_unlock_until_unix:
+		LocalPrefs.library_unlock_until_unix = 0
+		LocalPrefs.library_unlock_started_unix = 0
+		LocalPrefs.save_prefs()
+	elif _window_still_valid():
+		set_process(true)
 
 
 func has_plus() -> bool:
@@ -24,12 +30,15 @@ func has_plus() -> bool:
 func grant_plus() -> void:
 	if _has_plus:
 		return
+	var window_was_active := _window_still_valid()
 	_has_plus = true
-	_temp_unlocks.clear()
 	save_state()
 	plus_changed.emit(true)
-	temp_unlocks_changed.emit()
 	AdsService.set_ads_enabled(false)
+	if window_was_active:
+		_end_library_unlock("plus_purchased")
+	else:
+		temp_unlocks_changed.emit()
 
 
 func revoke_plus_for_debug() -> void:
@@ -48,17 +57,41 @@ func set_plus_for_debug(enabled: bool) -> void:
 
 
 func is_temp_unlocked(sound_id: String) -> bool:
-	if sound_id.is_empty() or _has_plus:
+	return not sound_id.is_empty() and is_library_unlocked()
+
+
+func is_library_unlocked() -> bool:
+	if _has_plus:
 		return false
-	_prune_expired_temp_unlocks()
-	return str(_temp_unlocks.get(sound_id, "")) == _today_key()
+	if _clock_changed():
+		_end_library_unlock("clock_changed")
+		return false
+	return LocalPrefs.library_unlock_until_unix > int(Time.get_unix_time_from_system())
 
 
-func grant_temp_unlock(sound_id: String) -> void:
-	if sound_id.is_empty() or _has_plus:
+func library_unlock_seconds_left() -> int:
+	if not is_library_unlocked():
+		return 0
+	return maxi(0, LocalPrefs.library_unlock_until_unix - int(Time.get_unix_time_from_system()))
+
+
+func can_start_library_unlock() -> bool:
+	return not _has_plus and not is_library_unlocked() and LocalPrefs.library_unlock_last_day != _today_key()
+
+
+func library_used_today() -> bool:
+	return LocalPrefs.library_unlock_last_day == _today_key()
+
+
+func grant_library_unlock() -> void:
+	if _has_plus:
 		return
-	_temp_unlocks[sound_id] = _today_key()
-	save_state()
+	var now := int(Time.get_unix_time_from_system())
+	LocalPrefs.library_unlock_started_unix = now
+	LocalPrefs.library_unlock_until_unix = now + LIBRARY_UNLOCK_SEC
+	LocalPrefs.library_unlock_last_day = _today_key()
+	LocalPrefs.save_prefs()
+	set_process(true)
 	temp_unlocks_changed.emit()
 
 
@@ -67,19 +100,50 @@ func _today_key() -> String:
 	return "%04d-%02d-%02d" % [int(d.year), int(d.month), int(d.day)]
 
 
-func _prune_expired_temp_unlocks() -> void:
-	var today := _today_key()
-	var changed := false
-	var keep: Dictionary = {}
-	for sound_id in _temp_unlocks.keys():
-		if str(_temp_unlocks[sound_id]) == today:
-			keep[sound_id] = _temp_unlocks[sound_id]
-		else:
-			changed = true
-	if changed:
-		_temp_unlocks = keep
-		save_state()
-		temp_unlocks_changed.emit()
+func _window_still_valid() -> bool:
+	var now := int(Time.get_unix_time_from_system())
+	if LocalPrefs.library_unlock_until_unix <= now:
+		return false
+	if _clock_changed():
+		return false
+	return true
+
+
+func _clock_changed() -> bool:
+	var now := int(Time.get_unix_time_from_system())
+	var started := LocalPrefs.library_unlock_started_unix
+	var until := LocalPrefs.library_unlock_until_unix
+	if until <= 0:
+		return false
+	if now < started - 5:
+		return true
+	if until - now > LIBRARY_UNLOCK_SEC + 5:
+		return true
+	return false
+
+
+func _end_library_unlock(reason: String) -> void:
+	LocalPrefs.library_unlock_until_unix = 0
+	LocalPrefs.library_unlock_started_unix = 0
+	LocalPrefs.save_prefs()
+	set_process(false)
+	temp_unlocks_changed.emit()
+	library_unlock_ended.emit(reason)
+	AnalyticsService.log_event("library_unlock_ended", {"reason": reason})
+
+
+func _process(_delta: float) -> void:
+	var now := int(Time.get_unix_time_from_system())
+	if _clock_changed():
+		_end_library_unlock("clock_changed")
+	elif now >= LocalPrefs.library_unlock_until_unix:
+		_end_library_unlock("expired")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		if LocalPrefs.library_unlock_until_unix > 0:
+			_process(0.0)
 
 
 func load_state() -> void:
@@ -93,10 +157,6 @@ func load_state() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	_has_plus = bool(parsed.get("has_plus", false))
-	var temps: Variant = parsed.get("temp_unlocks", {})
-	if typeof(temps) == TYPE_DICTIONARY:
-		_temp_unlocks = temps
-	_prune_expired_temp_unlocks()
 	if _has_plus:
 		AdsService.set_ads_enabled(false)
 
@@ -105,9 +165,7 @@ func save_state() -> void:
 	var file := FileAccess.open(ENTITLEMENTS_PATH, FileAccess.WRITE)
 	if file == null:
 		return
-	file.store_string(
-		JSON.stringify({"has_plus": _has_plus, "temp_unlocks": _temp_unlocks})
-	)
+	file.store_string(JSON.stringify({"has_plus": _has_plus}))
 	file.close()
 
 

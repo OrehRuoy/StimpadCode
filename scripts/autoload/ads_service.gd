@@ -2,7 +2,7 @@ extends Node
 
 signal banner_visibility_changed(visible: bool)
 signal privacy_choices_availability_changed(available: bool)
-signal rewarded_unlock_completed(sound_id: String)
+signal rewarded_unlock_completed
 signal rewarded_unlock_failed(reason: String)
 
 ## iOS production (AdMob app + units). Android left empty until AdMob Android app exists.
@@ -79,7 +79,7 @@ var _last_interstitial_unix: float = -99999.0
 var _banner_mounted: bool = false
 var _banner_keep_alive_armed: bool = false
 var _banner_keep_alive_gen: int = 0
-var _pending_reward_sound_id: String = ""
+var _pending_reward_active: bool = false
 var _reward_earned_pending: bool = false
 ## Main UI (home grid) finished first paint — set via notify_ui_ready().
 var _ui_ready: bool = false
@@ -141,6 +141,7 @@ func can_show_interstitial() -> bool:
 	if not (
 		_ads_enabled
 		and not Entitlements.has_plus()
+		and not Entitlements.is_library_unlocked()
 		and not _playback_active
 		and _has_mobile_ads()
 		and _sdk_ready
@@ -240,24 +241,24 @@ func _emit_rewarded_failed(code: String, message: String) -> void:
 	rewarded_unlock_failed.emit(message)
 
 
-func try_show_rewarded_for_sound(sound_id: String) -> void:
-	if sound_id.is_empty():
-		_emit_rewarded_failed("no_sound", tr("No sound selected."))
+func try_show_rewarded_for_library() -> void:
+	if Entitlements.has_plus() or Entitlements.is_library_unlocked():
+		rewarded_unlock_completed.emit()
 		return
-	if Entitlements.has_plus() or Entitlements.is_temp_unlocked(sound_id):
-		rewarded_unlock_completed.emit(sound_id)
+	if not Entitlements.can_start_library_unlock():
+		_emit_rewarded_failed("daily_used", tr("Come back tomorrow or get Plus"))
 		return
 	if not OS.has_feature("mobile"):
 		## Editor / desktop: grant immediately so paywall flow is testable.
-		Entitlements.grant_temp_unlock(sound_id)
-		rewarded_unlock_completed.emit(sound_id)
+		Entitlements.grant_library_unlock()
+		rewarded_unlock_completed.emit()
 		return
 	if _playback_active:
 		_emit_rewarded_failed("playback_active", tr("Stop playback first."))
 		return
 	if not _sdk_ready:
 		ensure_initialized_for_rewarded()
-		_pending_reward_sound_id = sound_id
+		_pending_reward_active = true
 		_reward_earned_pending = false
 		var waited := 0.0
 		while not _sdk_ready and waited < 12.0:
@@ -266,12 +267,12 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 		if not _sdk_ready or _admob == null:
 			_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
 			return
-		if _pending_reward_sound_id != sound_id:
+		if not _pending_reward_active:
 			return
 	if _admob == null:
 		_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
 		return
-	_pending_reward_sound_id = sound_id
+	_pending_reward_active = true
 	_reward_earned_pending = false
 	_apply_request_config_before_ad_load()
 	if _rewarded_ready:
@@ -281,7 +282,7 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 	if not _rewarded_load_in_flight:
 		_preload_rewarded()
 	var loaded := await _wait_until_rewarded_settled(8.0)
-	if _pending_reward_sound_id != sound_id:
+	if not _pending_reward_active:
 		return
 	if loaded and _admob and _rewarded_ready:
 		_admob.show_rewarded_ad()
@@ -805,18 +806,18 @@ func _on_rewarded_earned(_ad_info, _reward) -> void:
 
 
 func _on_rewarded_dismissed(_ad_info) -> void:
-	var sound_id := _pending_reward_sound_id
+	var active := _pending_reward_active
 	var earned := _reward_earned_pending
-	_pending_reward_sound_id = ""
+	_pending_reward_active = false
 	_reward_earned_pending = false
 	_preload_rewarded()
 	keep_banner_visible()
-	if sound_id.is_empty():
+	if not active:
 		return
 	if earned:
-		Entitlements.grant_temp_unlock(sound_id)
-		AnalyticsService.log_event("rewarded_earned", {"scope": "sound"})
-		rewarded_unlock_completed.emit(sound_id)
+		Entitlements.grant_library_unlock()
+		AnalyticsService.log_event("rewarded_earned", {"scope": "library", "minutes": 20})
+		rewarded_unlock_completed.emit()
 	else:
 		_emit_rewarded_failed("closed_early", tr("Watch the full ad to unlock."))
 
@@ -838,7 +839,7 @@ func _on_rewarded_failed_to_load(_ad_info, error) -> void:
 
 
 func _on_rewarded_failed_to_show(_ad_info, error) -> void:
-	_pending_reward_sound_id = ""
+	_pending_reward_active = false
 	_reward_earned_pending = false
 	_rewarded_ready = false
 	_log_ad_error("rewarded show", error)

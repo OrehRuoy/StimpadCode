@@ -6,13 +6,6 @@
     "pt_BR": "%s · único",
     "ja": "%s · 1回"
   },
-  "%s unlocked until midnight. Buy Plus for everything, no ads.": {
-    "de": "%s ist bis Mitternacht frei. Hol Plus für alles, ohne Werbung.",
-    "es": "%s está libre hasta medianoche. Compra Plus para todo, sin anuncios.",
-    "fr": "%s est débloqué jusqu’à minuit. Prenez Plus pour tout, sans pub.",
-    "pt_BR": "%s está livre até meia-noite. Compre o Plus para tudo, sem anúncios.",
-    "ja": "%s は深夜0時まで解除されています。Plus ですべて、広告なし。"
-  },
   "← Back": {
     "de": "← Zurück",
     "es": "← Atrás",
@@ -825,13 +818,6 @@
     "pt_BR": "Ainda não há sons recentes.\nToque algo e ele aparece aqui.",
     "ja": "最近の音はまだありません。\n再生すると、ここに表示されます。"
   },
-  "No sound selected.": {
-    "de": "Kein Sound ausgewählt.",
-    "es": "Ningún sonido seleccionado.",
-    "fr": "Aucun son sélectionné.",
-    "pt_BR": "Nenhum som selecionado.",
-    "ja": "音が選ばれていません。"
-  },
   "No sounds in this filter.": {
     "de": "Keine Sounds in diesem Filter.",
     "es": "No hay sonidos en este filtro.",
@@ -1448,12 +1434,54 @@
     "pt_BR": "Produto desconhecido",
     "ja": "不明な商品"
   },
-  "Unlock \"%s\" or go Plus": {
-    "de": "„%s“ freischalten oder Plus holen",
-    "es": "Desbloquea «%s» o pasa a Plus",
-    "fr": "Débloquez « %s » ou passez à Plus",
-    "pt_BR": "Desbloqueie “%s” ou assine o Plus",
-    "ja": "「%s」を解除するか Plus にする"
+  "\"%s\" is a Plus sound": {
+    "de": "„%s“ ist ein Plus-Sound",
+    "es": "\"%s\" es un sonido Plus",
+    "fr": "« %s » est un son Plus",
+    "pt_BR": "\"%s\" é um som Plus",
+    "ja": "「%s」は Plus の音です"
+  },
+  "Checking your purchases…": {
+    "de": "Käufe werden geprüft…",
+    "es": "Revisando tus compras…",
+    "fr": "Vérification de vos achats…",
+    "pt_BR": "Verificando suas compras…",
+    "ja": "購入を確認しています…"
+  },
+  "Come back tomorrow or get Plus": {
+    "de": "Komm morgen wieder oder hol Plus",
+    "es": "Vuelve mañana o consigue Plus",
+    "fr": "Revenez demain ou prenez Plus",
+    "pt_BR": "Volte amanhã ou pegue o Plus",
+    "ja": "明日また来るか、Plus を入手してください"
+  },
+  "Everything is open for now. Get Plus to keep it, with no ads.": {
+    "de": "Gerade ist alles offen. Hol Plus, um es zu behalten, ohne Werbung.",
+    "es": "Todo está abierto por ahora. Consigue Plus para quedártelo, sin anuncios.",
+    "fr": "Tout est ouvert pour le moment. Prenez Plus pour le garder, sans pub.",
+    "pt_BR": "Está tudo aberto por agora. Pegue o Plus para manter, sem anúncios.",
+    "ja": "今はすべて開けています。広告なしで残すなら Plus を入手してください。"
+  },
+  "No purchase found for this Apple ID.": {
+    "de": "Kein Kauf für diese Apple-ID gefunden.",
+    "es": "No se encontró una compra para este Apple ID.",
+    "fr": "Aucun achat trouvé pour cet identifiant Apple.",
+    "pt_BR": "Nenhuma compra encontrada para este ID Apple.",
+    "ja": "この Apple ID の購入は見つかりませんでした。"
+  },
+  "Plus free for 20 min": {
+    "de": "Plus 20 Min. frei",
+    "es": "Plus gratis por 20 min",
+    "fr": "Plus offert 20 min",
+    "pt_BR": "Plus grátis por 20 min",
+    "ja": "Plus が20分無料"
+  },
+  "Plus unlocked: %s left": {
+    "de": "Plus frei: noch %s",
+    "es": "Plus desbloqueado: quedan %s",
+    "fr": "Plus débloqué : %s restantes",
+    "pt_BR": "Plus liberado: faltam %s",
+    "ja": "Plus 解除中：残り %s"
   },
   "Preview · %s": {
     "de": "Vorschau · %s",
@@ -1475,13 +1503,6 @@
     "fr": "Tout débloquer",
     "pt_BR": "Desbloquear tudo",
     "ja": "すべて解除"
-  },
-  "Unlock until midnight": {
-    "de": "Bis Mitternacht frei",
-    "es": "Desbloqueado hasta medianoche",
-    "fr": "Débloqué jusqu’à minuit",
-    "pt_BR": "Desbloqueado até meia-noite",
-    "ja": "深夜0時まで解除"
   },
   "Until I stop": {
     "de": "Bis ich stoppe",
@@ -1553,12 +1574,19 @@
     "pt_BR": "Quer um brilho suave ao tocar? Ative Ondas ao tocar em Ajustes.",
     "ja": "タップしたときに柔らかい光が欲しいときは、設定でタップの波紋をオンにしてください。"
   },
-  "Watch an ad for today, or unlock everything with Plus.": {
-    "de": "Schau eine Werbung für heute, oder schalte mit Plus alles frei.",
-    "es": "Mira un anuncio para hoy, o desbloquea todo con Plus.",
-    "fr": "Regardez une pub pour aujourd’hui, ou débloquez tout avec Plus.",
-    "pt_BR": "Assista a um anúncio para hoje, ou desbloqueie tudo com o Plus.",
-    "ja": "今日だけ広告を見るか、Plus ですべて解除します。"
+  "Watch one ad and every sound is open for 20 minutes today. Or get Plus for good.": {
+    "de": "Schau eine Werbung und alle Sounds sind heute 20 Minuten offen. Oder hol Plus für immer.",
+    "es": "Mira un anuncio y todos los sonidos quedan abiertos 20 minutos hoy. O consigue Plus para siempre.",
+    "fr": "Regardez une pub et tous les sons sont ouverts 20 minutes aujourd’hui. Ou prenez Plus pour de bon.",
+    "pt_BR": "Assista a um anúncio e todos os sons ficam abertos por 20 minutos hoje. Ou pegue o Plus para sempre.",
+    "ja": "広告を1本見ると、今日は20分間すべての音が開きます。ずっと使うなら Plus を入手してください。"
+  },
+  "Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.": {
+    "de": "Deine 20 Minuten Plus sind vorbei. Hol Plus, um jeden Sound zu behalten, oder tippe auf Wiederherstellen, wenn du es schon gekauft hast.",
+    "es": "Tus 20 minutos de Plus terminaron. Consigue Plus para quedarte con todos los sonidos, o toca Restaurar si ya lo compraste.",
+    "fr": "Vos 20 minutes de Plus sont finies. Prenez Plus pour garder chaque son, ou touchez Restaurer si vous l’avez déjà acheté.",
+    "pt_BR": "Seus 20 minutos de Plus acabaram. Pegue o Plus para ficar com todos os sons, ou toque em Restaurar se você já comprou.",
+    "ja": "Plus の20分が終わりました。すべての音を残すなら Plus を入手するか、購入済みなら復元をタップしてください。"
   },
   "Watch the full ad to unlock.": {
     "de": "Schau die Werbung ganz, um freizuschalten.",

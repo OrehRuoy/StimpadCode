@@ -26,6 +26,8 @@ extends Control
 @onready var _vbox: VBoxContainer = $Margin/VBox
 
 var _focus_sound: Dictionary = {}
+var _open_reason: String = ""
+var _countdown_accum := 0.0
 
 
 func _ready() -> void:
@@ -44,12 +46,23 @@ func _ready() -> void:
 	_style_controls()
 	_apply_responsive_layout()
 	_refresh()
+	set_process(true)
 
 
-func open_for_sound(sound: Dictionary = {}) -> void:
+func _process(delta: float) -> void:
+	if not visible or not Entitlements.is_library_unlocked():
+		return
+	_countdown_accum += delta
+	if _countdown_accum < 1.0:
+		return
+	_countdown_accum = 0.0
+	_refresh()
+
+
+func open_for_sound(sound: Dictionary = {}, reason: String = "") -> void:
 	_focus_sound = sound
-	## Kick AdMob only when a locked sound needs the Watch Ad button — not on cold start.
-	if not sound.is_empty() and not Entitlements.has_plus():
+	_open_reason = reason
+	if not Entitlements.has_plus() and Entitlements.can_start_library_unlock():
 		AdsService.ensure_initialized_for_rewarded()
 	_refresh()
 
@@ -157,11 +170,22 @@ func _on_display_price_updated(_price: String) -> void:
 	_price_label.text = _price_copy()
 
 
+func _library_clock() -> String:
+	var left := Entitlements.library_unlock_seconds_left()
+	return "%d:%02d" % [int(left / 60), left % 60]
+
+
+func _all_sounds_status() -> String:
+	var total := SoundCatalog.sounds.size()
+	var free_count := SoundCatalog.get_free_sounds().size()
+	return tr("Unlock all %d sounds (%d free, %d with Plus) and remove ads.") % [total, free_count, total - free_count]
+
+
 func _refresh() -> void:
 	var sound_id := str(_focus_sound.get("id", ""))
 	var sound_name := tr(str(_focus_sound.get("name", "this sound")))
 	var has_focus := not sound_id.is_empty()
-	var offer_rewarded := has_focus and AdsService.can_offer_rewarded()
+	var offer_rewarded := AdsService.can_offer_rewarded() and Entitlements.can_start_library_unlock()
 
 	_set_plus_title(true)
 
@@ -177,37 +201,50 @@ func _refresh() -> void:
 	_buy_btn.disabled = false
 	_buy_wrap.modulate = Color.WHITE
 	_price_label.text = _price_copy()
-	_set_watch_visible(offer_rewarded)
 
-	if offer_rewarded:
-		_subtitle.text = tr("Unlock \"%s\" or go Plus") % sound_name
-		if Entitlements.is_temp_unlocked(sound_id):
-			_status.text = tr("%s unlocked until midnight. Buy Plus for everything, no ads.") % sound_name
-			_set_watch_visible(false)
-		else:
-			_status.text = tr("Watch an ad for today, or unlock everything with Plus.")
-			_watch_hint.text = tr("Unlock until midnight")
-	else:
+	if Entitlements.is_library_unlocked():
+		_subtitle.text = tr("Plus unlocked: %s left") % _library_clock()
+		_status.text = tr("Everything is open for now. Get Plus to keep it, with no ads.")
+		_set_watch_visible(false)
+		return
+
+	if _open_reason == "library_window_ended":
 		_subtitle.text = tr("All sounds · No ads · One purchase")
-		var total := SoundCatalog.sounds.size()
-		var free_count := SoundCatalog.get_free_sounds().size()
-		_status.text = tr("Unlock all %d sounds (%d free, %d with Plus) and remove ads.") % [total, free_count, total - free_count]
+		_status.text = tr("Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.")
+		_set_watch_visible(false)
+		return
+
+	if Entitlements.library_used_today():
+		_subtitle.text = tr("\"%s\" is a Plus sound") % sound_name if has_focus else tr("All sounds · No ads · One purchase")
+		_status.text = tr("Come back tomorrow or get Plus")
+		_set_watch_visible(false)
+		return
+
+	if offer_rewarded and has_focus:
+		_subtitle.text = tr("\"%s\" is a Plus sound") % sound_name
+		_status.text = tr("Watch one ad and every sound is open for 20 minutes today. Or get Plus for good.")
+		_watch_hint.text = tr("Plus free for 20 min")
+		_set_watch_visible(true)
+		return
+
+	_subtitle.text = tr("All sounds · No ads · One purchase")
+	_status.text = _all_sounds_status()
+	_watch_hint.text = tr("Plus free for 20 min")
+	_set_watch_visible(offer_rewarded)
 
 
 func _on_watch_ad() -> void:
-	var sound_id := str(_focus_sound.get("id", ""))
-	if sound_id.is_empty():
-		return
 	_status.text = tr("Loading ad…")
-	AnalyticsService.log_event("paywall_watch_ad_tap", {"sound_id": sound_id})
-	AdsService.try_show_rewarded_for_sound(sound_id)
+	AnalyticsService.log_event("paywall_watch_ad_tap", {"scope": "library"})
+	AdsService.try_show_rewarded_for_library()
 
 
-func _on_rewarded_done(sound_id: String) -> void:
-	if str(_focus_sound.get("id", "")) != sound_id:
-		return
+func _on_rewarded_done() -> void:
 	_refresh()
-	_nav_call("show_player", [_focus_sound])
+	if not _focus_sound.is_empty():
+		_nav_call("show_player", [_focus_sound])
+	else:
+		_nav_call("show_home")
 
 
 func _on_rewarded_failed(reason: String) -> void:
@@ -224,6 +261,13 @@ func _on_buy() -> void:
 
 func _on_restore() -> void:
 	AnalyticsService.log_event("paywall_restore_tap", {})
+	if OS.get_name() == "iOS":
+		_status.text = tr("Checking your purchases…")
+		get_tree().create_timer(6.0).timeout.connect(func() -> void:
+			if Entitlements.has_plus() or not is_instance_valid(self) or not visible:
+				return
+			_status.text = tr("No purchase found for this Apple ID.")
+		, CONNECT_ONE_SHOT)
 	IAPService.restore_purchases()
 
 

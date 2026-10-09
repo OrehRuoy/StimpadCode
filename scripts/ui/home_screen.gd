@@ -47,6 +47,7 @@ var _grid_gen: int = 0
 var _first_home_ready_emitted: bool = false
 var _play_again_scroll: ScrollContainer
 var _play_again_box: HBoxContainer
+var _library_label: Label
 
 enum DevMenuItem {
 	UNPAID = 0,
@@ -66,6 +67,7 @@ func _ready() -> void:
 	Entitlements.plus_changed.connect(_on_plus_changed)
 	Entitlements.temp_unlocks_changed.connect(_refresh_grid)
 	Entitlements.temp_unlocks_changed.connect(_rebuild_play_again)
+	Entitlements.temp_unlocks_changed.connect(_refresh_library_banner)
 	visibility_changed.connect(_on_home_visibility_changed)
 	SoundCatalog.catalog_loaded.connect(_rebuild_filters)
 	SoundCatalog.catalog_loaded.connect(_refresh_grid)
@@ -81,6 +83,7 @@ func _ready() -> void:
 	_hide_scroll_bar(_scroll.get_v_scroll_bar())
 	_rebuild_filters()
 	_build_play_again()
+	_build_library_banner()
 	_apply_responsive_layout()
 	if SoundCatalog.sounds.size() > 0:
 		_refresh_grid()
@@ -356,6 +359,41 @@ func _filtered_sounds() -> Array[Dictionary]:
 		if str(sound.get("category", "")) == _selected_sound_category:
 			filtered.append(sound)
 	return filtered
+
+
+func _build_library_banner() -> void:
+	_library_label = Label.new()
+	_library_label.name = "LibraryUnlock"
+	_library_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_library_label.add_theme_font_size_override("font_size", 14)
+	_library_label.add_theme_color_override("font_color", Color(0.55, 0.92, 0.82, 1))
+	var vbox := _category_select.get_parent()
+	vbox.add_child(_library_label)
+	vbox.move_child(_library_label, _category_select.get_index() + 1)
+	_refresh_library_banner()
+	set_process(true)
+
+
+func _process(_delta: float) -> void:
+	if _library_label == null or not _library_label.visible:
+		return
+	var text := tr("Plus unlocked: %s left") % _library_clock()
+	if _library_label.text != text:
+		_library_label.text = text
+
+
+func _refresh_library_banner() -> void:
+	if _library_label == null:
+		return
+	var on := Entitlements.is_library_unlocked()
+	_library_label.visible = on
+	if on:
+		_library_label.text = tr("Plus unlocked: %s left") % _library_clock()
+
+
+func _library_clock() -> String:
+	var left := Entitlements.library_unlock_seconds_left()
+	return "%d:%02d" % [int(left / 60), left % 60]
 
 
 func _on_home_visibility_changed() -> void:

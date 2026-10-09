@@ -29,6 +29,7 @@ var _timer_row: HFlowContainer
 var _timer_buttons: Dictionary = {}
 var _preview_mode := false
 var _preview_label: Label
+var _library_label: Label
 
 
 func _ready() -> void:
@@ -62,12 +63,35 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not _preview_mode or _preview_label == null:
+	if _preview_mode and _preview_label != null:
+		var left := AudioController.get_preview_seconds_left()
+		var text := tr("Preview · %s") % ("%d:%02d" % [int(left / 60), left % 60])
+		if _preview_label.text != text:
+			_preview_label.text = text
+	_refresh_player_library_label()
+
+
+func _refresh_player_library_label() -> void:
+	_ensure_library_label()
+	var on := Entitlements.is_library_unlocked()
+	_library_label.visible = on and not _preview_mode
+	if not _library_label.visible:
 		return
-	var left := AudioController.get_preview_seconds_left()
-	var text := tr("Preview · %s") % ("%d:%02d" % [int(left / 60), left % 60])
-	if _preview_label.text != text:
-		_preview_label.text = text
+	var left := Entitlements.library_unlock_seconds_left()
+	var text := tr("Plus unlocked: %s left") % ("%d:%02d" % [int(left / 60), left % 60])
+	if _library_label.text != text:
+		_library_label.text = text
+
+
+func _ensure_library_label() -> void:
+	if _library_label != null:
+		return
+	_library_label = Label.new()
+	_library_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_library_label.add_theme_font_size_override("font_size", 14)
+	_library_label.add_theme_color_override("font_color", Color(0.55, 0.92, 0.82, 1))
+	_vbox.add_child(_library_label)
+	_vbox.move_child(_library_label, _title.get_index() + 1)
 
 
 func open_preview(sound: Dictionary) -> void:

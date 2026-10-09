@@ -39,6 +39,9 @@ var enjoy_prompt_snooze_until: int = 0
 var enjoy_prompt_last_shown_unix: int = 0
 var preview_day: String = ""
 var previewed_ids: Array[String] = []
+var library_unlock_until_unix: int = 0
+var library_unlock_started_unix: int = 0
+var library_unlock_last_day: String = ""
 
 
 func _ready() -> void:
@@ -92,6 +95,9 @@ func load_prefs() -> void:
 	enjoy_prompt_last_shown_unix = int(parsed.get("enjoy_prompt_last_shown_unix", 0))
 	preview_day = str(parsed.get("preview_day", ""))
 	previewed_ids = _to_string_array(parsed.get("previewed_ids", []))
+	library_unlock_until_unix = int(parsed.get("library_unlock_until_unix", 0))
+	library_unlock_started_unix = int(parsed.get("library_unlock_started_unix", 0))
+	library_unlock_last_day = str(parsed.get("library_unlock_last_day", ""))
 	if parsed.has("last_scope"):
 		last_scope = str(parsed.get("last_scope", "All"))
 		last_sound_category = str(parsed.get("last_sound_category", "All"))
@@ -134,6 +140,9 @@ func save_prefs() -> void:
 		"enjoy_prompt_last_shown_unix": enjoy_prompt_last_shown_unix,
 		"preview_day": preview_day,
 		"previewed_ids": previewed_ids,
+		"library_unlock_until_unix": library_unlock_until_unix,
+		"library_unlock_started_unix": library_unlock_started_unix,
+		"library_unlock_last_day": library_unlock_last_day,
 	}
 	var file := FileAccess.open(PREFS_PATH, FileAccess.WRITE)
 	if file == null:
