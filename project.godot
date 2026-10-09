@@ -65,7 +65,7 @@ window/handheld/orientation=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg")
+enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg", "res://addons/InappReviewPlugin/plugin.cfg")
 
 [gui]
 

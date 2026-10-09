@@ -55,15 +55,13 @@ Create matching products in App Store Connect and Google Play Console before tes
 
 ## In-app review (Enjoy StimPad → Yes)
 Wired end-to-end:
-1. `EnjoyPromptService` shows “Are you enjoying StimPad?”
+1. `EnjoyPromptService` shows “Are you enjoying StimPad?” after the second open and a real 45-second listen, once the user is back on Home and no fullscreen ad, feature tip, or paywall is up.
 2. **Yes** → `ReviewService.request_review()` (`scripts/ui/enjoy_prompt.gd`)
 3. **No** → feedback form
 
-**iOS native path (CI builds):** GodotApplePlugins StoreKit is installed by `ios-testflight.yml`. `ReviewService` calls `StoreKitManager.request_review` / `requestReview` when present (same stack as IAP). Optional [cengiz-pz In-app Review](https://github.com/cengiz-pz/godot-ios-inapp-review-plugin) also auto-binds if you add it later.
+**iOS native path:** [godot-inapp-review v5.2](https://github.com/godot-mobile-plugins/godot-inapp-review/releases/tag/v5.2) (`addons/InappReviewPlugin/` and `ios/plugins/InappReviewPlugin*.xcframework`). v5.3 targets Godot 4.7 and is not used. `ReviewService` calls the `InappReviewPlugin` singleton `launch_review_flow()` and does not wait on `generate_review_info`. The pinned GodotApplePlugins build (`build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65`) does not include `StoreKitManager.request_review`; that method is only a fallback if a future pin adds it. The Yes path never opens Safari. If neither API is present, the card thanks the user and points them at Settings.
 
-**Fallbacks:** store write-review URL (`ReviewService.IOS_APP_STORE_ID` = `6796806236`). Settings → **Rate StimPad** always opens that page. Android uses the Play URL when the build is Android.
-
-Without a device plugin, editor/desktop builds print a stub (dev menu can force the enjoy prompt).
+**Settings → Rate StimPad** always opens the App Store write-review page (`ReviewService.IOS_APP_STORE_ID` = `6796806236`). Android still uses the Play URL when the in-app review plugin is not available. The Android export preset is not enabled for this plugin.
 
 ## Feedback (Web3Forms)
 `FeedbackService` posts to `https://api.web3forms.com/submit` (access key in that script). Settings → Feedback and the enjoy-prompt **No** path open the same form (OS, version/build, message, optional email, optional sound requests).
