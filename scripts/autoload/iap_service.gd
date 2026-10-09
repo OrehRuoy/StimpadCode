@@ -13,6 +13,7 @@ const _IOS_PRODUCT_IDS := {PRODUCT_ID: PRODUCT_ID}
 
 var _ready_to_purchase: bool = false
 var _display_price: String = DISPLAY_PRICE
+var _has_live_price: bool = false
 var _ios_store: Node = null
 var _ios_store_ready: bool = false
 var _pending_purchase: bool = false
@@ -39,6 +40,28 @@ func get_product_id() -> String:
 
 func get_display_price() -> String:
 	return _display_price
+
+
+func has_live_price() -> bool:
+	return _has_live_price
+
+
+func get_price_value() -> float:
+	if _ios_store != null and _ios_store_ready:
+		return float(_ios_store.get_price_value(PRODUCT_ID))
+	return 0.0
+
+
+func get_currency_code() -> String:
+	if _ios_store != null and _ios_store_ready:
+		return str(_ios_store.get_currency_code(PRODUCT_ID))
+	return ""
+
+
+func get_last_transaction_id() -> String:
+	if _ios_store != null and _ios_store_ready:
+		return str(_ios_store.get_last_transaction_id())
+	return ""
 
 
 func purchase_plus() -> void:
@@ -109,6 +132,7 @@ func _on_ios_product_prices_updated() -> void:
 	if price.is_empty():
 		return
 	_display_price = price
+	_has_live_price = true
 	display_price_updated.emit(_display_price)
 
 

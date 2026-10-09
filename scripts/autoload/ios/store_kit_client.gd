@@ -16,6 +16,7 @@ var _manager: RefCounted = null
 var _products_by_store_id: Dictionary = {}
 var _internal_for_store_id: Dictionary = {}
 var _ready := false
+var _last_transaction_id: String = ""
 
 
 func is_available() -> bool:
@@ -69,6 +70,39 @@ func get_display_price(internal_product_id: String) -> String:
 			if product != null and "display_price" in product:
 				return str(product.display_price)
 	return ""
+
+
+func get_price_value(internal_product_id: String) -> float:
+	var product: Variant = _product_for(internal_product_id)
+	if product == null:
+		return 0.0
+	if product.has_method("get_price"):
+		return float(product.get_price())
+	if "price" in product:
+		return float(product.price)
+	return 0.0
+
+
+func get_currency_code(internal_product_id: String) -> String:
+	var product: Variant = _product_for(internal_product_id)
+	if product == null:
+		return ""
+	if product.has_method("get_currency_code"):
+		return str(product.get_currency_code())
+	if "currency_code" in product:
+		return str(product.currency_code)
+	return ""
+
+
+func get_last_transaction_id() -> String:
+	return _last_transaction_id
+
+
+func _product_for(internal_product_id: String) -> Variant:
+	for store_id in _products_by_store_id:
+		if _internal_for_store_id.get(store_id, "") == internal_product_id:
+			return _products_by_store_id[store_id]
+	return null
 
 
 func purchase_store_id(store_product_id: String) -> bool:
@@ -126,6 +160,8 @@ func _on_products_request_completed(products: Array, status: int) -> void:
 
 
 func _on_purchase_completed(_transaction: Variant, status: int, error_message: String) -> void:
+	if status == _STATUS_OK and _transaction != null:
+		_remember_transaction_id(_transaction)
 	var internal_id := _internal_id_from_transaction(_transaction)
 	var grant := status == _STATUS_OK
 	var reason := error_message
@@ -166,6 +202,16 @@ func _internal_id_from_transaction(transaction: Variant) -> String:
 	if store_id.is_empty():
 		return ""
 	return str(_internal_for_store_id.get(store_id, ""))
+
+
+func _remember_transaction_id(transaction: Variant) -> void:
+	var tid := ""
+	if transaction.has_method("get_transaction_id"):
+		tid = str(transaction.get_transaction_id())
+	elif "transaction_id" in transaction:
+		tid = str(transaction.transaction_id)
+	if not tid.is_empty():
+		_last_transaction_id = tid
 
 
 func _finish_transaction(transaction: Variant) -> void:

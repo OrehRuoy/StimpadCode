@@ -197,11 +197,6 @@ func _on_watch_ad() -> void:
 	if sound_id.is_empty():
 		return
 	_status.text = tr("Loading ad…")
-	AnalyticsService.log_event("paywall_buy_tap", {
-		"source": "ad",
-		"sound_id": sound_id,
-		"price": IAPService.get_display_price(),
-	})
 	AnalyticsService.log_event("paywall_watch_ad_tap", {"sound_id": sound_id})
 	AdsService.try_show_rewarded_for_sound(sound_id)
 
@@ -218,10 +213,10 @@ func _on_rewarded_failed(reason: String) -> void:
 
 
 func _on_buy() -> void:
-	AnalyticsService.log_event("paywall_buy_tap", {
-		"source": "iap",
-		"price": IAPService.get_display_price(),
-	})
+	var buy := {"source": "iap"}
+	if IAPService.has_live_price():
+		buy["price"] = IAPService.get_display_price()
+	AnalyticsService.log_event("paywall_buy_tap", buy)
 	IAPService.purchase_plus()
 
 
@@ -231,7 +226,13 @@ func _on_restore() -> void:
 
 
 func _on_purchase_done(_product_id: String) -> void:
-	AnalyticsService.log_event("plus_purchase_success", {"product_id": str(_product_id)})
+	var done := {"product_id": str(_product_id)}
+	if IAPService.has_live_price() and IAPService.get_price_value() > 0.0 and not IAPService.get_currency_code().is_empty():
+		done["value"] = IAPService.get_price_value()
+		done["currency"] = IAPService.get_currency_code()
+	elif IAPService.has_live_price():
+		done["price_display"] = IAPService.get_display_price()
+	AnalyticsService.log_event("plus_purchase_success", done)
 	_refresh()
 	_nav_call("show_home")
 

@@ -18,6 +18,8 @@ var _stop_at_unix: int = 0
 var _stop_after_loop: bool = false
 var _loop_pass_pending: bool = false
 var _play_started_msec: int = 0
+var _listen_accum_sec := 0.0
+var _listen_30_logged := false
 
 
 func _ready() -> void:
@@ -36,8 +38,16 @@ func _ready() -> void:
 	apply_sfx_volume(LocalPrefs.sfx_volume)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	_check_stop_deadline()
+	if _player != null and _player.playing:
+		_listen_accum_sec += minf(delta, 0.5)
+		if not _listen_30_logged and _listen_accum_sec >= 30.0:
+			_listen_30_logged = true
+			AnalyticsService.log_event("listen_30s", {
+				"sound_id": str(_current_sound.get("id", "")),
+				"mode": str(_current_sound.get("mode", "")),
+			})
 
 
 func _notification(what: int) -> void:
@@ -128,8 +138,17 @@ func play_sound(sound: Dictionary) -> void:
 	_player.play()
 	_player.pitch_scale = clampf(LocalPrefs.playback_rate, 0.5, 1.5)
 	_play_started_msec = Time.get_ticks_msec()
+	_listen_accum_sec = 0.0
+	_listen_30_logged = false
 	playback_started.emit(str(sound.get("id", "")))
-	LocalPrefs.note_recent_sound(str(sound.get("id", "")))
+	var sound_id := str(sound.get("id", ""))
+	if LocalPrefs.recent_sound_ids.is_empty():
+		AnalyticsService.log_event("first_sound_play", {
+			"sound_id": sound_id,
+			"tier": str(sound.get("tier", "")),
+			"mode": str(sound.get("mode", "")),
+		})
+	LocalPrefs.note_recent_sound(sound_id)
 	AnalyticsService.log_sound_play(sound)
 
 
@@ -177,6 +196,8 @@ func stop() -> void:
 	_stop_after_loop = false
 	_loop_pass_pending = false
 	_play_started_msec = 0
+	_listen_accum_sec = 0.0
+	_listen_30_logged = false
 	_current_sound = {}
 	if not stopped_id.is_empty():
 		AnalyticsService.log_sound_stop(stopped, duration_sec)
@@ -195,6 +216,11 @@ func _arm_stop_timer() -> void:
 	_stop_at_unix = int(Time.get_unix_time_from_system()) + _session_duration_sec
 	_session_timer.wait_time = float(_session_duration_sec)
 	_session_timer.start()
+	AnalyticsService.log_event("timer_started", {
+		"minutes": int(_session_duration_sec / 60),
+		"sound_id": str(_current_sound.get("id", "")),
+		"mode": str(_current_sound.get("mode", "")),
+	})
 
 
 func _clear_stop_timer() -> void:
@@ -215,8 +241,13 @@ func _on_session_timer_timeout() -> void:
 	## Looping streams (esp. MP3 with loop=true) often never emit `finished`,
 	## so end the session on the timer itself.
 	var finished_id := str(_current_sound.get("id", ""))
+	var minutes := int(_session_duration_sec / 60)
 	stop()
 	if not finished_id.is_empty():
+		AnalyticsService.log_event("timer_finished", {
+			"minutes": minutes,
+			"sound_id": finished_id,
+		})
 		playback_finished.emit(finished_id)
 
 

@@ -115,13 +115,19 @@ func _on_purchase_completed(product_id: String) -> void:
 	if product_id == PRODUCT_ID:
 		grant_plus()
 		## GA4 / Google Ads conversion signals (link Firebase ↔ Google Ads in console).
-		AnalyticsService.log_event("purchase", {
-			"currency": "USD",
-			"value": 4.99,
-			"transaction_id": "plus_%d" % int(Time.get_unix_time_from_system()),
+		var purchase := {
 			"item_id": PRODUCT_ID,
 			"item_name": "StimPad Plus",
-		})
+		}
+		var transaction_id := IAPService.get_last_transaction_id()
+		if not transaction_id.is_empty():
+			purchase["transaction_id"] = transaction_id
+		if IAPService.has_live_price() and IAPService.get_price_value() > 0.0 and not IAPService.get_currency_code().is_empty():
+			purchase["value"] = IAPService.get_price_value()
+			purchase["currency"] = IAPService.get_currency_code()
+		elif IAPService.has_live_price():
+			purchase["price_display"] = IAPService.get_display_price()
+		AnalyticsService.log_event("purchase", purchase)
 		AnalyticsService.log_event("plus_unlocked", {
 			"product_id": PRODUCT_ID,
 			"source": "purchase",

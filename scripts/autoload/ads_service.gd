@@ -235,9 +235,14 @@ func try_show_interstitial_on_safe_exit() -> void:
 	_admob.show_interstitial_ad()
 
 
+func _emit_rewarded_failed(code: String, message: String) -> void:
+	AnalyticsService.log_event("rewarded_failed", {"reason": code})
+	rewarded_unlock_failed.emit(message)
+
+
 func try_show_rewarded_for_sound(sound_id: String) -> void:
 	if sound_id.is_empty():
-		rewarded_unlock_failed.emit(tr("No sound selected."))
+		_emit_rewarded_failed("no_sound", tr("No sound selected."))
 		return
 	if Entitlements.has_plus() or Entitlements.is_temp_unlocked(sound_id):
 		rewarded_unlock_completed.emit(sound_id)
@@ -248,7 +253,7 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 		rewarded_unlock_completed.emit(sound_id)
 		return
 	if _playback_active:
-		rewarded_unlock_failed.emit(tr("Stop playback first."))
+		_emit_rewarded_failed("playback_active", tr("Stop playback first."))
 		return
 	if not _sdk_ready:
 		ensure_initialized_for_rewarded()
@@ -259,12 +264,12 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 			await get_tree().create_timer(0.4).timeout
 			waited += 0.4
 		if not _sdk_ready or _admob == null:
-			rewarded_unlock_failed.emit(tr("Ads aren't ready yet — try again in a moment."))
+			_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
 			return
 		if _pending_reward_sound_id != sound_id:
 			return
 	if _admob == null:
-		rewarded_unlock_failed.emit(tr("Ads aren't ready yet — try again in a moment."))
+		_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
 		return
 	_pending_reward_sound_id = sound_id
 	_reward_earned_pending = false
@@ -282,9 +287,9 @@ func try_show_rewarded_for_sound(sound_id: String) -> void:
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 	elif _rewarded_load_in_flight:
-		rewarded_unlock_failed.emit(tr("Ad is still loading — try again in a moment."))
+		_emit_rewarded_failed("loading", tr("Ad is still loading — try again in a moment."))
 	else:
-		rewarded_unlock_failed.emit(tr("No ad available right now — try again in a bit."))
+		_emit_rewarded_failed("no_ad", tr("No ad available right now — try again in a bit."))
 
 
 func privacy_choices_available() -> bool:
@@ -810,9 +815,10 @@ func _on_rewarded_dismissed(_ad_info) -> void:
 		return
 	if earned:
 		Entitlements.grant_temp_unlock(sound_id)
+		AnalyticsService.log_event("rewarded_earned", {"scope": "sound"})
 		rewarded_unlock_completed.emit(sound_id)
 	else:
-		rewarded_unlock_failed.emit(tr("Watch the full ad to unlock."))
+		_emit_rewarded_failed("closed_early", tr("Watch the full ad to unlock."))
 
 
 func _on_rewarded_failed_to_load(_ad_info, error) -> void:
@@ -838,7 +844,7 @@ func _on_rewarded_failed_to_show(_ad_info, error) -> void:
 	_log_ad_error("rewarded show", error)
 	_preload_rewarded()
 	keep_banner_visible()
-	rewarded_unlock_failed.emit(tr("Couldn't show the ad. Try again."))
+	_emit_rewarded_failed("show_failed", tr("Couldn't show the ad. Try again."))
 
 
 func _on_playback_started(_sound_id: String) -> void:

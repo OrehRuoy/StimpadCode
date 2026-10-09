@@ -3,14 +3,23 @@ extends Node
 ## Firebase / Google Analytics bridge (iOS via GodotFirebaseiOS → GA4).
 ## Popularity: event `sound_play` with param `sound_id` (also `select_content`).
 
+const MAX_QUEUED_EVENTS := 40
+const QUEUE_GIVE_UP_SEC := 90.0
+
 var _initialized: bool = false
 var _native = null
+var _queue: Array[Dictionary] = []
+var _queue_open := true
+var _flushing := false
+var _queue_started_msec: int = 0
 
 
 func _ready() -> void:
+	_queue_started_msec = Time.get_ticks_msec()
 	## Defer native Firebase Analytics bind — cold-start races with AdMob/home caused TestFlight crashes.
 	if OS.has_feature("mobile") and OS.get_name() == "iOS":
 		get_tree().create_timer(10.0).timeout.connect(_initialize_analytics, CONNECT_ONE_SHOT)
+		_arm_native_retry()
 	else:
 		call_deferred("_initialize_analytics")
 
@@ -19,9 +28,25 @@ func log_event(event_name: String, params: Dictionary = {}) -> void:
 	var clean := _stringify_params(params)
 	if OS.has_feature("editor") or not OS.has_feature("mobile"):
 		print("[Analytics] %s %s" % [event_name, clean])
-	if not _initialized:
+	if not OS.has_feature("mobile"):
 		return
-	_log_event_native(event_name, clean)
+	if _initialized and _native != null:
+		_log_event_native(event_name, clean)
+		return
+	if _queue_open:
+		_enqueue(event_name, clean)
+
+
+func log_app_open() -> void:
+	var days := 0
+	if LocalPrefs.first_open_unix > 0:
+		var elapsed := int(Time.get_unix_time_from_system()) - LocalPrefs.first_open_unix
+		days = maxi(0, int(float(elapsed) / 86400.0))
+	log_event("app_open", {
+		"app_open_count": LocalPrefs.app_open_count,
+		"has_plus": Entitlements.has_plus(),
+		"days_since_first_open": days,
+	})
 
 
 func log_screen(screen_name: String) -> void:
@@ -77,18 +102,77 @@ func _initialize_analytics() -> void:
 		if ios.has_signal("firebase_initialized") and not ios.is_connected("firebase_initialized", _on_firebase_ready):
 			ios.firebase_initialized.connect(_on_firebase_ready, CONNECT_ONE_SHOT)
 			## Fail-open so early plays still queue once native is up.
-			get_tree().create_timer(8.0).timeout.connect(func() -> void:
-				if not _initialized:
-					_initialized = true
-			, CONNECT_ONE_SHOT)
+			get_tree().create_timer(8.0).timeout.connect(_on_fail_open, CONNECT_ONE_SHOT)
 			return
 	_initialized = true
+	if _native != null:
+		_flush_queue()
+
+
+func _on_fail_open() -> void:
+	if not _initialized:
+		_initialized = true
+	if _native == null:
+		_native = _resolve_native()
+	if _native != null:
+		_flush_queue()
 
 
 func _on_firebase_ready() -> void:
 	_native = _resolve_native()
 	_initialized = true
 	print("AnalyticsService: Firebase initialized")
+	if _native != null:
+		_flush_queue()
+
+
+func _arm_native_retry() -> void:
+	get_tree().create_timer(2.0).timeout.connect(_retry_native, CONNECT_ONE_SHOT)
+
+
+func _retry_native() -> void:
+	if not _queue_open or _native != null:
+		return
+	var elapsed := float(Time.get_ticks_msec() - _queue_started_msec) / 1000.0
+	if elapsed >= QUEUE_GIVE_UP_SEC:
+		_queue.clear()
+		_queue_open = false
+		return
+	var resolved = _resolve_native()
+	if resolved != null:
+		_native = resolved
+		_initialized = true
+		_flush_queue()
+		return
+	_arm_native_retry()
+
+
+func _enqueue(event_name: String, params: Dictionary) -> void:
+	if _queue.size() >= MAX_QUEUED_EVENTS:
+		var dropped := false
+		for i in _queue.size():
+			if str(_queue[i].get("name", "")) == "screen_view":
+				_queue.remove_at(i)
+				dropped = true
+				break
+		if not dropped:
+			return
+	_queue.append({"name": event_name, "params": params})
+
+
+func _flush_queue() -> void:
+	if _flushing or _native == null:
+		return
+	_flushing = true
+	var batch := 0
+	while not _queue.is_empty():
+		var ev: Dictionary = _queue.pop_front()
+		_log_event_native(str(ev.get("name", "")), ev.get("params", {}))
+		batch += 1
+		if batch >= 8 and not _queue.is_empty():
+			batch = 0
+			await get_tree().process_frame
+	_flushing = false
 
 
 func _resolve_native():

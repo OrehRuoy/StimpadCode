@@ -37,6 +37,7 @@ func _ready() -> void:
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
 	get_viewport().size_changed.connect(_update_banner_inset)
 	_update_banner_inset()
+	AnalyticsService.log_app_open()
 	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
 	if _home.has_signal("home_content_ready"):
 		_home.home_content_ready.connect(_on_home_content_ready, CONNECT_ONE_SHOT)
@@ -129,10 +130,17 @@ func show_settings() -> void:
 	AnalyticsService.log_screen("settings")
 
 
-func show_paywall(for_sound: Dictionary = {}) -> void:
+func show_paywall(for_sound: Dictionary = {}, reason: String = "") -> void:
 	IAPService.ensure_store_started()
 	_show_screen(_paywall)
 	_paywall.call("open_for_sound", for_sound)
+	var why := reason
+	if why.is_empty():
+		why = "locked_sound" if not for_sound.is_empty() else "plus_button"
+	AnalyticsService.log_event("paywall_view", {
+		"reason": why,
+		"sound_id": str(for_sound.get("id", "")),
+	})
 	AnalyticsService.log_screen("paywall")
 
 

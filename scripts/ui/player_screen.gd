@@ -342,6 +342,11 @@ func _on_back() -> void:
 func _on_favorite_toggle() -> void:
 	var sound_id := str(_sound.get("id", ""))
 	LocalPrefs.toggle_favorite(sound_id)
+	if LocalPrefs.is_favorite(sound_id):
+		AnalyticsService.log_event("favorite_add", {
+			"sound_id": sound_id,
+			"favorites_count": LocalPrefs.favorites.size(),
+		})
 	HapticsService.tap()
 	_spawn_ripple_on_control(_favorite_btn)
 	_refresh_favorite_icon()
