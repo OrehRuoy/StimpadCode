@@ -88,7 +88,7 @@ func set_session_duration(seconds: int) -> void:
 	if LocalPrefs.session_duration_sec != seconds:
 		LocalPrefs.session_duration_sec = seconds
 		LocalPrefs.save_prefs()
-	if is_playing() and _sound_holds_open():
+	if is_playing() and seconds > 0 and not _previewing:
 		_arm_stop_timer()
 	else:
 		_clear_stop_timer()
@@ -145,7 +145,10 @@ func play_sound(sound: Dictionary) -> void:
 		_loop_pass_pending = false
 		_arm_stop_timer()
 	else:
-		_clear_stop_timer()
+		if _session_duration_sec > 0:
+			_arm_stop_timer()
+		else:
+			_clear_stop_timer()
 		_stop_after_loop = false
 	_player.play()
 	_player.pitch_scale = clampf(LocalPrefs.playback_rate, 0.5, 1.5)
@@ -266,11 +269,6 @@ func stop() -> void:
 	playback_stopped.emit(stopped_id)
 
 
-func _sound_holds_open() -> bool:
-	var mode := str(_current_sound.get("mode", ""))
-	return mode == "loop" or LocalPrefs.repeat_oneshots
-
-
 func _arm_stop_timer() -> void:
 	_clear_stop_timer()
 	if _session_duration_sec <= 0:
@@ -294,7 +292,7 @@ func _check_stop_deadline() -> void:
 	if _previewing and int(Time.get_unix_time_from_system()) >= _preview_end_unix:
 		end_preview("timeout")
 		return
-	if _stop_at_unix <= 0 or not is_playing():
+	if _stop_at_unix <= 0 or (not is_playing() and _current_sound.is_empty()):
 		return
 	if int(Time.get_unix_time_from_system()) >= _stop_at_unix:
 		_stop_at_unix = 0
@@ -322,13 +320,16 @@ func _on_player_finished() -> void:
 	var finished_id := str(_current_sound.get("id", ""))
 	if finished_id.is_empty():
 		return
+	_check_stop_deadline()
+	if not is_playing() and _current_sound.is_empty():
+		return
 	if _stop_after_loop:
 		stop()
 		playback_finished.emit(finished_id)
 		return
 	## Fallback: if native loop didn't engage, keep replaying until Stop.
 	var mode := str(_current_sound.get("mode", ""))
-	if mode == "loop" or LocalPrefs.repeat_oneshots:
+	if mode == "loop" or LocalPrefs.repeat_oneshots or _stop_at_unix > 0:
 		_player.play()
 		return
 	## Oneshot finished.
