@@ -28,6 +28,7 @@ extends Control
 var _focus_sound: Dictionary = {}
 var _open_reason: String = ""
 var _countdown_accum := 0.0
+var _paywall_scroll: ScrollContainer
 
 
 func _ready() -> void:
@@ -163,6 +164,7 @@ func _make_content_scroll() -> void:
 	## which looks dead and cannot be tapped.
 	var margin := _vbox.get_parent()
 	var scroll := ScrollContainer.new()
+	_paywall_scroll = scroll
 	scroll.name = "PaywallScroll"
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -182,7 +184,15 @@ func _make_content_scroll() -> void:
 func _set_watch_visible(on: bool) -> void:
 	_watch_wrap.visible = on
 	_watch_meta.visible = on
+	_watch_wrap.custom_minimum_size.y = 78.0 if on else 0.0
 	_apply_responsive_layout()
+
+
+func _reveal_actions() -> void:
+	if _paywall_scroll == null:
+		return
+	var target: Control = _watch_wrap if _watch_wrap.visible else _buy_wrap
+	_paywall_scroll.call_deferred("ensure_control_visible", target)
 
 
 func _price_copy() -> String:
@@ -210,8 +220,6 @@ func _refresh() -> void:
 	var has_focus := not sound_id.is_empty()
 	## Daily unlock is offered on every locked paywall, including after a preview.
 	## Ads that are not ready yet still show the button; the tap explains why.
-	var offer_rewarded := Entitlements.can_start_library_unlock()
-
 	_set_plus_title(true)
 	_buy_btn.disabled = false
 	_buy_btn.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -222,6 +230,7 @@ func _refresh() -> void:
 		_status.text = tr("You have StimPad Plus. All sounds unlocked, ads removed.")
 		_price_label.text = tr("Owned")
 		_set_watch_visible(false)
+		_reveal_actions()
 		return
 	_price_label.text = _price_copy()
 
@@ -229,31 +238,25 @@ func _refresh() -> void:
 		_subtitle.text = tr("Plus unlocked: %s left") % _library_clock()
 		_status.text = tr("Everything is open for now. Get Plus to keep it, with no ads.")
 		_set_watch_visible(false)
+		_reveal_actions()
 		return
 
+	## Watch Ad stays on every locked paywall, including right after a preview.
+	_watch_hint.text = tr("Plus free for 20 min")
+	_set_watch_visible(true)
 	if _open_reason == "library_window_ended":
 		_subtitle.text = tr("All sounds · No ads · One purchase")
 		_status.text = tr("Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.")
-		_set_watch_visible(false)
-		return
-
-	if Entitlements.library_used_today():
+	elif Entitlements.library_used_today() or not Entitlements.can_start_library_unlock():
 		_subtitle.text = tr("\"%s\" is a Plus sound") % sound_name if has_focus else tr("All sounds · No ads · One purchase")
 		_status.text = tr("Come back tomorrow or get Plus")
-		_set_watch_visible(false)
-		return
-
-	if offer_rewarded and has_focus:
+	elif has_focus:
 		_subtitle.text = tr("\"%s\" is a Plus sound") % sound_name
 		_status.text = tr("Watch one ad and every sound is open for 20 minutes today. Or get Plus for good.")
-		_watch_hint.text = tr("Plus free for 20 min")
-		_set_watch_visible(true)
-		return
-
-	_subtitle.text = tr("All sounds · No ads · One purchase")
-	_status.text = _all_sounds_status()
-	_watch_hint.text = tr("Plus free for 20 min")
-	_set_watch_visible(offer_rewarded)
+	else:
+		_subtitle.text = tr("All sounds · No ads · One purchase")
+		_status.text = _all_sounds_status()
+	_reveal_actions()
 
 
 func _on_watch_ad() -> void:

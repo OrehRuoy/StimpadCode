@@ -129,13 +129,37 @@ func is_native_banner_showing() -> bool:
 	return _banner_mounted and _banner_impression_recorded
 
 
+func _banner_width_dp() -> int:
+	## AdMob adaptive width is in points. The Godot window on iOS is in pixels.
+	var scale := DisplayServer.screen_get_scale()
+	var win_w := float(DisplayServer.window_get_size().x)
+	if scale > 1.01 and win_w > 0.0:
+		return maxi(320, int(round(win_w / scale)))
+	return maxi(320, int(round(get_viewport().get_visible_rect().size.x)))
+
+
+func _points_to_viewport(points: float) -> float:
+	var scale := DisplayServer.screen_get_scale()
+	var win_h := float(DisplayServer.window_get_size().y)
+	var view_h := get_viewport().get_visible_rect().size.y
+	if scale > 1.01 and win_h > 1.0 and view_h > (win_h / scale) * 1.4:
+		return points * (view_h / (win_h / scale))
+	return points
+
+
 func banner_reserved_height() -> float:
 	if Entitlements.has_plus() or not _ads_enabled:
 		return 0.0
-	var ad_h := 64.0 if Responsive.is_tablet(get_viewport().get_visible_rect().size) else 50.0
+	var tablet := Responsive.is_tablet(get_viewport().get_visible_rect().size)
+	## Floor clears a tall adaptive banner plus the home-indicator strip.
+	## A short reserve let the native ad draw on top of the last buttons.
+	var ad_h := _points_to_viewport(120.0 if tablet else 100.0)
 	if _banner_measured_height >= 40.0:
-		ad_h = clampf(_banner_measured_height, 50.0, 120.0)
-	return ad_h + BANNER_UI_GAP
+		var measured := _banner_measured_height
+		if measured < ad_h * 0.6:
+			measured = _points_to_viewport(measured)
+		ad_h = maxf(ad_h, measured)
+	return ad_h + _points_to_viewport(BANNER_UI_GAP)
 
 
 func can_show_interstitial() -> bool:
@@ -809,7 +833,7 @@ func _show_banner_native() -> void:
 	_banner_load_requested = true
 	_banner_load_in_flight = true
 	var req := _admob.create_banner_ad_request()
-	var width_dp := int(round(get_viewport().get_visible_rect().size.x))
+	var width_dp := _banner_width_dp()
 	if width_dp >= 320:
 		req.set_adaptive_width(width_dp)
 	_admob.load_banner_ad(req)
