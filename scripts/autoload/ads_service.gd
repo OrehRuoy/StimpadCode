@@ -68,17 +68,19 @@ const AD_ERROR_NO_FILL := 3
 ## Interstitials: not every navigation — every Nth safe exit, with a cooldown.
 const INTERSTITIAL_EVERY_N_EXITS := 3
 const INTERSTITIAL_MIN_INTERVAL_SEC := 90.0
-## Keep the same native banner on screen. New creatives come from AdMob auto-refresh
-## (set the banner unit to 60s in AdMob). This timer only re-shows; it does not loadAd.
-const BANNER_KEEP_ALIVE_SEC := 60.0
+## One banner stays on every screen. A new creative is requested this often.
+## AdMob's own refresh, if it fires, resets this wait so two requests are not stacked.
+const BANNER_REFRESH_SEC := 45.0
 ## A few points so the last control does not sit on the ad's top edge.
 const BANNER_UI_GAP := 4.0
 
 var _safe_exit_count: int = 0
 var _last_interstitial_unix: float = -99999.0
 var _banner_mounted: bool = false
-var _banner_keep_alive_armed: bool = false
-var _banner_keep_alive_gen: int = 0
+var _banner_refresh_armed: bool = false
+var _banner_refresh_gen: int = 0
+var _banner_ad_id: String = ""
+var _last_banner_creative_unix: float = -99999.0
 var _pending_reward_active: bool = false
 var _fullscreen_ad_since_unix: float = 0.0
 var _reward_earned_pending: bool = false
@@ -229,10 +231,7 @@ func ensure_banner_mounted() -> void:
 			hide_banner()
 		return
 	if _admob != null and _admob.is_banner_ad_loaded():
-		_admob.show_banner_ad()
-		_banner_mounted = true
-		_arm_banner_keep_alive()
-		banner_visibility_changed.emit(true)
+		_show_current_banner()
 		return
 	_show_banner_native()
 
@@ -243,9 +242,7 @@ func keep_banner_visible() -> void:
 	if not should_show_banner():
 		return
 	if _admob != null and _admob.is_banner_ad_loaded():
-		_admob.show_banner_ad()
-		_banner_mounted = true
-		_arm_banner_keep_alive()
+		_show_current_banner()
 		return
 	ensure_banner_mounted()
 
@@ -257,8 +254,9 @@ func show_banner_if_allowed() -> void:
 func hide_banner() -> void:
 	_banner_mounted = false
 	_banner_impression_recorded = false
-	_banner_keep_alive_armed = false
-	_banner_keep_alive_gen += 1
+	_banner_refresh_armed = false
+	_banner_refresh_gen += 1
+	_banner_ad_id = ""
 	## Hide only — do not destroy/reload so Plus toggle / temporary hide can remount the same ad.
 	if _admob and _admob.is_banner_ad_loaded():
 		_admob.hide_banner_ad()
@@ -415,10 +413,10 @@ func _initialize_ads() -> void:
 	_admob.consent_form_loaded.connect(_on_consent_form_loaded)
 	_admob.consent_form_failed_to_load.connect(_on_consent_form_failed_to_load)
 	_admob.consent_form_dismissed.connect(_on_consent_form_dismissed)
-	_admob.banner_ad_loaded.connect(func(_a, _r): _on_banner_loaded())
+	_admob.banner_ad_loaded.connect(_on_banner_loaded)
 	_admob.banner_ad_failed_to_load.connect(_on_banner_failed_to_load)
 	_admob.banner_ad_impression.connect(func(_a): _on_banner_impression())
-	_admob.banner_ad_refreshed.connect(func(_a, _r): _on_banner_refreshed())
+	_admob.banner_ad_refreshed.connect(_on_banner_refreshed)
 	_admob.banner_ad_size_measured.connect(_on_banner_size_measured)
 	_admob.interstitial_ad_loaded.connect(func(_a, _r):
 		_interstitial_ready = true
@@ -689,28 +687,39 @@ func _emit_privacy_choices_availability() -> void:
 	privacy_choices_availability_changed.emit(privacy_choices_available())
 
 
-func _on_banner_loaded() -> void:
+func _on_banner_loaded(ad_info: AdInfo, _response = null) -> void:
 	_banner_load_in_flight = false
 	_banner_retry_count = 0
 	_banner_load_requested = true
+	var new_id := ""
+	if ad_info != null:
+		new_id = ad_info.get_ad_id()
 	## Native banners start hidden — show on the next frame so the plugin cache is populated.
 	await get_tree().process_frame
 	if _admob == null:
 		return
-	if should_show_banner():
-		_admob.show_banner_ad()
-		_banner_mounted = true
-		_arm_banner_keep_alive()
-		banner_visibility_changed.emit(true)
-	else:
+	if not should_show_banner():
 		banner_visibility_changed.emit(false)
+		return
+	var previous := _banner_ad_id
+	if not new_id.is_empty():
+		_admob.show_banner_ad(new_id)
+		_banner_ad_id = new_id
+	else:
+		_admob.show_banner_ad()
+	_banner_mounted = true
+	_last_banner_creative_unix = Time.get_unix_time_from_system()
+	if not previous.is_empty() and previous != _banner_ad_id:
+		_admob.remove_banner_ad(previous)
+	_arm_banner_refresh()
+	banner_visibility_changed.emit(true)
 
 
 func _on_banner_impression() -> void:
 	_banner_impression_recorded = true
 	_banner_mounted = true
 	print("[AdsService] Banner impression recorded")
-	_arm_banner_keep_alive()
+	_arm_banner_refresh()
 	banner_visibility_changed.emit(true)
 
 
@@ -723,25 +732,35 @@ func _on_banner_size_measured(ad_info: AdInfo) -> void:
 		banner_visibility_changed.emit(_banner_mounted)
 
 
-func _on_banner_refreshed() -> void:
+func _on_banner_refreshed(ad_info: AdInfo, _response = null) -> void:
+	_last_banner_creative_unix = Time.get_unix_time_from_system()
+	if ad_info != null and not ad_info.get_ad_id().is_empty():
+		_banner_ad_id = ad_info.get_ad_id()
 	if should_show_banner() and _admob:
-		_admob.show_banner_ad()
-		_banner_mounted = true
-		_arm_banner_keep_alive()
+		_show_current_banner()
 
 
 func _on_banner_failed_to_load(_ad_info, error) -> void:
-	_banner_mounted = false
 	_banner_load_requested = false
 	_banner_load_in_flight = false
+	var still_up := _banner_mounted and not _banner_ad_id.is_empty()
+	if not still_up:
+		_banner_mounted = false
 	_log_ad_error("banner", error)
 	var delay := _retry_delay(error, _banner_retry_count, BANNER_RETRY_MAX)
 	if delay < 0.0:
-		banner_visibility_changed.emit(false)
+		if still_up:
+			_arm_banner_refresh()
+		else:
+			banner_visibility_changed.emit(false)
 		return
 	_banner_retry_count += 1
 	get_tree().create_timer(delay).timeout.connect(func() -> void:
-		if should_show_banner() and not _banner_mounted and not _banner_load_in_flight:
+		if not should_show_banner() or _banner_load_in_flight:
+			return
+		if still_up:
+			_on_banner_refresh_due()
+		elif not _banner_mounted:
 			ensure_banner_mounted()
 	)
 
@@ -839,12 +858,9 @@ func _show_banner_native() -> void:
 		return
 	_apply_request_config_before_ad_load()
 	if _admob.is_banner_ad_loaded():
-		_admob.show_banner_ad()
-		_banner_mounted = true
-		_arm_banner_keep_alive()
-		banner_visibility_changed.emit(true)
+		_show_current_banner()
 		return
-	## One in-flight load; AdMob refreshes the creative on its own after a successful show.
+	## One in-flight load. Screen changes must not start another.
 	if _banner_load_requested or _banner_load_in_flight:
 		banner_visibility_changed.emit(_banner_mounted)
 		return
@@ -928,23 +944,52 @@ func _wait_until_rewarded_settled(timeout_sec: float) -> bool:
 	return _rewarded_ready
 
 
-func _arm_banner_keep_alive() -> void:
-	if _banner_keep_alive_armed or not should_show_banner():
+func _show_current_banner() -> void:
+	if _admob == null:
 		return
-	_banner_keep_alive_armed = true
-	var gen := _banner_keep_alive_gen
-	get_tree().create_timer(BANNER_KEEP_ALIVE_SEC).timeout.connect(func() -> void:
-		if gen != _banner_keep_alive_gen:
+	if not _banner_ad_id.is_empty():
+		_admob.show_banner_ad(_banner_ad_id)
+	else:
+		_admob.show_banner_ad()
+	_banner_mounted = true
+	_arm_banner_refresh()
+	banner_visibility_changed.emit(true)
+
+
+func _arm_banner_refresh() -> void:
+	if _banner_refresh_armed or not should_show_banner():
+		return
+	_banner_refresh_armed = true
+	var gen := _banner_refresh_gen
+	get_tree().create_timer(BANNER_REFRESH_SEC).timeout.connect(func() -> void:
+		if gen != _banner_refresh_gen:
 			return
-		_on_banner_keep_alive()
+		_on_banner_refresh_due()
 	)
 
 
-func _on_banner_keep_alive() -> void:
-	_banner_keep_alive_armed = false
-	if not should_show_banner():
+func _on_banner_refresh_due() -> void:
+	_banner_refresh_armed = false
+	if not should_show_banner() or _admob == null:
 		return
-	if _admob != null and _admob.is_banner_ad_loaded():
-		_admob.show_banner_ad()
+	## Leave the current banner up. A fullscreen ad is covering it; try again later.
+	if _fullscreen_ad_since_unix > 0.0 or _banner_load_in_flight:
+		_arm_banner_refresh()
+		return
+	var elapsed := Time.get_unix_time_from_system() - _last_banner_creative_unix
+	if elapsed < BANNER_REFRESH_SEC - 1.0:
+		_show_current_banner()
+		return
+	if _admob.is_banner_ad_loaded():
+		if not _banner_ad_id.is_empty():
+			_admob.show_banner_ad(_banner_ad_id)
+		else:
+			_admob.show_banner_ad()
 		_banner_mounted = true
-	_arm_banner_keep_alive()
+	_banner_load_in_flight = true
+	_apply_request_config_before_ad_load()
+	var req := _admob.create_banner_ad_request()
+	var width_dp := _banner_width_dp()
+	if width_dp >= 320:
+		req.set_adaptive_width(width_dp)
+	_admob.load_banner_ad(req)

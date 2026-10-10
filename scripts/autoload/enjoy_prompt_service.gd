@@ -91,7 +91,7 @@ func _on_settle_elapsed() -> void:
 	if nav.has_method("is_home_visible") and not nav.call("is_home_visible"):
 		return
 	var paywall := nav.get_node_or_null("Screens/PaywallScreen")
-	var blocked := (
+	var blocked: bool = (
 		AdsService.is_fullscreen_ad_showing()
 		or FeatureTipService.is_showing()
 		or (paywall != null and paywall.visible)
