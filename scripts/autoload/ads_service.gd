@@ -71,8 +71,8 @@ const INTERSTITIAL_MIN_INTERVAL_SEC := 90.0
 ## Keep the same native banner on screen. New creatives come from AdMob auto-refresh
 ## (set the banner unit to 60s in AdMob). This timer only re-shows; it does not loadAd.
 const BANNER_KEEP_ALIVE_SEC := 60.0
-## Extra Godot UI inset above the native banner so sliders / tiles are not flush on the ad.
-const BANNER_UI_GAP := 20.0
+## A few points so the last control does not sit on the ad's top edge.
+const BANNER_UI_GAP := 4.0
 
 var _safe_exit_count: int = 0
 var _last_interstitial_unix: float = -99999.0
@@ -130,12 +130,19 @@ func is_native_banner_showing() -> bool:
 
 
 func _banner_width_dp() -> int:
-	## AdMob adaptive width is in points. The Godot window on iOS is in pixels.
+	## AdMob wants the width in points. Prefer the Godot viewport, which is
+	## already in points with this project's stretch settings. Dividing a
+	## point width by the screen scale asks AdMob for a banner that is too
+	## narrow and looks cut off.
+	var view_w := float(get_viewport().get_visible_rect().size.x)
 	var scale := DisplayServer.screen_get_scale()
 	var win_w := float(DisplayServer.window_get_size().x)
-	if scale > 1.01 and win_w > 0.0:
-		return maxi(320, int(round(win_w / scale)))
-	return maxi(320, int(round(get_viewport().get_visible_rect().size.x)))
+	var points := view_w
+	if scale > 1.01 and win_w > view_w * 1.25:
+		points = win_w / scale
+	if view_w >= 320.0 and points > view_w * 1.25:
+		points = view_w
+	return maxi(320, int(round(points)))
 
 
 func _points_to_viewport(points: float) -> float:
@@ -147,19 +154,30 @@ func _points_to_viewport(points: float) -> float:
 	return points
 
 
-func banner_reserved_height() -> float:
-	if Entitlements.has_plus() or not _ads_enabled:
-		return 0.0
+func _banner_height_points() -> float:
+	## Anchored adaptive banners are about 50pt on a phone and 90pt on a tablet.
+	## Reserving 100pt left a gray strip above a normal ad.
 	var tablet := Responsive.is_tablet(get_viewport().get_visible_rect().size)
-	## Floor clears a tall adaptive banner plus the home-indicator strip.
-	## A short reserve let the native ad draw on top of the last buttons.
-	var ad_h := _points_to_viewport(120.0 if tablet else 100.0)
-	if _banner_measured_height >= 40.0:
-		var measured := _banner_measured_height
-		if measured < ad_h * 0.6:
-			measured = _points_to_viewport(measured)
-		ad_h = maxf(ad_h, measured)
-	return ad_h + _points_to_viewport(BANNER_UI_GAP)
+	var fallback := 90.0 if tablet else 50.0
+	var cap := 100.0 if tablet else 68.0
+	if _banner_measured_height < 32.0:
+		return fallback
+	var measured := _banner_measured_height
+	var scale := DisplayServer.screen_get_scale()
+	if scale > 1.01 and measured > cap:
+		var as_points := measured / scale
+		if as_points >= 32.0:
+			measured = as_points
+	return clampf(measured, 32.0, cap)
+
+
+func banner_reserved_height() -> float:
+	if Entitlements.has_plus() or not _ads_enabled or not should_show_banner():
+		return 0.0
+	## No ad on screen yet: do not leave an empty gray slab.
+	if not _banner_mounted and _banner_measured_height < 32.0:
+		return 0.0
+	return _points_to_viewport(_banner_height_points() + BANNER_UI_GAP)
 
 
 func can_show_interstitial() -> bool:

@@ -18,6 +18,8 @@ var _ios_store: Node = null
 var _ios_store_ready: bool = false
 var _pending_purchase: bool = false
 var _store_start_requested: bool = false
+var _purchase_requested: bool = false
+var _restore_requested: bool = false
 
 
 func _ready() -> void:
@@ -68,6 +70,7 @@ func purchase_plus() -> void:
 	if Entitlements.has_plus():
 		return
 	ensure_store_started()
+	_purchase_requested = true
 	purchase_started.emit(PRODUCT_ID)
 	if not OS.has_feature("mobile"):
 		await get_tree().create_timer(0.4).timeout
@@ -81,6 +84,7 @@ func purchase_plus() -> void:
 
 func restore_purchases() -> void:
 	ensure_store_started()
+	_restore_requested = true
 	if not OS.has_feature("mobile"):
 		if Entitlements.has_plus():
 			purchase_restored.emit([PRODUCT_ID])
@@ -121,8 +125,6 @@ func _on_ios_store_ready() -> void:
 	_ios_store_ready = true
 	_ready_to_purchase = true
 	_on_ios_product_prices_updated()
-	if _ios_store != null:
-		_ios_store.refresh_entitlements()
 
 
 func _on_ios_product_prices_updated() -> void:
@@ -166,8 +168,12 @@ func _on_ios_purchase_settled(
 		return
 	if grant_rewards:
 		_pending_purchase = false
+		_purchase_requested = false
 		purchase_completed.emit(PRODUCT_ID)
-	else:
+	elif _restore_requested or _purchase_requested:
+		## A paywall visit starts StoreKit, which can replay an old transaction.
+		## That is not a purchase. Only Restore, or a buy the user just started,
+		## may turn Plus on.
 		purchase_restored.emit([PRODUCT_ID])
 
 
@@ -176,6 +182,10 @@ func _on_ios_restore_finished(success: bool, reason: String) -> void:
 		push_warning("IAPService: restore failed: %s" % reason)
 	if _ios_store != null:
 		_ios_store.refresh_entitlements()
+	## Entitlement replay can arrive just after restore_finished.
+	get_tree().create_timer(2.0).timeout.connect(func() -> void:
+		_restore_requested = false
+	, CONNECT_ONE_SHOT)
 
 
 func _request_purchase_native(product_id: String) -> void:

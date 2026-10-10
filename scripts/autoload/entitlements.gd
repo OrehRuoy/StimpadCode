@@ -7,6 +7,9 @@ signal library_unlock_ended(reason: String)
 const ENTITLEMENTS_PATH := "user://stimpad_entitlements.json"
 const PRODUCT_ID := "com.stimpad.soundboard.plus"
 const LIBRARY_UNLOCK_SEC := 20 * 60
+## Opening the paywall used to replay a StoreKit transaction and save Plus,
+## and a stuck 20-minute window hid Watch Ad. Epoch 2 forgets that once.
+const ENTITLEMENT_EPOCH := 2
 
 var _has_plus: bool = false
 
@@ -157,15 +160,29 @@ func load_state() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	_has_plus = bool(parsed.get("has_plus", false))
+	var epoch := int(parsed.get("epoch", 1))
+	if epoch < ENTITLEMENT_EPOCH:
+		_has_plus = false
+		LocalPrefs.clear_library_unlock()
+		save_state()
+		call_deferred("_enable_ads_after_reset")
+		return
 	if _has_plus:
 		AdsService.set_ads_enabled(false)
+
+
+func _enable_ads_after_reset() -> void:
+	AdsService.set_ads_enabled(true)
 
 
 func save_state() -> void:
 	var file := FileAccess.open(ENTITLEMENTS_PATH, FileAccess.WRITE)
 	if file == null:
 		return
-	file.store_string(JSON.stringify({"has_plus": _has_plus}))
+	file.store_string(JSON.stringify({
+		"has_plus": _has_plus,
+		"epoch": ENTITLEMENT_EPOCH,
+	}))
 	file.close()
 
 

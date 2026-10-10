@@ -155,8 +155,6 @@ func _on_products_request_completed(products: Array, status: int) -> void:
 	_ready = true
 	store_ready.emit()
 	product_prices_updated.emit()
-	if _manager.has_method("fetch_current_entitlements"):
-		_manager.fetch_current_entitlements()
 
 
 func _on_purchase_completed(_transaction: Variant, status: int, error_message: String) -> void:

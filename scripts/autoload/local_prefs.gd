@@ -197,6 +197,13 @@ func snooze_enjoy_prompt(seconds: int) -> void:
 	save_prefs()
 
 
+func clear_library_unlock() -> void:
+	library_unlock_until_unix = 0
+	library_unlock_started_unix = 0
+	library_unlock_last_day = ""
+	save_prefs()
+
+
 func reset_enjoy_prompt_for_debug() -> void:
 	enjoy_prompt_completed = false
 	enjoy_prompt_snooze_until = 0

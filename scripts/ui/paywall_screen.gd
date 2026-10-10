@@ -159,9 +159,8 @@ func _set_plus_title(_use_art: bool = true, _fallback_text: String = "StimPad Pl
 
 
 func _make_content_scroll() -> void:
-	## Keep Unlock and Watch Ad reachable above the banner. A centered column
-	## that is taller than the phone draws the buy button under the native ad,
-	## which looks dead and cannot be tapped.
+	## Hero copy scrolls. Watch Ad and Unlock stay pinned under it so a tall
+	## banner cannot cover them and they cannot scroll off the phone.
 	var margin := _vbox.get_parent()
 	var scroll := ScrollContainer.new()
 	_paywall_scroll = scroll
@@ -171,9 +170,24 @@ func _make_content_scroll() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	var actions := VBoxContainer.new()
+	actions.name = "PaywallActions"
+	actions.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.size_flags_vertical = Control.SIZE_SHRINK_END
+	actions.add_theme_constant_override("separation", 4)
+	for node in [_watch_wrap, _watch_meta, _buy_wrap, _price_label, _restore_wrap]:
+		_vbox.remove_child(node)
+		actions.add_child(node)
 	margin.remove_child(_vbox)
-	margin.add_child(scroll)
+	var column := VBoxContainer.new()
+	column.name = "PaywallColumn"
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_theme_constant_override("separation", 6)
+	margin.add_child(column)
+	column.add_child(scroll)
 	scroll.add_child(_vbox)
+	column.add_child(actions)
 	_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	_vbox.alignment = BoxContainer.ALIGNMENT_BEGIN
 	for bar in [scroll.get_h_scroll_bar(), scroll.get_v_scroll_bar()]:
@@ -191,8 +205,7 @@ func _set_watch_visible(on: bool) -> void:
 func _reveal_actions() -> void:
 	if _paywall_scroll == null:
 		return
-	var target: Control = _watch_wrap if _watch_wrap.visible else _buy_wrap
-	_paywall_scroll.call_deferred("ensure_control_visible", target)
+	_paywall_scroll.call_deferred("ensure_control_visible", _status)
 
 
 func _price_copy() -> String:

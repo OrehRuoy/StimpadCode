@@ -8,16 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/feedback_screen.tscn" id="6"]
 [ext_resource type="Texture2D" path="res://assets/branding/boot_splash.png" id="7"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
-bg_color = Color(0.14, 0.18, 0.26, 0.92)
-border_width_top = 2
-border_color = Color(0.37, 0.81, 0.69, 0.55)
-corner_radius_top_left = 14
-corner_radius_top_right = 14
-content_margin_left = 8
-content_margin_top = 8
-content_margin_right = 8
-content_margin_bottom = 8
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_banner"]
 
 [node name="Main" type="Control" groups=["main_nav"]]
 layout_mode = 3
@@ -90,9 +81,10 @@ anchor_bottom = 1.0
 offset_top = -52.0
 grow_horizontal = 2
 grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
+theme_override_styles/panel = SubResource("StyleBoxEmpty_banner")
 
 [node name="Label" type="Label" parent="BannerPlaceholder"]
+visible = false
 layout_mode = 2
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.75, 0.84, 0.9, 1)

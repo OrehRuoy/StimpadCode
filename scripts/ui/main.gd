@@ -239,20 +239,18 @@ func _update_banner_inset() -> void:
 	_screens.offset_bottom = -(banner_h + bar_h)
 	_banner_placeholder.offset_top = -banner_h
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
-	_banner_placeholder.visible = reserve
+	_banner_placeholder.visible = banner_h > 1.0
 	if _now_playing != null:
 		_now_playing.offset_bottom = -banner_h
 		_now_playing.offset_top = -(banner_h + NOW_PLAYING_H)
 		_now_playing.visible = bar_h > 0.0
-	var preview := reserve and (not OS.has_feature("mobile") or OS.is_debug_build())
-	if preview:
-		_banner_placeholder.remove_theme_stylebox_override("panel")
-	else:
-		_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
+	## Never paint the scene's gray panel. That box sat above a shorter ad.
+	_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_banner_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var label := _banner_placeholder.get_node_or_null("Label") as Label
 	if label:
-		label.visible = preview
+		var show_label := not OS.has_feature("mobile") and OS.is_debug_build()
+		label.visible = show_label
 		label.text = tr("Ad banner area") if AdsService.should_show_banner() else tr("Ad banner area (preview)")
 
 
