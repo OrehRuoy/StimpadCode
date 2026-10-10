@@ -193,7 +193,14 @@ func _apply_responsive_layout() -> void:
 	_margin.add_theme_constant_override("margin_bottom", int(bottom))
 	_vbox.add_theme_constant_override("separation", 14 if tablet else 10)
 	_title.add_theme_font_size_override("font_size", Responsive.title_font_size(vs))
-	_art_frame.custom_minimum_size = Vector2(0, Responsive.player_art_min_height(vs))
+	## Art expands into leftover space. A tall minimum pushes the timer chips
+	## out of the screen and under the banner.
+	var controls_h := 300.0 if LocalPrefs.show_pitch_speed else 230.0
+	if tablet:
+		controls_h += 48.0
+	var art_room := vs.y - top - bottom - controls_h - 96.0
+	var art_h := clampf(art_room, 120.0 if tablet else 88.0, Responsive.player_art_min_height(vs))
+	_art_frame.custom_minimum_size = Vector2(0, art_h)
 	var btn_h := Responsive.top_button_min_height(vs)
 	_back_btn.custom_minimum_size = Vector2(100, btn_h)
 	_favorite_btn.custom_minimum_size = Vector2(btn_h + 8.0, btn_h + 8.0)

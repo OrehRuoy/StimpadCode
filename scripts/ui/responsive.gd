@@ -54,14 +54,50 @@ static func title_font_size(viewport_size: Vector2) -> int:
 	return 30 if is_tablet(viewport_size) else 24
 
 
+static func px_to_viewport(px: float, window_axis: float, view_axis: float) -> float:
+	## Safe area and window size are screen pixels. Layout margins are viewport units.
+	if px <= 0.0:
+		return 0.0
+	if window_axis <= 1.0 or view_axis <= 1.0:
+		return px
+	if window_axis <= view_axis * 1.15:
+		return px
+	return px * view_axis / window_axis
+
+
+static func viewport_size() -> Vector2:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		return (tree as SceneTree).root.get_visible_rect().size
+	return Vector2.ZERO
+
+
 static func safe_outer_margins(base: Vector4) -> Vector4:
 	var sa := DisplayServer.get_display_safe_area()
 	var win := DisplayServer.window_get_size()
-	var left := maxf(base.x, float(sa.position.x) + 8.0)
-	var top := maxf(base.y, float(sa.position.y) + 8.0)
-	var right := maxf(base.z, float(win.x - sa.position.x - sa.size.x) + 8.0)
-	var bottom := maxf(base.w, float(win.y - sa.position.y - sa.size.y) + 8.0)
+	var view := viewport_size()
+	var win_x := float(win.x)
+	var win_y := float(win.y)
+	var left := maxf(base.x, px_to_viewport(float(sa.position.x), win_x, view.x) + 8.0)
+	var top := maxf(base.y, px_to_viewport(float(sa.position.y), win_y, view.y) + 8.0)
+	var right_px := float(win.x - sa.position.x - sa.size.x)
+	var bottom_px := float(win.y - sa.position.y - sa.size.y)
+	var right := maxf(base.z, px_to_viewport(right_px, win_x, view.x) + 8.0)
+	var bottom := maxf(base.w, px_to_viewport(bottom_px, win_y, view.y) + 8.0)
 	## Keep chrome clear of status bar / notch (esp. player Back).
 	if OS.has_feature("mobile") and top < 40.0:
 		top = 40.0
+	## The banner strip already sits in the home-indicator area. Adding that
+	## inset again inside the screen pushes content up and then the player
+	## controls spill back down over the ad.
+	var ads = tree_ads()
+	if ads != null and ads.has_method("banner_reserved_height") and ads.banner_reserved_height() > 1.0:
+		bottom = base.w
 	return Vector4(left, top, right, bottom)
+
+
+static func tree_ads() -> Node:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		return (tree as SceneTree).root.get_node_or_null("AdsService")
+	return null

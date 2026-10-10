@@ -147,39 +147,67 @@ func _banner_width_dp() -> int:
 	return maxi(320, int(round(points)))
 
 
-func _points_to_viewport(points: float) -> float:
+func _choose_banner_height(measured: float, scale: float, win_h: float, view: Vector2) -> float:
+	## Anchored adaptive banners are about 50pt on a phone and 90pt on a tablet.
+	## The plugin may report that height in viewport units or in screen pixels.
+	## Pick the reading that looks like a banner. Dividing a point height, or
+	## clamping a pixel height, is what left the ad covering the sound screen.
+	var tablet := Responsive.is_tablet(view)
+	var fallback := 90.0 if tablet else 50.0
+	var max_h := minf(view.y * 0.22, 160.0 if tablet else 110.0)
+	if max_h < 50.0:
+		max_h = 50.0
+	if measured < 32.0:
+		return fallback
+	var options: Array[float] = [measured]
+	if scale > 1.01:
+		options.append(measured / scale)
+	if win_h > view.y * 1.2 and win_h > 1.0:
+		options.append(measured * view.y / win_h)
+	var best := fallback
+	var best_dist := 100000.0
+	var found := false
+	for option in options:
+		if option < 32.0 or option > max_h:
+			continue
+		var dist := absf(option - fallback)
+		if not found or dist < best_dist:
+			found = true
+			best = option
+			best_dist = dist
+	return best if found else fallback
+
+
+func _banner_height_viewport() -> float:
+	var view := get_viewport().get_visible_rect().size
 	var scale := DisplayServer.screen_get_scale()
 	var win_h := float(DisplayServer.window_get_size().y)
-	var view_h := get_viewport().get_visible_rect().size.y
-	if scale > 1.01 and win_h > 1.0 and view_h > (win_h / scale) * 1.4:
-		return points * (view_h / (win_h / scale))
-	return points
-
-
-func _banner_height_points() -> float:
-	## Anchored adaptive banners are about 50pt on a phone and 90pt on a tablet.
-	## Reserving 100pt left a gray strip above a normal ad.
-	var tablet := Responsive.is_tablet(get_viewport().get_visible_rect().size)
-	var fallback := 90.0 if tablet else 50.0
-	var cap := 100.0 if tablet else 68.0
-	if _banner_measured_height < 32.0:
-		return fallback
-	var measured := _banner_measured_height
-	var scale := DisplayServer.screen_get_scale()
-	if scale > 1.01 and measured > cap:
-		var as_points := measured / scale
-		if as_points >= 32.0:
-			measured = as_points
-	return clampf(measured, 32.0, cap)
+	var readings: Array[float] = []
+	if _banner_measured_height >= 32.0:
+		readings.append(_banner_measured_height)
+	if _admob != null and _admob.is_banner_ad_loaded():
+		var dim := _admob.get_banner_dimension(_banner_ad_id)
+		if dim.y >= 32.0:
+			readings.append(dim.y)
+		var px := _admob.get_banner_dimension_in_pixels(_banner_ad_id)
+		if px.y >= 32.0:
+			readings.append(px.y)
+	if readings.is_empty():
+		return _choose_banner_height(0.0, scale, win_h, view)
+	## Use the tallest sane reading so a pixel value cannot shrink the slot
+	## under the creative that is actually on screen.
+	var best := 0.0
+	for reading in readings:
+		best = maxf(best, _choose_banner_height(reading, scale, win_h, view))
+	return best
 
 
 func banner_reserved_height() -> float:
 	if Entitlements.has_plus() or not _ads_enabled or not should_show_banner():
 		return 0.0
-	## No ad on screen yet: do not leave an empty gray slab.
-	if not _banner_mounted and _banner_measured_height < 32.0:
-		return 0.0
-	return _points_to_viewport(_banner_height_points() + BANNER_UI_GAP)
+	## Keep the slot from the moment a banner should be on screen, so controls
+	## are already above it when the creative appears.
+	return _banner_height_viewport() + BANNER_UI_GAP
 
 
 func can_show_interstitial() -> bool:

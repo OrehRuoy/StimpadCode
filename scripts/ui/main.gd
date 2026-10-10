@@ -39,6 +39,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(_update_banner_inset)
 	AudioController.preview_finished.connect(_on_preview_finished)
 	Entitlements.library_unlock_ended.connect(_on_library_unlock_ended)
+	_screens.clip_contents = true
 	_update_banner_inset()
 	AnalyticsService.log_app_open()
 	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
@@ -230,9 +231,8 @@ func _on_banner_visibility_changed(_visible: bool) -> void:
 
 
 func _update_banner_inset() -> void:
-	## Reserve bottom space on free tier so app UI does not sit under the native banner.
-	## On device the spacer must be empty — an opaque “Ad banner area” panel can cover
-	## the native AdMob view and produce requests with 0 impressions.
+	## The native banner owns the bottom strip. Every screen lives above it.
+	## The spacer stays empty so it cannot paint over the AdMob view.
 	var reserve := not Entitlements.has_plus()
 	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
 	var bar_h := NOW_PLAYING_H if _now_playing_visible() else 0.0
