@@ -45,6 +45,8 @@ var _scope_chips: Dictionary = {} ## id -> Button
 var _syncing_dev_menu: bool = false
 var _grid_gen: int = 0
 var _first_home_ready_emitted: bool = false
+var _play_again_column: VBoxContainer
+var _play_again_caption: Label
 var _play_again_scroll: ScrollContainer
 var _play_again_box: HBoxContainer
 var _library_label: Label
@@ -402,8 +404,16 @@ func _on_home_visibility_changed() -> void:
 
 
 func _build_play_again() -> void:
+	_play_again_column = VBoxContainer.new()
+	_play_again_column.name = "PlayAgain"
+	_play_again_column.add_theme_constant_override("separation", 6)
+	_play_again_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_play_again_caption = Label.new()
+	_play_again_caption.text = tr("Play again")
+	_play_again_caption.add_theme_font_size_override("font_size", 13)
+	_play_again_caption.add_theme_color_override("font_color", Color(0.7, 0.78, 0.86, 1))
+	_play_again_column.add_child(_play_again_caption)
 	_play_again_scroll = ScrollContainer.new()
-	_play_again_scroll.name = "PlayAgain"
 	_play_again_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_play_again_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_play_again_scroll.scroll_deadzone = 24
@@ -411,9 +421,10 @@ func _build_play_again() -> void:
 	_play_again_box = HBoxContainer.new()
 	_play_again_box.add_theme_constant_override("separation", 8)
 	_play_again_scroll.add_child(_play_again_box)
+	_play_again_column.add_child(_play_again_scroll)
 	var vbox := _category_select.get_parent()
-	vbox.add_child(_play_again_scroll)
-	vbox.move_child(_play_again_scroll, _category_select.get_index() + 1)
+	vbox.add_child(_play_again_column)
+	vbox.move_child(_play_again_column, _category_select.get_index() + 1)
 	_hide_scroll_bar(_play_again_scroll.get_h_scroll_bar())
 	_hide_scroll_bar(_play_again_scroll.get_v_scroll_bar())
 	_rebuild_play_again()
@@ -424,7 +435,7 @@ func _play_again_ok(sound: Dictionary) -> bool:
 
 
 func _rebuild_play_again() -> void:
-	if _play_again_box == null:
+	if _play_again_box == null or _play_again_column == null:
 		return
 	for child in _play_again_box.get_children():
 		_play_again_box.remove_child(child)
@@ -468,15 +479,10 @@ func _rebuild_play_again() -> void:
 			used[fav_id] = true
 			fav_added += 1
 	if entries.is_empty():
-		_play_again_scroll.visible = false
+		_play_again_column.visible = false
 		return
-	_play_again_scroll.visible = true
-	var caption := Label.new()
-	caption.text = tr("Play again")
-	caption.add_theme_font_size_override("font_size", 13)
-	caption.add_theme_color_override("font_color", Color(0.7, 0.78, 0.86, 1))
-	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_play_again_box.add_child(caption)
+	_play_again_column.visible = true
+	_play_again_caption.text = tr("Play again")
 	var vs := get_viewport_rect().size
 	var is_tablet := Responsive.is_tablet(vs)
 	var small_phone := vs.y < 740.0 and not is_tablet
@@ -506,7 +512,7 @@ func _rebuild_play_again() -> void:
 		btn.pressed.connect(_on_play_again_pressed.bind(sound, slot, position))
 		_play_again_box.add_child(btn)
 		position += 1
-	_play_again_scroll.custom_minimum_size = Vector2(0, chip_h + 8.0)
+	_play_again_scroll.custom_minimum_size = Vector2(0, chip_h)
 
 
 func _on_play_again_pressed(sound: Dictionary, slot: String, position: int) -> void:

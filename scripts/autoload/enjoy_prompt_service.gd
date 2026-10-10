@@ -30,13 +30,22 @@ var _qualified_listen := false
 
 func _ready() -> void:
 	LocalPrefs.note_app_open()
-	AudioController.listened_enough.connect(func(_sound_id: String) -> void:
-		_qualified_listen = true
-	)
+	AudioController.listened_enough.connect(_on_listened_enough)
+
+
+func _on_listened_enough(_sound_id: String) -> void:
+	_qualified_listen = true
+	## Listening often finishes on the player, or on Home after they already
+	## came back. Either way, try again once the 45 seconds are real.
+	_schedule_prompt()
 
 
 ## Call when navigating back to Home — may show the prompt after settle delay.
 func on_returned_home() -> void:
+	_schedule_prompt()
+
+
+func _schedule_prompt() -> void:
 	if not _should_offer():
 		return
 	if not _force_next and not _qualified_listen:
@@ -76,16 +85,20 @@ func _on_settle_elapsed() -> void:
 		return
 	if not _force_next and not _qualified_listen:
 		return
-	if AdsService.is_fullscreen_ad_showing() or FeatureTipService.is_showing():
-		return
 	var nav := get_tree().get_first_node_in_group("main_nav")
-	if nav != null:
-		var paywall := nav.get_node_or_null("Screens/PaywallScreen")
-		if paywall != null and paywall.visible:
-			return
 	if nav == null:
 		return
 	if nav.has_method("is_home_visible") and not nav.call("is_home_visible"):
+		return
+	var paywall := nav.get_node_or_null("Screens/PaywallScreen")
+	var blocked := (
+		AdsService.is_fullscreen_ad_showing()
+		or FeatureTipService.is_showing()
+		or (paywall != null and paywall.visible)
+	)
+	if blocked:
+		## Don't drop this chance because an ad or tip was still up.
+		_schedule_prompt()
 		return
 	_show_prompt()
 

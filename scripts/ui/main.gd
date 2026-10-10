@@ -192,7 +192,11 @@ func _on_preview_finished(sound_id: String, reason: String) -> void:
 	})
 	_player.call("close_preview")
 	if reason == "timeout" or reason == "stop":
-		show_paywall(SoundCatalog.get_sound_by_id(sound_id), "preview_ended")
+		var sound := SoundCatalog.get_sound_by_id(sound_id)
+		if SoundCatalog.is_sound_unlocked(sound):
+			show_player(sound)
+		else:
+			show_paywall(sound, "preview_ended")
 
 
 func _on_library_unlock_ended(reason: String) -> void:

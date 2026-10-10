@@ -44,6 +44,7 @@ func _ready() -> void:
 	AdsService.rewarded_unlock_failed.connect(_on_rewarded_failed)
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
+	_make_content_scroll()
 	_apply_responsive_layout()
 	_refresh()
 	set_process(true)
@@ -156,6 +157,28 @@ func _set_plus_title(_use_art: bool = true, _fallback_text: String = "StimPad Pl
 	_title.visible = false
 
 
+func _make_content_scroll() -> void:
+	## Keep Unlock and Watch Ad reachable above the banner. A centered column
+	## that is taller than the phone draws the buy button under the native ad,
+	## which looks dead and cannot be tapped.
+	var margin := _vbox.get_parent()
+	var scroll := ScrollContainer.new()
+	scroll.name = "PaywallScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	margin.remove_child(_vbox)
+	margin.add_child(scroll)
+	scroll.add_child(_vbox)
+	_vbox.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_vbox.alignment = BoxContainer.ALIGNMENT_BEGIN
+	for bar in [scroll.get_h_scroll_bar(), scroll.get_v_scroll_bar()]:
+		bar.modulate.a = 0.0
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
 func _set_watch_visible(on: bool) -> void:
 	_watch_wrap.visible = on
 	_watch_meta.visible = on
@@ -185,21 +208,21 @@ func _refresh() -> void:
 	var sound_id := str(_focus_sound.get("id", ""))
 	var sound_name := tr(str(_focus_sound.get("name", "this sound")))
 	var has_focus := not sound_id.is_empty()
-	var offer_rewarded := AdsService.can_offer_rewarded() and Entitlements.can_start_library_unlock()
+	## Daily unlock is offered on every locked paywall, including after a preview.
+	## Ads that are not ready yet still show the button; the tap explains why.
+	var offer_rewarded := Entitlements.can_start_library_unlock()
 
 	_set_plus_title(true)
+	_buy_btn.disabled = false
+	_buy_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	_buy_wrap.modulate = Color.WHITE
 
 	if Entitlements.has_plus():
 		_subtitle.text = tr("You're all set")
 		_status.text = tr("You have StimPad Plus. All sounds unlocked, ads removed.")
-		_buy_btn.disabled = true
-		_buy_wrap.modulate = Color(1, 1, 1, 0.45)
 		_price_label.text = tr("Owned")
 		_set_watch_visible(false)
 		return
-
-	_buy_btn.disabled = false
-	_buy_wrap.modulate = Color.WHITE
 	_price_label.text = _price_copy()
 
 	if Entitlements.is_library_unlocked():
@@ -252,6 +275,12 @@ func _on_rewarded_failed(reason: String) -> void:
 
 
 func _on_buy() -> void:
+	if Entitlements.has_plus():
+		if not _focus_sound.is_empty():
+			_nav_call("show_player", [_focus_sound])
+		else:
+			_nav_call("show_home")
+		return
 	var buy := {"source": "iap"}
 	if IAPService.has_live_price():
 		buy["price"] = IAPService.get_display_price()
