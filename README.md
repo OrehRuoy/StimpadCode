@@ -26,6 +26,9 @@ See [docs/PLUGIN_SETUP.md](docs/PLUGIN_SETUP.md) for AdMob, Firebase Analytics, 
 ## iOS CI
 See [docs/IOS_CI.md](docs/IOS_CI.md). Workflows: `.github/workflows/ios-testflight.yml`
 
+## Release rule
+Every feature branch is merged into `main` before it ships. TestFlight, App Store, and Play builds run only from `main`.
+
 ## Privacy policy
 https://orehruoy.github.io/StimPad/privacy-policy.html
 

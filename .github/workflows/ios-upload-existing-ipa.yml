@@ -12,7 +12,35 @@ jobs:
   upload:
     runs-on: macos-26
     steps:
+      - name: Require main
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Store builds only run from refs/heads/main (this run is ${GITHUB_REF})."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Require IPA built from main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::source_run_id must be a numeric GitHub Actions run id."
+            exit 1
+          fi
+          branch=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" --jq .head_branch)
+          if [ "$branch" != "main" ]; then
+            echo "::error::Refusing to upload an IPA built from '${branch}'. Store uploads only come from main."
+            exit 1
+          fi
+          echo "Source run ${SOURCE_RUN_ID} was built from main."
+
       - uses: actions/download-artifact@v4
         with:
           name: StimPad-ipa
