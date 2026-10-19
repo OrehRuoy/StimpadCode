@@ -43,6 +43,7 @@ func _ready() -> void:
 	Entitlements.plus_changed.connect(func(_v): _refresh())
 	AdsService.rewarded_unlock_completed.connect(_on_rewarded_done)
 	AdsService.rewarded_unlock_failed.connect(_on_rewarded_failed)
+	AdsService.privacy_choices_availability_changed.connect(func(_available): _refresh())
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
 	_make_content_scroll()
@@ -255,8 +256,9 @@ func _refresh() -> void:
 		return
 
 	## Watch Ad stays on every locked paywall, including right after a preview.
+	## Hidden when Android consent does not allow an ad request.
 	_watch_hint.text = tr("Plus free for 20 min")
-	_set_watch_visible(true)
+	_set_watch_visible(AdsService.can_offer_rewarded())
 	if _open_reason == "library_window_ended":
 		_subtitle.text = tr("All sounds · No ads · One purchase")
 		_status.text = tr("Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.")
@@ -306,12 +308,13 @@ func _on_buy() -> void:
 
 func _on_restore() -> void:
 	AnalyticsService.log_event("paywall_restore_tap", {})
-	if OS.get_name() == "iOS":
+	if OS.get_name() == "iOS" or Platform.is_android():
 		_status.text = tr("Checking your purchases…")
+		var missing := tr("No purchase found for this Google account.") if Platform.is_android() else tr("No purchase found for this Apple ID.")
 		get_tree().create_timer(6.0).timeout.connect(func() -> void:
 			if Entitlements.has_plus() or not is_instance_valid(self) or not visible:
 				return
-			_status.text = tr("No purchase found for this Apple ID.")
+			_status.text = missing
 		, CONNECT_ONE_SHOT)
 	IAPService.restore_purchases()
 
@@ -330,7 +333,10 @@ func _on_purchase_done(_product_id: String) -> void:
 
 func _on_restored(product_ids: Array) -> void:
 	if product_ids.is_empty():
-		_status.text = tr("No purchases found to restore.")
+		if Platform.is_android():
+			_status.text = tr("No purchase found for this Google account.")
+		else:
+			_status.text = tr("No purchases found to restore.")
 	else:
 		_status.text = tr("Purchase restored.")
 		_refresh()

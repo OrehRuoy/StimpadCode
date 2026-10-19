@@ -1,6 +1,6 @@
 # StimPad: Audio Sensory Fidget
 
-Godot 4.6.3 mobile soundboard for neurodivergent users. iOS-first, Android-ready.
+Godot 4.6.3 soundboard for neurodivergent users. It ships on iPhone, iPad, and Android.
 
 ## Bundle ID
 `com.stimpad.soundboard`

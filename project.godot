@@ -14,30 +14,22 @@ config/name="StimPad"
 config/description="Audio sensory fidget soundboard for neurodivergent users."
 config/version="1.0.5"
 run/main_scene="res://scenes/main.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "Mobile")
 boot_splash/bg_color=Color(0.102, 0.133, 0.188, 1)
 boot_splash/image="res://assets/branding/boot_splash.png"
-boot_splash/fullsize=true
-boot_splash/use_filter=true
 config/icon="res://assets/branding/icon_1024.png"
 config/build="1"
 
 [audio]
 
 buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"
-; Playback: ignore the ringer switch and mix under other apps.
-; Godot 4.6 still stops the audio driver when the app backgrounds, so lock-screen
-; playback needs an engine change. Do not add UIBackgroundModes audio until then.
 general/ios/session_category=3
 general/ios/mix_with_others=true
 
-[internationalization]
-
-locale/fallback="en"
-rendering/root_node_auto_translate=true
-
 [autoload]
 
+Platform="*res://scripts/autoload/platform.gd"
 LocaleService="*res://scripts/autoload/locale_service.gd"
 SoundCatalog="*res://scripts/autoload/sound_catalog.gd"
 AudioController="*res://scripts/autoload/audio_controller.gd"
@@ -65,7 +57,7 @@ window/handheld/orientation=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg", "res://addons/InappReviewPlugin/plugin.cfg")
+enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg", "res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/InappReviewPlugin/plugin.cfg")
 
 [gui]
 

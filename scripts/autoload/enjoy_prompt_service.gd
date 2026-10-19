@@ -59,6 +59,13 @@ func is_showing() -> bool:
 	return _prompt != null and is_instance_valid(_prompt)
 
 
+func dismiss() -> void:
+	if not is_showing():
+		return
+	if _prompt.has_method("_on_close"):
+		_prompt.call("_on_close")
+
+
 func force_show_now() -> void:
 	_force_next = true
 	_cancel_delay()

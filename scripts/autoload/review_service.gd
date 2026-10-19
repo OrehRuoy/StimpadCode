@@ -47,6 +47,10 @@ func _request_ios_sheet() -> bool:
 
 
 func _request_android() -> bool:
+	if Engine.has_singleton("InappReviewPlugin"):
+		Engine.get_singleton("InappReviewPlugin").launch_review_flow()
+		AnalyticsService.log_event("review_request_attempted", {"method": "inapp_plugin", "os": "android"})
+		return true
 	if _inapp_review != null:
 		return await _launch_inapp_review_plugin()
 	if Engine.has_singleton("GodotInAppReview"):

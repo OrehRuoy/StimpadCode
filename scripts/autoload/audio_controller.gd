@@ -1,4 +1,6 @@
 extends Node
+## StimPad mixes with other apps. Do not request Android audio focus.
+## Stock Godot 4.6 pauses the driver when the app backgrounds, on Android and iOS.
 
 signal playback_started(sound_id: String)
 signal playback_stopped(sound_id: String)
@@ -29,6 +31,11 @@ var _listen_enough_logged := false
 var _previewing := false
 var _preview_end_unix := 0
 var _preview_timer: Timer
+var _paused_by_os := false
+var _focus_interrupt_logged := false
+var _noisy_bridge: Variant = null
+var _noisy_bridge_failed := false
+var _noisy_poll_accum := 0.0
 
 
 func _ready() -> void:
@@ -53,6 +60,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_check_stop_deadline()
+	if Platform.is_android() and is_playing():
+		_noisy_poll_accum += delta
+		if _noisy_poll_accum >= 0.25:
+			_noisy_poll_accum = 0.0
+			_poll_audio_noisy()
 	if _player != null and _player.playing and not _previewing:
 		_listen_accum_sec += minf(delta, 0.5)
 		if not _listen_30_logged and _listen_accum_sec >= 30.0:
@@ -67,8 +79,27 @@ func _process(delta: float) -> void:
 
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		if is_playing():
+			_paused_by_os = true
+			if not _focus_interrupt_logged:
+				_focus_interrupt_logged = true
+				AnalyticsService.log_event("playback_interrupted", {
+					"sound_id": str(_current_sound.get("id", "")),
+					"reason": "focus_out",
+				})
+		return
 	if what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		_check_stop_deadline()
+		_focus_interrupt_logged = false
+		if not _paused_by_os:
+			return
+		_paused_by_os = false
+		if _current_sound.is_empty():
+			return
+		if not is_playing():
+			_player.play()
+		playback_started.emit(str(_current_sound.get("id", "")))
 
 
 func apply_sfx_volume(linear_01: float) -> void:
@@ -294,6 +325,32 @@ func _arm_stop_timer() -> void:
 func _clear_stop_timer() -> void:
 	_session_timer.stop()
 	_stop_at_unix = 0
+
+
+func _poll_audio_noisy() -> void:
+	var bridge: Variant = _audio_noisy_bridge()
+	if bridge == null:
+		return
+	var noisy: bool = bool(bridge.takeNoisyFlag())
+	if JavaClassWrapper.get_exception() != null or not noisy:
+		return
+	stop()
+
+
+func _audio_noisy_bridge() -> Variant:
+	if not Platform.is_android() or _noisy_bridge_failed:
+		return null
+	if _noisy_bridge != null:
+		return _noisy_bridge
+	if not ClassDB.class_exists("JavaClassWrapper"):
+		_noisy_bridge_failed = true
+		return null
+	var bridge: Variant = JavaClassWrapper.wrap("com.godot.game.AudioNoisyBridge")
+	if JavaClassWrapper.get_exception() != null or bridge == null:
+		_noisy_bridge_failed = true
+		return null
+	_noisy_bridge = bridge
+	return bridge
 
 
 func _check_stop_deadline() -> void:

@@ -47,6 +47,8 @@ gh secret set APPLE_ID_PASSWORD --repo OrehRuoy/StimpadCode
 gh secret set GOOGLE_SERVICE_INFO_PLIST_BASE64 --repo OrehRuoy/StimpadCode
 ```
 
+Android is exported from Godot on this PC. GitHub Actions builds iOS only, so there is no Android workflow and no Android signing secrets are required for CI.
+
 ## Can the agent add them for me?
 
 **Not without you providing the actual certificate and profile files.** Those live on your Mac/PC and must never be committed to git. Once you have the `.p12` and `.mobileprovision` files, you (or I with the files present locally) can run the commands above.
@@ -65,4 +67,6 @@ These files stay **gitignored**:
 - `*.p12`, `*.mobileprovision`
 - `GoogleService-Info.plist`, `ios/GoogleService-Info.plist`, `addons/GodotFirebaseiOS/GoogleService-Info.plist`
 - `addons/GodotFirebaseiOS/` (installed by `scripts/setup_ios_firebase.sh` / CI)
-- `android/app/google-services.json`
+- `android/build/google-services.json`
+- `*.keystore`, `android/*.keystore`
+- `.godot/export_credentials.cfg`

@@ -1,20 +1,32 @@
 # Android Export — StimPad
 
-Package: `com.stimpad.soundboard`
+Package: `com.stimpad.soundboard` (Play Console app id. Do not change it.)
 
-## export_presets.cfg
-Preset **Android** is configured in-repo. Before Play upload:
-1. Create/upload signing keystore; set `package/signed=true` and keystore env in CI or local export
-2. Add `android/app/google-services.json` (gitignored) for Firebase Analytics
-3. Set AdMob App ID via AdmobPlugin export config (`android_export.cfg` + `PROD_APP_ID_ANDROID` in `ads_service.gd`)
-4. Production ad units: fill `PROD_BANNER_ANDROID`, `PROD_INTERSTITIAL_ANDROID`, `PROD_REWARDED_ANDROID` (iOS already wired; Android still empty)
+Godot 4.6.3. Android builds use the Gradle template in `android/build`. `android/.build_version` is `4.6.3.stable`.
 
-## IAP
-Create managed product `com.stimpad.soundboard.plus` ($4.99) in Play Console.
-Wire Godot Play Billing plugin in `IAPService._request_purchase_native` (see CircuitSortCode / godot-iap docs in PLUGIN_SETUP.md).
+## Presets
 
-## Release order
-Ship iOS first. Android internal testing after iOS TestFlight is stable.
+In `export_presets.cfg`:
 
-## Tablet
-`screen/support_large` and `support_xlarge` enabled; home grid expands to 3–4 columns at wider widths.
+- **Android (Play Store .aab)** — `build/StimPad.aab`, `gradle_build/export_format=1`, arm64-v8a only, target SDK 36. This is the Play upload.
+- **Android APK (device test)** — `build/StimPad.apk`, `export_format=0`, `runnable=true`. Same package and version, for `adb install`.
+
+Both presets sign the build (`package/signed=true`), request internet, network state, and vibrate, and turn post-notifications off. Both set `screen/support_large` and `screen/support_xlarge` to true, so 7-inch and 10-inch tablets are included.
+
+## Version code
+
+`version/name` is `1.0.5`, matching `application/config/version` in `project.godot`. Both Android presets use `version/code=1` because this is the first Play upload. Raise that integer by 1 for each later Play upload.
+
+## Signing
+
+Upload keystore: `%USERPROFILE%\keys\stimpad-upload.keystore` (outside the repo). Alias `stimpad`. The password is in `%USERPROFILE%\keys\stimpad-upload-info.txt`. `*.keystore`, `*.jks`, and `keys/` are gitignored.
+
+Local release exports read the path, alias, and password from `.godot/export_credentials.cfg` (gitignored) for both Android presets. Export from the Godot editor. Android is not built in GitHub Actions.
+
+## Firebase
+
+`android/build/google-services.json` is gitignored. Copy the Firebase Android config there before a release export. A release export of `com.stimpad.soundboard` refuses to build when that file is missing or has no client for the package.
+
+## Local export
+
+Project → Export in Godot. Use **Android (Play Store .aab)** for Play and **Android APK (device test)** for `adb install`. Uncheck **Export with debug** on the build you upload.

@@ -5,15 +5,17 @@ signal privacy_choices_availability_changed(available: bool)
 signal rewarded_unlock_completed
 signal rewarded_unlock_failed(reason: String)
 
-## iOS production (AdMob app + units). Android left empty until AdMob Android app exists.
+## iOS production (AdMob app + units).
 const PROD_APP_ID_IOS := "ca-app-pub-5356882403986713~1231581339"
 const PROD_BANNER_IOS := "ca-app-pub-5356882403986713/8726927974"
 const PROD_INTERSTITIAL_IOS := "ca-app-pub-5356882403986713/9050627536"
 const PROD_REWARDED_IOS := "ca-app-pub-5356882403986713/3474601293"
-const PROD_APP_ID_ANDROID := ""
-const PROD_BANNER_ANDROID := ""
-const PROD_INTERSTITIAL_ANDROID := ""
-const PROD_REWARDED_ANDROID := ""
+## Android production ids. The AdMob Android app is not linked to a store yet;
+## Brock links it after the Play launch, and fill may be limited until then.
+const PROD_APP_ID_ANDROID := "ca-app-pub-5356882403986713~7546788183"
+const PROD_BANNER_ANDROID := "ca-app-pub-5356882403986713/6529044973"
+const PROD_INTERSTITIAL_ANDROID := "ca-app-pub-5356882403986713/9366961309"
+const PROD_REWARDED_ANDROID := "ca-app-pub-5356882403986713/8333081239"
 
 const GOOGLE_TEST_APP_ID := "ca-app-pub-3940256099942544~3347511713"
 const ATT_TEXT := (
@@ -32,6 +34,12 @@ var _admob_ready: bool = false
 var _mobile_ads_init_started: bool = false
 var _admob_init_cb_fired: bool = false
 var _ump_started: bool = false
+var _android_gather_active: bool = false
+var _android_privacy_form_open: bool = false
+var _android_consent_finished: bool = false
+var _ads_blocked_by_consent: bool = false
+var _consent_bridge_cached: Variant = null
+var _consent_bridge_lookup_failed: bool = false
 var _playback_active: bool = false
 var _admob: Admob
 var _interstitial_ready: bool = false
@@ -94,6 +102,8 @@ func _ready() -> void:
 	AudioController.playback_finished.connect(_on_playback_stopped)
 	## Do not start AdMob until Main dismisses the boot overlay (home content ready).
 	## Starting during cold load / texture spike crashes TestFlight devices.
+	## _process only polls the Android consent bridge.
+	set_process(false)
 
 
 func _notification(what: int) -> void:
@@ -124,7 +134,13 @@ func set_ads_enabled(enabled: bool) -> void:
 
 
 func should_show_banner() -> bool:
-	return _ads_enabled and not Entitlements.has_plus() and _has_mobile_ads() and _sdk_ready
+	return (
+		_ads_enabled
+		and not Entitlements.has_plus()
+		and not _ads_blocked_by_consent
+		and _has_mobile_ads()
+		and _sdk_ready
+	)
 
 
 func is_native_banner_showing() -> bool:
@@ -216,6 +232,7 @@ func can_show_interstitial() -> bool:
 		and not Entitlements.has_plus()
 		and not Entitlements.is_library_unlocked()
 		and not _playback_active
+		and not _ads_blocked_by_consent
 		and _has_mobile_ads()
 		and _sdk_ready
 		and _interstitial_ready
@@ -230,7 +247,7 @@ func can_show_interstitial() -> bool:
 func can_offer_rewarded() -> bool:
 	if Entitlements.has_plus():
 		return false
-	if not _ads_enabled:
+	if not _ads_enabled or _ads_blocked_by_consent:
 		return false
 	## Desktop/editor: simulate rewarded unlock for testing.
 	if not OS.has_feature("mobile"):
@@ -367,6 +384,14 @@ func try_show_rewarded_for_library() -> void:
 
 func privacy_choices_available() -> bool:
 	## UMP privacy-options entry point (EEA / some US states). Hidden when not required.
+	if Platform.is_android():
+		var bridge: Variant = _consent_bridge()
+		if bridge == null:
+			return false
+		var required: bool = bool(bridge.isPrivacyOptionsRequired())
+		if JavaClassWrapper.get_exception() != null:
+			return false
+		return required
 	if not _has_mobile_ads() or not _sdk_ready:
 		return false
 	return _admob.is_consent_form_available()
@@ -374,6 +399,9 @@ func privacy_choices_available() -> bool:
 
 func open_privacy_choices_from_settings() -> void:
 	## Settings → Manage Ad Consent. Re-opens UMP privacy options when required.
+	if Platform.is_android():
+		_open_android_privacy_options()
+		return
 	if not OS.has_feature("mobile") or _admob == null:
 		return
 	_privacy_settings_request = true
@@ -382,6 +410,193 @@ func open_privacy_choices_from_settings() -> void:
 		_admob.load_consent_form()
 		return
 	_admob.update_consent_info()
+
+
+func _process(_delta: float) -> void:
+	var keep_running := false
+	if _android_gather_active:
+		keep_running = true
+		_poll_android_gather()
+	if _android_privacy_form_open:
+		keep_running = true
+		_poll_android_privacy_form()
+	if not keep_running:
+		set_process(false)
+
+
+func _android_release_ids_blocked() -> bool:
+	if not Platform.is_android() or OS.is_debug_build():
+		return false
+	if PROD_APP_ID_ANDROID.is_empty() or PROD_APP_ID_ANDROID == GOOGLE_TEST_APP_ID:
+		push_error("AdMob: Android release build is missing a production app id — ads will not load")
+		return true
+	return false
+
+
+func _begin_android_consent_gather() -> void:
+	if _android_gather_active or _sdk_ready:
+		return
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		_block_ads_for_consent("ConsentBridge missing")
+		return
+	_android_gather_active = true
+	set_process(true)
+	get_tree().create_timer(12.0).timeout.connect(_on_android_gather_timeout, CONNECT_ONE_SHOT)
+	bridge.gatherConsent()
+	if JavaClassWrapper.get_exception() != null:
+		_android_gather_active = false
+		_block_ads_for_consent("gatherConsent failed to start")
+
+
+func _on_android_gather_timeout() -> void:
+	if not _android_gather_active or _sdk_ready:
+		return
+	var bridge: Variant = _consent_bridge()
+	var state := -1
+	if bridge != null:
+		state = int(bridge.getGatherState())
+		if JavaClassWrapper.get_exception() != null:
+			state = -1
+	if state == 2:
+		_finish_android_gather()
+		return
+	## Still running: the form may be on screen. Do not request, and do not abandon it.
+	if state == 1:
+		get_tree().create_timer(12.0).timeout.connect(_on_android_gather_timeout, CONNECT_ONE_SHOT)
+		return
+	_android_gather_active = false
+	_block_ads_for_consent("consent gather timed out")
+
+
+func _poll_android_gather() -> void:
+	if not _android_gather_active:
+		return
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		_android_gather_active = false
+		_block_ads_for_consent("ConsentBridge missing")
+		return
+	var state := int(bridge.getGatherState())
+	if JavaClassWrapper.get_exception() != null or state != 2:
+		return
+	_finish_android_gather()
+
+
+func _finish_android_gather() -> void:
+	if not _android_gather_active:
+		return
+	_android_gather_active = false
+	_android_consent_finished = true
+	var bridge: Variant = _consent_bridge()
+	var err := ""
+	if bridge != null:
+		err = str(bridge.getGatherError())
+		if JavaClassWrapper.get_exception() != null:
+			err = "ConsentBridge read failed"
+	if _android_may_request_ads():
+		_ads_blocked_by_consent = false
+		_apply_mediation_and_request_config(_android_has_ads_consent())
+		_begin_mobile_ads_initialization()
+		return
+	var reason := err if not err.is_empty() else "consent does not allow ad requests"
+	_block_ads_for_consent(reason)
+
+
+func _android_may_request_ads() -> bool:
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		return false
+	var allows: bool = bool(bridge.allowsAdRequests())
+	if JavaClassWrapper.get_exception() != null or not allows:
+		return false
+	var status := str(bridge.getConsentStatusName())
+	if JavaClassWrapper.get_exception() != null:
+		return false
+	if status == "NOT_REQUIRED":
+		return true
+	if status != "OBTAINED":
+		return false
+	return _android_has_ads_consent()
+
+
+func _android_has_ads_consent() -> bool:
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		return false
+	var granted: bool = bool(bridge.hasAdsConsent())
+	if JavaClassWrapper.get_exception() != null:
+		return false
+	return granted
+
+
+func _open_android_privacy_options() -> void:
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		return
+	_android_privacy_form_open = true
+	set_process(true)
+	bridge.showPrivacyOptionsForm()
+	if JavaClassWrapper.get_exception() != null:
+		_android_privacy_form_open = false
+
+
+func _poll_android_privacy_form() -> void:
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		_android_privacy_form_open = false
+		return
+	var state := int(bridge.getPrivacyFormState())
+	if JavaClassWrapper.get_exception() != null or state != 2:
+		return
+	bridge.clearPrivacyFormState()
+	if JavaClassWrapper.get_exception() != null:
+		_android_privacy_form_open = false
+		return
+	_android_privacy_form_open = false
+	_android_consent_finished = true
+	if not _android_may_request_ads():
+		_block_ads_for_consent("privacy options denied")
+		return
+	_ads_blocked_by_consent = false
+	_apply_mediation_and_request_config(_android_has_ads_consent())
+	if not _mobile_ads_init_started:
+		_begin_mobile_ads_initialization()
+		return
+	if _sdk_ready:
+		ensure_banner_mounted()
+		_preload_interstitial()
+		_preload_rewarded()
+	_emit_privacy_choices_availability()
+
+
+func _block_ads_for_consent(reason: String) -> void:
+	_ads_blocked_by_consent = true
+	push_warning("AdMob: ads blocked by consent (%s)" % reason)
+	AnalyticsService.log_event("ads_blocked_by_consent", {"reason": reason})
+	if _banner_mounted:
+		hide_banner()
+	_emit_privacy_choices_availability()
+
+
+func _consent_bridge() -> Variant:
+	if not Platform.is_android():
+		return null
+	if _consent_bridge_lookup_failed:
+		return null
+	if _consent_bridge_cached != null:
+		return _consent_bridge_cached
+	if not ClassDB.class_exists("JavaClassWrapper"):
+		_consent_bridge_lookup_failed = true
+		push_warning("UMP ConsentBridge unavailable — JavaClassWrapper missing")
+		return null
+	var bridge: Variant = JavaClassWrapper.wrap("com.godot.game.ConsentBridge")
+	if JavaClassWrapper.get_exception() != null or bridge == null:
+		_consent_bridge_lookup_failed = true
+		push_warning("UMP ConsentBridge unavailable — rebuild the Android app so user-messaging-platform is packaged")
+		return null
+	_consent_bridge_cached = bridge
+	return bridge
 
 
 func _has_mobile_ads() -> bool:
@@ -406,9 +621,11 @@ func _initialize_ads() -> void:
 	_admob.remove_banner_ads_after_scene = false
 	_admob.remove_interstitial_ads_after_displayed = true
 	_admob.banner_position = LoadAdRequest.AdPosition.BOTTOM
-	## Pin to the physical bottom so the ad covers the home-indicator strip.
-	## Safe-area anchoring left a gray gap under the banner.
-	_admob.banner_anchor_to_safe_area = false
+	## iOS: pin to the physical bottom so the ad covers the home-indicator strip.
+	## Safe-area anchoring left a gray gap under the banner on iOS.
+	## Must stay true on Android. GodotApp always calls EdgeToEdge.enable(), so a BOTTOM
+	## banner with safe-area off sits under the nav/gesture bar: AdMob counts the request, never the impression.
+	_admob.banner_anchor_to_safe_area = Platform.is_android()
 	## Anchored adaptive fills much better than a fixed 320×50 on modern phones.
 	_admob.banner_size = LoadAdRequest.RequestedAdSize.ADAPTIVE
 	## Unity Ads mediation — same as Circuit Sort (pods via AdmobPlugin ios_export.cfg).
@@ -421,15 +638,12 @@ func _initialize_ads() -> void:
 	_admob.ios_real_banner_id = PROD_BANNER_IOS
 	_admob.ios_real_interstitial_id = PROD_INTERSTITIAL_IOS
 	_admob.ios_real_rewarded_id = PROD_REWARDED_IOS
-	## Android — Google demo only until AdMob Android app + units exist.
-	_admob.android_debug_application_id = GOOGLE_TEST_APP_ID
-	_admob.android_real_application_id = GOOGLE_TEST_APP_ID if PROD_APP_ID_ANDROID.is_empty() else PROD_APP_ID_ANDROID
-	if not PROD_BANNER_ANDROID.is_empty():
-		_admob.android_real_banner_id = PROD_BANNER_ANDROID
-	if not PROD_INTERSTITIAL_ANDROID.is_empty():
-		_admob.android_real_interstitial_id = PROD_INTERSTITIAL_ANDROID
-	if not PROD_REWARDED_ANDROID.is_empty():
-		_admob.android_real_rewarded_id = PROD_REWARDED_ANDROID
+	## Android — real App ID in both slots (Google wants it even when a debug build uses demo units).
+	_admob.android_debug_application_id = PROD_APP_ID_ANDROID
+	_admob.android_real_application_id = PROD_APP_ID_ANDROID
+	_admob.android_real_banner_id = PROD_BANNER_ANDROID
+	_admob.android_real_interstitial_id = PROD_INTERSTITIAL_ANDROID
+	_admob.android_real_rewarded_id = PROD_REWARDED_ANDROID
 	if OS.get_name() == "iOS":
 		_admob.att_enabled = true
 		_admob.att_text = tr(ATT_TEXT)
@@ -479,8 +693,14 @@ func _initialize_ads() -> void:
 		push_error("AdMob: AdmobPlugin singleton missing — enable plugins/AdmobPlugin in export preset")
 		return
 
-	## Order (W4D / Circuit Sort): ATT → Mobile Ads initialize() → UMP → load ads.
-	## Never call UMP or load ads before initialize().
+	## iOS: ATT → Mobile Ads initialize() → plugin UMP → load ads.
+	## Android: ConsentBridge on the main thread, then initialize(). Never call
+	## _admob.update_consent_info() on Android.
+	if _android_release_ids_blocked():
+		return
+	if Platform.is_android():
+		_begin_android_consent_gather()
+		return
 	if OS.get_name() == "iOS" and not _att_resolved:
 		await _request_ios_tracking_authorization()
 		return
@@ -620,10 +840,12 @@ func _consent_resolved() -> bool:
 	return consent.status in [UserConsent.Status.OBTAINED, UserConsent.Status.NOT_REQUIRED]
 
 
-func _apply_mediation_and_request_config() -> void:
+func _apply_mediation_and_request_config(gdpr_override: Variant = null) -> void:
 	if _admob == null:
 		return
 	var gdpr_ok := _consent_resolved()
+	if gdpr_override is bool:
+		gdpr_ok = gdpr_override
 	var privacy := NetworkPrivacySettings.new()
 	privacy.set_has_gdpr_consent(gdpr_ok)
 	privacy.set_has_ccpa_sale_consent(gdpr_ok)
@@ -692,7 +914,12 @@ func _on_admob_initialized(_status) -> void:
 
 
 func _on_mobile_ads_ready_for_ump() -> void:
-	## SDK is up — now UMP, then load ads.
+	## Android already gathered consent before initialize(). Do not call plugin UMP.
+	if Platform.is_android():
+		if _android_consent_finished and _android_may_request_ads() and not _ads_blocked_by_consent:
+			_serve_ads_now()
+		return
+	## iOS: SDK is up — now UMP, then load ads.
 	_start_ump_consent_flow()
 
 

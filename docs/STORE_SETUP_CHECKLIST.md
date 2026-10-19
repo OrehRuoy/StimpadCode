@@ -37,23 +37,31 @@ Execute in order. Android prep can run in parallel after step 4.
 - [ ] **3.2** Verify URL loads over HTTPS
 - [ ] **3.3** Link from app Settings + store listings
 
-## Phase 4 — Android (prepare, ship after iOS)
+## Phase 4 — Android
+Done in the repo:
+- [x] **4.0a** Android AAB and APK presets, package `com.stimpad.soundboard`, arm64-v8a only
+- [x] **4.0b** AdMob Android app id and banner, interstitial, and rewarded units in `scripts/autoload/ads_service.gd`
+- [x] **4.0c** UMP consent (`ConsentBridge`) runs before the first ad request
+- [x] **4.0d** Play Billing product `com.stimpad.soundboard.plus` (one-time, acknowledged, never consumed)
+- [x] **4.0e** Firebase Analytics bridge, started after the boot overlay
+
+Still in Play Console:
 - [ ] **4.1** Play Console → Create app `com.stimpad.soundboard`
 - [ ] **4.2** Upload signing key / Play App Signing
-- [ ] **4.3** Firebase → Add Android app → `google-services.json`
-- [ ] **4.4** AdMob → Android app + banner / interstitial / rewarded units → fill `PROD_*_ANDROID` in `ads_service.gd`
-- [ ] **4.5** Play → Monetize → In-app product `com.stimpad.soundboard.plus` $4.99
-- [ ] **4.6** Content rating + Data safety (Ads, Analytics, no account)
-- [ ] **4.7** Store listing + screenshots (phone + tablet)
-- [ ] **4.8** Internal testing track → closed test → production
+- [ ] **4.3** Firebase → Add Android app → `google-services.json` (gitignored; CI secret `GOOGLE_SERVICES_JSON_BASE64`)
+- [ ] **4.4** AdMob → link the Android app to the Play store after the first release
+- [ ] **4.5** Play → Monetize → In-app product `com.stimpad.soundboard.plus` at US $4.99, and add license testers
+- [ ] **4.6** Content rating, Data safety, and target audience (13+, not Families). Copy is in `store/play/`
+- [ ] **4.7** Store listing and screenshots (phone and tablet). See `store/play/ASSETS.md`
+- [ ] **4.8** First AAB uploaded by hand, then internal testing, then closed testing. See `docs/PLAY_STORE.md`
 
 ## Phase 5 — Pre-submission QA
-- [ ] Free tier: 8 sounds play, ads show (banner), no ad during playback
+- [ ] Free tier: 14 of 95 sounds play, ads show (banner), no ad during playback
 - [ ] Plus purchase unlocks all sounds + removes ads (sandbox)
 - [ ] Restore purchases works on second device / reinstall
 - [ ] Favorites persist locally
 - [ ] Visual FX toggle works
-- [ ] Loop sounds respect 30s/1m/5m timer
+- [ ] Loop sounds respect the 15 / 30 / 60 minute sleep timer
 - [ ] Tablet layout (3–4 column grid)
 
 ## Review notes template

@@ -1490,6 +1490,27 @@
     "pt_BR": "Nenhuma compra encontrada para este ID Apple.",
     "ja": "この Apple ID の購入は見つかりませんでした。"
   },
+  "No purchase found for this Google account.": {
+    "de": "Kein Kauf für dieses Google-Konto gefunden.",
+    "es": "No se encontró una compra para esta cuenta de Google.",
+    "fr": "Aucun achat trouvé pour ce compte Google.",
+    "pt_BR": "Nenhuma compra encontrada para esta conta do Google.",
+    "ja": "この Google アカウントの購入は見つかりませんでした。"
+  },
+  "Google Play not ready yet": {
+    "de": "Google Play ist noch nicht bereit",
+    "es": "Google Play aún no está listo",
+    "fr": "Google Play n'est pas encore prêt",
+    "pt_BR": "O Google Play ainda não está pronto",
+    "ja": "Google Play の準備ができていません"
+  },
+  "Payment pending — Plus unlocks when Google Play confirms it": {
+    "de": "Zahlung ausstehend — Plus wird freigeschaltet, sobald Google Play sie bestätigt",
+    "es": "Pago pendiente — Plus se desbloquea cuando Google Play lo confirme",
+    "fr": "Paiement en attente — Plus se débloque quand Google Play le confirme",
+    "pt_BR": "Pagamento pendente — o Plus libera quando o Google Play confirmar",
+    "ja": "支払い確認中 — Google Play が確認すると Plus が解除されます"
+  },
   "Plus free for 20 min": {
     "de": "Plus 20 Min. frei",
     "es": "Plus gratis por 20 min",

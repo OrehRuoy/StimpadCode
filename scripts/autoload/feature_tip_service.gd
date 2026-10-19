@@ -56,6 +56,13 @@ func is_showing() -> bool:
 	return _tip != null and is_instance_valid(_tip)
 
 
+func dismiss() -> void:
+	if not is_showing():
+		return
+	if _tip.has_method("_on_ok"):
+		_tip.call("_on_ok")
+
+
 func note_sound_opened() -> void:
 	_session_sound_opens += 1
 

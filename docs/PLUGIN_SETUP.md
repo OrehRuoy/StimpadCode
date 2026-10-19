@@ -10,9 +10,9 @@ Use **AdmobPlugin Multi v6.0** (same as OrehRuoy/Whats4dinnerCode):
 4. Run `scripts/setup_ios_admob_frameworks.sh` before iOS export (CI does this)
 5. Production unit IDs live in `scripts/autoload/ads_service.gd` (`PROD_*`). Debug device builds still use Google demo units; release uses production (`is_real = not OS.is_debug_build()`).
 
-**Consent init order (iOS + Android):** ATT (iOS) → `MobileAds.initialize()` → UMP consent form if required → load ads. Never call UMP or request ads before `initialize()`. Implemented in `scripts/autoload/ads_service.gd`. ATT + app IDs for export: `addons/AdmobPlugin/ios_export.cfg` and `android_export.cfg`. Settings → **Manage Ad Consent** re-opens the UMP privacy options form when Google requires an entry point for the user’s region.
+**Consent init order:** iOS is ATT, then `MobileAds.initialize()`, then the plugin UMP form, then ad requests. Android is `ConsentBridge.gatherConsent()` on the main thread, then `initialize()`, then ad requests. Android does not call `_admob.update_consent_info()`. A deny, a timeout, or a missing bridge does not request ads. Implemented in `scripts/autoload/ads_service.gd`. ATT + app IDs for export: `addons/AdmobPlugin/ios_export.cfg` and `android_export.cfg`. Settings → **Manage Ad Consent** re-opens the UMP privacy options form when Google requires an entry point for the user’s region.
 
-**Unity Ads mediation:** enabled via `MediationNetwork.Flag.UNITY` + `ios_export.cfg` `enabled_networks=PackedStringArray("unity")`. Export generates a Podfile and runs `pod install` on macOS CI (opens `.xcworkspace`). AdMob console still needs a Unity mediation group + Game ID linked for Unity demand to fill.
+**Unity Ads mediation:** enabled via `MediationNetwork.Flag.UNITY` and `enabled_networks=PackedStringArray("unity")` in `ios_export.cfg` and `android_export.cfg`. No Unity Game ID or placement ID is stored in the project. Unity fills only after AdMob → Mediation groups (Android and iOS) have the Unity Ads source with a Game ID and placement IDs. iOS export generates a Podfile and runs `pod install` on macOS CI (opens `.xcworkspace`).
 
 Enable in `export_presets.cfg`: `plugins/AdmobPlugin=true` (checkbox key, not `plugins/exported=`)
 
@@ -25,9 +25,11 @@ iOS: [GodotFirebaseiOS 0.5.6](https://github.com/SomniGameStudios/godot-firebase
 3. Enable **GodotFirebaseiOS** in Project → Plugins (already listed in `project.godot`).
 4. CI secret: `GOOGLE_SERVICE_INFO_PLIST_BASE64` (base64 of the plist).
 
-Android: `google-services.json` + Firebase Android plugin (later).
+Android: put `google-services.json` at `android/build/google-services.json`. CI secret: `GOOGLE_SERVICES_JSON_BASE64`. Events go through `FirebaseAnalyticsBridge` (`com.godot.game`), started after the boot overlay. DebugView: `adb shell setprop debug.firebase.analytics.app com.stimpad.soundboard`.
 
-Events are wired in `scripts/autoload/analytics_service.gd` via the `FirebaseIOS` autoload.
+Background audio is not supported on Android or iOS with stock Godot 4.6.
+
+Events are wired in `scripts/autoload/analytics_service.gd` via the `FirebaseIOS` autoload on iOS and `FirebaseAnalyticsBridge` on Android.
 
 ### Viewing sound popularity in Google Analytics / Firebase
 1. Firebase console → enable **Analytics** for the iOS app + link a **GA4** property (Project settings → Integrations → Google Analytics).
@@ -49,7 +51,7 @@ Product ID: `com.stimpad.soundboard.plus` (non-consumable)
 
 **iOS:** GodotApplePlugins StoreKit 2 (`GodotApplePluginsRuntime` + `GodotApplePluginsStoreKit`), release pin `build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65`. Wired in `scripts/autoload/iap_service.gd` via `scripts/autoload/ios/store_kit_client.gd`. iOS CI installs the plugins automatically; local Mac exports must copy the same folders into `addons/`. **min iOS 17.0** required.
 
-**Android:** Google Play Billing via compatible Godot 4 IAP addon behind `IAPService` (not wired yet).
+**Android:** one-time product `com.stimpad.soundboard.plus` through [GodotGooglePlayBilling](https://github.com/godot-sdk-integrations/godot-google-play-billing) 3.2.0 (`addons/GodotGooglePlayBilling`, `BillingClient`). Add the same product in Play Console and license-test the Google account. Product details and purchases only load from a build installed by Play (internal, closed, or open testing). A sideloaded APK cannot query the product. `IAPService` acknowledges the purchase and never consumes it.
 
 Create matching products in App Store Connect and Google Play Console before testing purchases.
 
@@ -61,7 +63,7 @@ Wired end-to-end:
 
 **iOS native path:** [godot-inapp-review v5.2](https://github.com/godot-mobile-plugins/godot-inapp-review/releases/tag/v5.2) (`addons/InappReviewPlugin/` and `ios/plugins/InappReviewPlugin*.xcframework`). v5.3 targets Godot 4.7 and is not used. `ReviewService` calls the `InappReviewPlugin` singleton `launch_review_flow()` and does not wait on `generate_review_info`. The pinned GodotApplePlugins build (`build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65`) does not include `StoreKitManager.request_review`; that method is only a fallback if a future pin adds it. The Yes path never opens Safari. If neither API is present, the card thanks the user and points them at Settings.
 
-**Settings → Rate StimPad** always opens the App Store write-review page (`ReviewService.IOS_APP_STORE_ID` = `6796806236`). Android still uses the Play URL when the in-app review plugin is not available. The Android export preset is not enabled for this plugin.
+**Settings → Rate StimPad** always opens the store listing (`ReviewService.open_write_review()`): the App Store write-review page on iOS (`6796806236`) and the Play listing on Android. That button does not call the in-app review sheet. Enjoy → Yes calls `request_review()`, which uses the `InappReviewPlugin` singleton on Android and does not open the browser. Both Android export presets set `plugins/InappReviewPlugin=true`.
 
 ## Feedback (Web3Forms)
 `FeedbackService` posts to `https://api.web3forms.com/submit` (access key in that script). Settings → Feedback and the enjoy-prompt **No** path open the same form (OS, version/build, message, optional email, optional sound requests).

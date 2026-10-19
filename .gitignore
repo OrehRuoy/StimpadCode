@@ -5,8 +5,8 @@ export.cfg
 export_presets.cfg.bak
 _tmp/
 
-# Build artifacts
-build/
+# Build artifacts (repo-root export output only; android/build is the Gradle template)
+/build/
 *.apk
 *.aab
 *.ipa
@@ -22,10 +22,28 @@ desktop.ini
 GoogleService-Info.plist
 ios/GoogleService-Info.plist
 addons/GodotFirebaseiOS/GoogleService-Info.plist
-android/app/google-services.json
 *.p12
 *.mobileprovision
 *.keystore
+*.jks
+keys/
+android/*.keystore
+.godot/export_credentials.cfg
+google-services.json
+android/build/google-services.json
+
+# Godot Android template. Commit only the overrides we maintain.
+android/build/**
+!android/build/.gdignore
+!android/build/build.gradle
+!android/build/config.gradle
+!android/build/settings.gradle
+!android/build/gradle.properties
+!android/build/proguard-rules.pro
+!android/build/res/
+!android/build/res/**
+!android/build/src/
+!android/build/src/**
 .env
 .env.*
 

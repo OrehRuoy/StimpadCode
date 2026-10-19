@@ -3,6 +3,15 @@ class_name AppInfo
 ## Shared app identity helpers for feedback / diagnostics.
 
 
+static func store_label() -> String:
+	var store := Platform.store_name()
+	if store == Platform.STORE_APP_STORE:
+		return "App Store"
+	if store == Platform.STORE_PLAY:
+		return "Google Play"
+	return ""
+
+
 static func os_label() -> String:
 	if OS.has_feature("ios"):
 		return "iOS"

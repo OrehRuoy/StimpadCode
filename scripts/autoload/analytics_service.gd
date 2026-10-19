@@ -5,9 +5,28 @@ extends Node
 
 const MAX_QUEUED_EVENTS := 40
 const QUEUE_GIVE_UP_SEC := 90.0
+const _ANDROID_BRIDGE := "com.godot.game.FirebaseAnalyticsBridge"
+## GA4 custom dimensions only store strings. Quote these so they cannot round-trip as numbers.
+const _GA4_STRING_DIMENSIONS: Dictionary = {
+	"sound_id": true,
+	"sound_name": true,
+	"category": true,
+	"tier": true,
+	"mode": true,
+	"content_type": true,
+	"item_id": true,
+	"screen_name": true,
+	"product_id": true,
+	"source": true,
+	"method": true,
+	"os": true,
+}
 
 var _initialized: bool = false
 var _native = null
+var _android_bridge = null
+var _android_tracking_disabled := false
+var _android_started := false
 var _queue: Array[Dictionary] = []
 var _queue_open := true
 var _flushing := false
@@ -20,8 +39,18 @@ func _ready() -> void:
 	if OS.has_feature("mobile") and OS.get_name() == "iOS":
 		get_tree().create_timer(10.0).timeout.connect(_initialize_analytics, CONNECT_ONE_SHOT)
 		_arm_native_retry()
+	elif Platform.is_android():
+		## Android starts after the boot overlay, via ensure_started().
+		return
 	else:
 		call_deferred("_initialize_analytics")
+
+
+func ensure_started() -> void:
+	if not Platform.is_android() or _android_started:
+		return
+	_android_started = true
+	_initialize_analytics()
 
 
 func log_event(event_name: String, params: Dictionary = {}) -> void:
@@ -93,7 +122,8 @@ func log_sound_stop(sound: Dictionary, duration_sec: float) -> void:
 func _initialize_analytics() -> void:
 	_native = _resolve_native()
 	if _native == null and OS.has_feature("mobile"):
-		push_warning("AnalyticsService: Firebase Analytics not found — events stay local/print only.")
+		if not _android_tracking_disabled:
+			push_warning("AnalyticsService: Firebase Analytics not found — events stay local/print only.")
 		_initialized = true
 		return
 	## Wait for FirebaseIOS core init on device when available.
@@ -106,6 +136,9 @@ func _initialize_analytics() -> void:
 			return
 	_initialized = true
 	if _native != null:
+		if Platform.is_android():
+			set_user_property("platform", Platform.store_name())
+			set_user_property("app_build", AppInfo.build_number())
 		_flush_queue()
 
 
@@ -175,7 +208,26 @@ func _flush_queue() -> void:
 	_flushing = false
 
 
+func set_user_property(prop_name: String, prop_value: String) -> void:
+	var name_key := prop_name.strip_edges()
+	var value_text := prop_value.strip_edges()
+	if name_key.is_empty():
+		return
+	if Platform.is_android():
+		if _android_bridge == null:
+			return
+		var payload := '{"name":%s,"value":%s}' % [JSON.stringify(name_key), JSON.stringify(value_text)]
+		_android_bridge.setUserPropertyJson(payload)
+		if JavaClassWrapper.get_exception() != null:
+			push_warning("AnalyticsService.set_user_property failed for '%s'" % name_key)
+		return
+	if OS.has_feature("ios") and _native != null and _native.has_method("set_user_property"):
+		_native.set_user_property(name_key, value_text)
+
+
 func _resolve_native():
+	if Platform.is_android():
+		return _resolve_android_bridge()
 	## Prefer GodotFirebaseiOS autoload analytics module.
 	if has_node("/root/FirebaseIOS"):
 		var ios = get_node("/root/FirebaseIOS")
@@ -190,8 +242,50 @@ func _resolve_native():
 	return null
 
 
+func _resolve_android_bridge():
+	if _android_tracking_disabled:
+		return null
+	if _android_bridge != null:
+		return _android_bridge
+	if not ClassDB.class_exists("JavaClassWrapper"):
+		return null
+	var bridge = JavaClassWrapper.wrap(_ANDROID_BRIDGE)
+	if JavaClassWrapper.get_exception() != null or bridge == null:
+		return null
+	var track: bool = bool(bridge.shouldTrackAnalytics())
+	if JavaClassWrapper.get_exception() != null or not track:
+		_android_tracking_disabled = true
+		_queue.clear()
+		_queue_open = false
+		return null
+	_android_bridge = bridge
+	return bridge
+
+
+func _encode_event_payload(event_name: String, params: Dictionary) -> String:
+	return '{"event":%s,"params":%s}' % [JSON.stringify(event_name), _encode_params_json(params)]
+
+
+func _encode_params_json(params: Dictionary) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	for raw_key in params.keys():
+		var key := str(raw_key)
+		var encoded: String
+		if _GA4_STRING_DIMENSIONS.has(key):
+			encoded = JSON.stringify(str(params[key]))
+		else:
+			encoded = JSON.stringify(params[key])
+		parts.append("%s:%s" % [JSON.stringify(key), encoded])
+	return "{" + ",".join(parts) + "}"
+
+
 func _log_event_native(event_name: String, params: Dictionary) -> void:
 	if _native == null:
+		return
+	if Platform.is_android():
+		_native.logEventJson(_encode_event_payload(event_name, params))
+		if JavaClassWrapper.get_exception() != null:
+			push_warning("AnalyticsService logEventJson failed for '%s'" % event_name)
 		return
 	## Normalize param values to String/int/float for native bridges.
 	var bridge_params := {}

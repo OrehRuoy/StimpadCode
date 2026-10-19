@@ -14,6 +14,8 @@ signal banner_visibility_changed(visible: bool) ## unused; kept for scene group
 
 const NOW_PLAYING_H := 58.0
 const ICON_STOP := "res://assets/ui/icon_stop.png"
+const _DEVICE_LAYOUT_BRIDGE := "com.godot.game.DeviceLayoutBridge"
+const _THREE_BUTTON_HOME_GAP_DP := 28.0
 
 var _current_screen: Control
 var _ripple_layer: Control
@@ -23,6 +25,8 @@ var _now_title: Button
 var _now_stop: Button
 var _now_hint: Label
 var _preview_started_unix: float = 0.0
+## -2 unknown, 0 no nav buttons, 1 has on-screen Home.
+var _nav_buttons_cached: int = -2
 
 
 func _ready() -> void:
@@ -80,8 +84,10 @@ func _on_home_content_ready() -> void:
 		await tw.finished
 		_boot_overlay.visible = false
 		_boot_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	## Ads start only after splash is gone (and AdsService may still no-op if disabled).
+	## Ads, Play Billing, and Firebase start only after splash is gone.
 	AdsService.notify_ui_ready()
+	IAPService.ensure_store_started()
+	AnalyticsService.ensure_started()
 	AdsService.ensure_banner_mounted()
 	## Defer analytics — native Firebase log right at reveal coincided with prior crashes.
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
@@ -104,10 +110,11 @@ func is_home_visible() -> bool:
 	return _current_screen == _home and _home.visible
 
 
-func show_home() -> void:
+func show_home(count_safe_exit: bool = true) -> void:
 	if AudioController.is_previewing():
 		AudioController.end_preview("cancel")
-	AdsService.try_show_interstitial_on_safe_exit()
+	if count_safe_exit:
+		AdsService.try_show_interstitial_on_safe_exit()
 	_show_screen(_home)
 	AnalyticsService.log_screen("home")
 	EnjoyPromptService.on_returned_home()
@@ -211,10 +218,30 @@ func _on_library_unlock_ended(reason: String) -> void:
 
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		get_viewport().set_input_as_handled()
+		_on_android_back()
+		return
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		if AudioController.is_previewing():
 			AudioController.end_preview("cancel")
 			_show_screen(_home)
+
+
+func _on_android_back() -> void:
+	if EnjoyPromptService.is_showing():
+		EnjoyPromptService.dismiss()
+		return
+	if FeatureTipService.is_showing():
+		FeatureTipService.dismiss()
+		return
+	if _current_screen == _player or _current_screen == _paywall or _current_screen == _settings or _current_screen == _feedback:
+		if _current_screen == _player and AudioController.is_previewing():
+			_player.call("close_preview")
+		show_home(false)
+		return
+	if _current_screen == _home:
+		get_tree().quit()
 
 
 func _show_screen(screen: Control) -> void:
@@ -230,19 +257,58 @@ func _on_banner_visibility_changed(_visible: bool) -> void:
 	_update_banner_inset()
 
 
+func _android_bottom_chrome() -> float:
+	var safe: Rect2i = DisplayServer.get_display_safe_area()
+	var win: Vector2i = DisplayServer.window_get_size()
+	var view := get_viewport().get_visible_rect().size
+	var bottom_px := float(win.y - (safe.position.y + safe.size.y))
+	var inset := Responsive.px_to_viewport(maxf(bottom_px, 0.0), float(win.y), view.y)
+	return inset + _three_button_gap_viewport()
+
+
+func _has_on_screen_nav_buttons() -> bool:
+	if not Platform.is_android():
+		return false
+	if _nav_buttons_cached >= 0:
+		return _nav_buttons_cached == 1
+	var bridge: Variant = JavaClassWrapper.wrap(_DEVICE_LAYOUT_BRIDGE)
+	if JavaClassWrapper.get_exception() != null or bridge == null:
+		return false
+	var has: bool = bool(bridge.hasOnScreenNavButtons())
+	if JavaClassWrapper.get_exception() != null:
+		return false
+	_nav_buttons_cached = 1 if has else 0
+	return has
+
+
+func _three_button_gap_viewport() -> float:
+	if not _has_on_screen_nav_buttons():
+		return 0.0
+	var dpi: int = DisplayServer.screen_get_dpi()
+	var density: float = maxf(float(dpi) / 160.0, 1.0)
+	var extra_px: float = _THREE_BUTTON_HOME_GAP_DP * density
+	var win_h: float = float(DisplayServer.window_get_size().y)
+	var view_h: float = get_viewport().get_visible_rect().size.y
+	return Responsive.px_to_viewport(extra_px, win_h, view_h)
+
+
 func _update_banner_inset() -> void:
 	## The native banner owns the bottom strip. Every screen lives above it.
 	## The spacer stays empty so it cannot paint over the AdMob view.
 	var reserve := not Entitlements.has_plus()
 	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
+	## Android anchors the banner to the safe area, so also reserve the system
+	## inset (and a 3-button nav gap) under that banner.
+	var system_bottom := _android_bottom_chrome() if Platform.is_android() and banner_h > 1.0 else 0.0
 	var bar_h := NOW_PLAYING_H if _now_playing_visible() else 0.0
-	_screens.offset_bottom = -(banner_h + bar_h)
-	_banner_placeholder.offset_top = -banner_h
+	_screens.offset_bottom = -(banner_h + system_bottom + bar_h)
+	_banner_placeholder.offset_bottom = -system_bottom
+	_banner_placeholder.offset_top = -(banner_h + system_bottom)
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
 	_banner_placeholder.visible = banner_h > 1.0
 	if _now_playing != null:
-		_now_playing.offset_bottom = -banner_h
-		_now_playing.offset_top = -(banner_h + NOW_PLAYING_H)
+		_now_playing.offset_bottom = -(banner_h + system_bottom)
+		_now_playing.offset_top = -(banner_h + system_bottom + NOW_PLAYING_H)
 		_now_playing.visible = bar_h > 0.0
 	## Never paint the scene's gray panel. That box sat above a shorter ad.
 	_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
