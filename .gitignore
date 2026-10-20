@@ -1,13 +1,17 @@
 # Godot
 .godot/
 *.import
+!assets/**/*.png.import
+!assets/**/*.webp.import
 export.cfg
 export_presets.cfg.bak
 _tmp/
 
 # Build artifacts (repo-root export output only; android/build is the Gradle template)
-/build/
-/_exclude/
+/build/*
+!/build/.gdignore
+/_exclude/*
+!/_exclude/.gdignore
 *.apk
 *.aab
 *.ipa

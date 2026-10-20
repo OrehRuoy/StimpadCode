@@ -15,7 +15,7 @@ Both presets sign the build (`package/signed=true`), request internet, network s
 
 ## Version code
 
-`version/name` is `1.0.5`, matching `application/config/version` in `project.godot`. Both Android presets use `version/code=4` for the next Play upload. Version code 3 was the previous build. Raise that integer by 1 for each later Play upload.
+`version/name` is `1.0.5`, matching `application/config/version` in `project.godot`. Both Android presets use `version/code=5` for the next Play upload. Version code 4 was the previous build. Raise that integer by 1 for each later Play upload.
 
 ## Signing
 
