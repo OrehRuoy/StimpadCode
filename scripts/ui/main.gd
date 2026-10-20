@@ -45,6 +45,8 @@ var _preview_started_unix: float = 0.0
 ## -2 unknown, 0 no nav buttons, 1 has on-screen Home.
 var _nav_buttons_cached: int = -2
 var _house_banner: TextureButton
+var _banner_fill: ColorRect
+var _grid_fade: TextureRect
 
 
 func _ready() -> void:
@@ -58,6 +60,8 @@ func _ready() -> void:
 	_show_screen(_home)
 	AdsService.banner_visibility_changed.connect(_on_banner_visibility_changed)
 	AdsService.house_banner_changed.connect(_update_banner_inset)
+	_ensure_banner_fill()
+	_ensure_grid_fade()
 	_ensure_house_banner()
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
 	get_viewport().size_changed.connect(_update_banner_inset)
@@ -312,6 +316,48 @@ func _three_button_gap_viewport() -> float:
 	return Responsive.px_to_viewport(extra_px, win_h, view_h)
 
 
+func _ensure_banner_fill() -> void:
+	if _banner_fill != null:
+		return
+	var fill := ColorRect.new()
+	fill.name = "BannerFill"
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fill.color = Color(0.055, 0.072, 0.095, 1)
+	fill.visible = false
+	fill.z_index = 0
+	_banner_placeholder.z_index = 2
+	fill.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	add_child(fill)
+	move_child(fill, _banner_placeholder.get_index())
+	_banner_fill = fill
+
+
+func _ensure_grid_fade() -> void:
+	if _grid_fade != null:
+		return
+	var fade := TextureRect.new()
+	fade.name = "GridFade"
+	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fade.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	fade.stretch_mode = TextureRect.STRETCH_SCALE
+	fade.z_index = 20
+	fade.visible = false
+	var grad := Gradient.new()
+	grad.set_color(0, Color(0.04, 0.06, 0.09, 0.0))
+	grad.set_color(1, Color(0.04, 0.06, 0.09, 0.82))
+	grad.add_point(0.42, Color(0.04, 0.06, 0.09, 0.28))
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.width = 8
+	tex.height = 128
+	tex.fill_from = Vector2(0.5, 0.0)
+	tex.fill_to = Vector2(0.5, 1.0)
+	fade.texture = tex
+	fade.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	add_child(fade)
+	_grid_fade = fade
+
+
 func _ensure_house_banner() -> void:
 	if _house_banner != null:
 		return
@@ -346,31 +392,41 @@ func _sync_house_banner(banner_h: float) -> void:
 
 
 func _update_banner_inset() -> void:
-	## The native banner owns the bottom strip. Every screen lives above it.
-	## The spacer stays empty so it cannot paint over the AdMob view.
+	## The banner slot is the bottom of the screen. The grid runs under the
+	## mini-player and fades there; it is not chopped off above a gray band.
 	var reserve := not Entitlements.has_plus()
 	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
-	## Android anchors the banner to the safe area, so also reserve the system
-	## inset (and a 3-button nav gap) under that banner.
+	## Android anchors the banner above the system nav. That strip is painted
+	## with the same dark fill so it is not a gray bar under the ad.
 	var system_bottom := _android_bottom_chrome() if Platform.is_android() and banner_h > 1.0 else 0.0
 	var show_bar := _now_playing_visible()
-	var card_lift := _card_safe_lift(banner_h)
-	## Extra 16 keeps the card shadow off the last tile.
-	var bar_h := (NOW_PLAYING_H + NOW_PLAYING_GAP + card_lift + 16.0) if show_bar or _now_open else 0.0
-	_screens.offset_bottom = -(banner_h + system_bottom + bar_h)
+	var floor_h := banner_h + system_bottom
+	if banner_h <= 1.0:
+		floor_h = _card_safe_lift(banner_h)
+	_screens.offset_bottom = -floor_h
 	_banner_placeholder.offset_bottom = -system_bottom
 	_banner_placeholder.offset_top = -(banner_h + system_bottom)
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
 	_banner_placeholder.visible = banner_h > 1.0
-	var rest_bottom := -(banner_h + system_bottom + card_lift + NOW_PLAYING_GAP)
+	if _banner_fill != null:
+		_banner_fill.offset_bottom = 0
+		_banner_fill.offset_top = -floor_h
+		_banner_fill.visible = floor_h > 1.0
+	var rest_bottom := -(floor_h + NOW_PLAYING_GAP)
 	_apply_now_playing_pose(show_bar, rest_bottom)
-	## Never paint the scene's gray panel. That box sat above a shorter ad.
+	if _grid_fade != null:
+		var fade_h := NOW_PLAYING_H + NOW_PLAYING_GAP + 36.0
+		_grid_fade.offset_bottom = -floor_h
+		_grid_fade.offset_top = -(floor_h + fade_h)
+		_grid_fade.visible = show_bar or _now_open
+	## Never paint the scene's gray panel over the native banner view.
 	_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_banner_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_sync_house_banner(banner_h)
+	var house_up := _house_banner != null and _house_banner.visible
 	var label := _banner_placeholder.get_node_or_null("Label") as Label
 	if label:
-		var show_label := not OS.has_feature("mobile") and OS.is_debug_build()
+		var show_label := not OS.has_feature("mobile") and OS.is_debug_build() and not house_up
 		label.visible = show_label
 		label.text = tr("Ad banner area") if AdsService.should_show_banner() else tr("Ad banner area (preview)")
 
@@ -408,8 +464,8 @@ func _build_now_playing() -> void:
 	_now_playing.modulate.a = 0.0
 	UiLook.style_now_playing_card(_now_playing)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_now_playing.add_child(row)
 	_now_open_btn = Button.new()
 	_now_open_btn.flat = true
@@ -424,19 +480,23 @@ func _build_now_playing() -> void:
 	row.add_child(_now_open_btn)
 	var info := HBoxContainer.new()
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info.add_theme_constant_override("separation", 10)
+	info.add_theme_constant_override("separation", 8)
 	info.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	info.alignment = BoxContainer.ALIGNMENT_BEGIN
 	_now_open_btn.add_child(info)
 	_now_art = TextureRect.new()
 	_now_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_now_art.custom_minimum_size = Vector2(52, 52)
+	_now_art.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_now_art.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_now_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_now_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_now_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	info.add_child(_now_art)
 	_now_eq = TextureRect.new()
 	_now_eq.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_now_eq.custom_minimum_size = Vector2(34, 34)
+	_now_eq.custom_minimum_size = Vector2(28, 28)
+	_now_eq.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_now_eq.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_now_eq.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_now_eq.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	info.add_child(_now_eq)
@@ -449,6 +509,7 @@ func _build_now_playing() -> void:
 	var words := VBoxContainer.new()
 	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	words.alignment = BoxContainer.ALIGNMENT_CENTER
 	words.add_theme_constant_override("separation", 0)
 	info.add_child(words)
@@ -458,6 +519,7 @@ func _build_now_playing() -> void:
 	_now_title.clip_text = true
 	_now_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_now_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_now_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_now_title.add_theme_font_size_override("font_size", 17)
 	_now_title.add_theme_color_override("font_color", Color(0.94, 0.97, 1, 1))
 	words.add_child(_now_title)
@@ -469,6 +531,7 @@ func _build_now_playing() -> void:
 	words.add_child(_now_hint)
 	_now_stop = Button.new()
 	_now_stop.focus_mode = Control.FOCUS_NONE
+	_now_stop.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_now_stop.custom_minimum_size = Vector2(56, 56)
 	_now_stop.tooltip_text = tr("Stop")
 	_now_stop.text = ""

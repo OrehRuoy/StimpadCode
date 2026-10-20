@@ -136,11 +136,15 @@ func set_ads_enabled(enabled: bool) -> void:
 	banner_visibility_changed.emit(should_show_banner())
 
 
+func _banner_slot_open() -> bool:
+	## The bottom slot stays reserved for non-Plus players even before AdMob
+	## is ready, so the bar is a house ad instead of an empty gray strip.
+	return _ads_enabled and not Entitlements.has_plus() and not _ads_blocked_by_consent
+
+
 func should_show_banner() -> bool:
 	return (
-		_ads_enabled
-		and not Entitlements.has_plus()
-		and not _ads_blocked_by_consent
+		_banner_slot_open()
 		and _has_mobile_ads()
 		and _sdk_ready
 	)
@@ -151,7 +155,7 @@ func is_native_banner_showing() -> bool:
 
 
 func should_show_house_banner() -> bool:
-	return should_show_banner() and not _banner_mounted
+	return _banner_slot_open() and not _banner_mounted
 
 
 func current_house_ad() -> Dictionary:
@@ -271,7 +275,7 @@ func _banner_height_viewport() -> float:
 
 
 func banner_reserved_height() -> float:
-	if Entitlements.has_plus() or not _ads_enabled or not should_show_banner():
+	if not _banner_slot_open():
 		return 0.0
 	## Keep the slot from the moment a banner should be on screen, so controls
 	## are already above it when the creative appears.

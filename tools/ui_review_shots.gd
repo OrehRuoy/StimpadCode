@@ -109,6 +109,7 @@ func _print_layout(tag: String, scope: String) -> void:
 	var logo := home.find_child("Logo", true, false) as Control
 	var caption := home.find_child("PlayAgainCaption", true, false) as Control
 	var now := root.find_child("NowPlaying", true, false) as Control
+	var house := root.find_child("HouseBanner", true, false) as CanvasItem
 	var logo_cx := -1.0
 	if logo != null:
 		logo_cx = logo.get_global_rect().get_center().x
@@ -125,7 +126,8 @@ func _print_layout(tag: String, scope: String) -> void:
 		" caption=", cap,
 		" caption_w=", caption.size.x if caption else -1,
 		" now=", now.get_global_rect() if now else Rect2(),
-		" now_vis=", now.visible if now else false
+		" now_vis=", now.visible if now else false,
+		" house=", house.visible if house else false
 	)
 
 

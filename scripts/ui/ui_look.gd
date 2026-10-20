@@ -208,20 +208,20 @@ static func style_hslider(slider: HSlider) -> void:
 static func style_sound_shortcut(btn: Button) -> void:
 	## Rounded sound card. Category pills stay mint capsules; these do not.
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.24, 0.13, 0.15, 0.96)
-	style.border_color = Color(1.0, 0.58, 0.46, 0.95)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
+	style.bg_color = Color(0.10, 0.07, 0.09, 0.94)
+	style.border_color = Color(1.0, 0.55, 0.46, 0.42)
+	style.border_width_left = 1
+	style.border_width_top = 1
+	style.border_width_right = 1
+	style.border_width_bottom = 1
 	style.corner_radius_top_left = 14
 	style.corner_radius_top_right = 14
 	style.corner_radius_bottom_right = 14
 	style.corner_radius_bottom_left = 14
-	style.content_margin_left = 10
-	style.content_margin_right = 12
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.content_margin_left = 0
+	style.content_margin_right = 0
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
 	style.shadow_color = Color(0.08, 0.02, 0.03, 0.35)
 	style.shadow_size = 6
 	style.shadow_offset = Vector2(0, 2)
@@ -246,9 +246,9 @@ static func style_now_playing_card(panel: PanelContainer) -> void:
 	style.content_margin_right = 10
 	style.content_margin_top = 8
 	style.content_margin_bottom = 8
-	style.shadow_color = Color(0.02, 0.04, 0.06, 0.55)
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0, 4)
+	style.shadow_color = Color(0.02, 0.04, 0.06, 0.42)
+	style.shadow_size = 16
+	style.shadow_offset = Vector2(0, 6)
 	panel.add_theme_stylebox_override("panel", style)
 
 
