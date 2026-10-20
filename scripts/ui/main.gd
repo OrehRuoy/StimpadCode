@@ -12,8 +12,16 @@ signal banner_visibility_changed(visible: bool) ## unused; kept for scene group
 @onready var _boot_overlay: ColorRect = $BootOverlay
 @onready var _boot_image: TextureRect = $BootOverlay/SplashImage
 
-const NOW_PLAYING_H := 58.0
+const NOW_PLAYING_H := 78.0
+const NOW_PLAYING_GAP := 10.0
+const NOW_PLAYING_SIDE := 12.0
 const ICON_STOP := "res://assets/ui/icon_stop.png"
+const EQ_FRAMES: Array[String] = [
+	"res://assets/ui/eq_1.png",
+	"res://assets/ui/eq_2.png",
+	"res://assets/ui/eq_3.png",
+	"res://assets/ui/eq_4.png",
+]
 const _DEVICE_LAYOUT_BRIDGE := "com.godot.game.DeviceLayoutBridge"
 const _THREE_BUTTON_HOME_GAP_DP := 28.0
 
@@ -21,9 +29,18 @@ var _current_screen: Control
 var _ripple_layer: Control
 var _boot_dismissed: bool = false
 var _now_playing: PanelContainer
-var _now_title: Button
+var _now_open_btn: Button
+var _now_title: Label
+var _now_art: TextureRect
+var _now_eq: TextureRect
+var _now_eq_frames: Array[Texture2D] = []
+var _now_eq_frame := 0
+var _now_eq_wait := 0.0
 var _now_stop: Button
 var _now_hint: Label
+var _now_open := false
+var _now_bottom_target := 0.0
+var _now_tween: Tween
 var _preview_started_unix: float = 0.0
 ## -2 unknown, 0 no nav buttons, 1 has on-screen Home.
 var _nav_buttons_cached: int = -2
@@ -336,16 +353,17 @@ func _update_banner_inset() -> void:
 	## Android anchors the banner to the safe area, so also reserve the system
 	## inset (and a 3-button nav gap) under that banner.
 	var system_bottom := _android_bottom_chrome() if Platform.is_android() and banner_h > 1.0 else 0.0
-	var bar_h := NOW_PLAYING_H if _now_playing_visible() else 0.0
+	var show_bar := _now_playing_visible()
+	var card_lift := _card_safe_lift(banner_h)
+	## Extra 16 keeps the card shadow off the last tile.
+	var bar_h := (NOW_PLAYING_H + NOW_PLAYING_GAP + card_lift + 16.0) if show_bar or _now_open else 0.0
 	_screens.offset_bottom = -(banner_h + system_bottom + bar_h)
 	_banner_placeholder.offset_bottom = -system_bottom
 	_banner_placeholder.offset_top = -(banner_h + system_bottom)
 	_banner_placeholder.custom_minimum_size = Vector2(0, banner_h)
 	_banner_placeholder.visible = banner_h > 1.0
-	if _now_playing != null:
-		_now_playing.offset_bottom = -(banner_h + system_bottom)
-		_now_playing.offset_top = -(banner_h + system_bottom + NOW_PLAYING_H)
-		_now_playing.visible = bar_h > 0.0
+	var rest_bottom := -(banner_h + system_bottom + card_lift + NOW_PLAYING_GAP)
+	_apply_now_playing_pose(show_bar, rest_bottom)
 	## Never paint the scene's gray panel. That box sat above a shorter ad.
 	_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_banner_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -357,61 +375,162 @@ func _update_banner_inset() -> void:
 		label.text = tr("Ad banner area") if AdsService.should_show_banner() else tr("Ad banner area (preview)")
 
 
+func _card_safe_lift(banner_h: float) -> float:
+	## The banner already sits in the home-indicator strip. With no banner,
+	## the card itself has to clear that inset.
+	if banner_h > 1.0:
+		return 0.0
+	var bottom_px := 0.0
+	if Responsive.test_insets_enabled:
+		bottom_px = Responsive.test_inset_px.w
+	else:
+		var safe := DisplayServer.get_display_safe_area()
+		var win := DisplayServer.window_get_size()
+		bottom_px = float(win.y - (safe.position.y + safe.size.y))
+	var view := get_viewport().get_visible_rect().size
+	var lift := Responsive.px_to_viewport(maxf(bottom_px, 0.0), float(DisplayServer.window_get_size().y), view.y)
+	if Platform.is_android():
+		lift += _three_button_gap_viewport()
+	return lift
+
+
 func _build_now_playing() -> void:
 	_now_playing = PanelContainer.new()
 	_now_playing.name = "NowPlaying"
 	_now_playing.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	_now_playing.offset_left = NOW_PLAYING_SIDE
+	_now_playing.offset_right = -NOW_PLAYING_SIDE
 	_now_playing.offset_bottom = 0
 	_now_playing.offset_top = -NOW_PLAYING_H
 	_now_playing.mouse_filter = Control.MOUSE_FILTER_STOP
 	_now_playing.visible = false
 	_now_playing.z_index = 30
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.14, 0.2, 0.96)
-	style.border_color = Color(0.37, 0.81, 0.69, 0.7)
-	style.border_width_top = 2
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	_now_playing.add_theme_stylebox_override("panel", style)
+	_now_playing.modulate.a = 0.0
+	UiLook.style_now_playing_card(_now_playing)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 10)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_now_playing.add_child(row)
-	_now_title = Button.new()
-	_now_title.flat = true
-	_now_title.focus_mode = Control.FOCUS_NONE
-	_now_title.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_now_open_btn = Button.new()
+	_now_open_btn.flat = true
+	_now_open_btn.focus_mode = Control.FOCUS_NONE
+	_now_open_btn.text = ""
+	_now_open_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_now_open_btn.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var empty := StyleBoxEmpty.new()
+	for state in ["normal", "hover", "pressed", "focus"]:
+		_now_open_btn.add_theme_stylebox_override(state, empty)
+	_now_open_btn.pressed.connect(_on_now_playing_open)
+	row.add_child(_now_open_btn)
+	var info := HBoxContainer.new()
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info.add_theme_constant_override("separation", 10)
+	info.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	_now_open_btn.add_child(info)
+	_now_art = TextureRect.new()
+	_now_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_now_art.custom_minimum_size = Vector2(52, 52)
+	_now_art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_now_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	info.add_child(_now_art)
+	_now_eq = TextureRect.new()
+	_now_eq.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_now_eq.custom_minimum_size = Vector2(34, 34)
+	_now_eq.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_now_eq.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	info.add_child(_now_eq)
+	for path in EQ_FRAMES:
+		var frame := UiLook.load_tex(path)
+		if frame != null:
+			_now_eq_frames.append(frame)
+	if not _now_eq_frames.is_empty():
+		_now_eq.texture = _now_eq_frames[0]
+	var words := VBoxContainer.new()
+	words.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	words.alignment = BoxContainer.ALIGNMENT_CENTER
+	words.add_theme_constant_override("separation", 0)
+	info.add_child(words)
+	_now_title = Label.new()
+	_now_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_now_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_now_title.clip_text = true
-	_now_title.add_theme_font_size_override("font_size", 16)
+	_now_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_now_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_now_title.add_theme_font_size_override("font_size", 17)
 	_now_title.add_theme_color_override("font_color", Color(0.94, 0.97, 1, 1))
-	_now_title.add_theme_color_override("font_hover_color", Color(0.94, 0.97, 1, 1))
-	_now_title.add_theme_color_override("font_pressed_color", Color(0.72, 0.95, 0.88, 1))
-	_now_title.pressed.connect(_on_now_playing_open)
-	row.add_child(_now_title)
+	words.add_child(_now_title)
 	_now_hint = Label.new()
+	_now_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_now_hint.add_theme_font_size_override("font_size", 13)
-	_now_hint.add_theme_color_override("font_color", Color(0.65, 0.78, 0.74, 1))
+	_now_hint.add_theme_color_override("font_color", Color(0.65, 0.86, 0.78, 1))
 	_now_hint.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	row.add_child(_now_hint)
+	words.add_child(_now_hint)
 	_now_stop = Button.new()
 	_now_stop.focus_mode = Control.FOCUS_NONE
-	_now_stop.custom_minimum_size = Vector2(72, 40)
+	_now_stop.custom_minimum_size = Vector2(56, 56)
 	_now_stop.tooltip_text = tr("Stop")
+	_now_stop.text = ""
 	_now_stop.pressed.connect(_on_now_playing_stop)
 	if ResourceLoader.exists(ICON_STOP):
 		_now_stop.icon = load(ICON_STOP)
 		_now_stop.expand_icon = true
-		_now_stop.add_theme_constant_override("icon_max_width", 28)
-		_now_stop.text = ""
+		_now_stop.add_theme_constant_override("icon_max_width", 56)
+		UiLook.style_icon_button(_now_stop, ICON_STOP, true)
 	else:
 		_now_stop.text = tr("Stop")
-	UiLook.style_chip(_now_stop, true)
+		UiLook.style_stop_button(_now_stop)
 	row.add_child(_now_stop)
 	add_child(_now_playing)
 	if _boot_overlay != null:
 		move_child(_now_playing, _boot_overlay.get_index())
+
+
+func _apply_now_playing_pose(show: bool, rest_bottom: float) -> void:
+	if _now_playing == null:
+		return
+	_now_playing.offset_left = NOW_PLAYING_SIDE
+	_now_playing.offset_right = -NOW_PLAYING_SIDE
+	var hidden_bottom := rest_bottom + NOW_PLAYING_H + 24.0
+	if show:
+		if _now_open and is_equal_approx(_now_bottom_target, rest_bottom):
+			return
+		var first := not _now_open
+		_now_open = true
+		_now_bottom_target = rest_bottom
+		_now_playing.visible = true
+		if first:
+			_now_playing.modulate.a = 0.0
+			_now_playing.offset_bottom = hidden_bottom
+			_now_playing.offset_top = hidden_bottom - NOW_PLAYING_H
+		_tween_now_playing(rest_bottom, 1.0, false)
+		return
+	if not _now_open:
+		_now_playing.visible = false
+		return
+	_now_open = false
+	_now_bottom_target = hidden_bottom
+	_tween_now_playing(hidden_bottom, 0.0, true)
+
+
+func _tween_now_playing(bottom: float, alpha: float, hide_after: bool) -> void:
+	if _now_tween != null and _now_tween.is_valid():
+		_now_tween.kill()
+	_now_tween = create_tween()
+	_now_tween.set_parallel(true)
+	_now_tween.tween_property(_now_playing, "offset_bottom", bottom, 0.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_now_tween.tween_property(_now_playing, "offset_top", bottom - NOW_PLAYING_H, 0.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_now_tween.tween_property(_now_playing, "modulate:a", alpha, 0.22)
+	if hide_after:
+		_now_tween.chain().tween_callback(_hide_now_playing_after_slide)
+
+
+func _hide_now_playing_after_slide() -> void:
+	if _now_open or _now_playing == null:
+		return
+	_now_playing.visible = false
+	_update_banner_inset()
 
 
 func _now_playing_visible() -> bool:
@@ -432,7 +551,9 @@ func _refresh_now_playing() -> void:
 		var sound := AudioController.get_current_sound()
 		var name := tr(str(sound.get("name", "Playing")))
 		_now_title.text = name
-		_now_title.tooltip_text = tr("Open %s") % name
+		_now_open_btn.tooltip_text = tr("Open %s") % name
+		var art_path := str(sound.get("art", ""))
+		_now_art.texture = UiLook.load_tex(art_path)
 		var left := AudioController.get_stop_seconds_left()
 		if left < 0:
 			_now_hint.text = ""
@@ -443,9 +564,15 @@ func _refresh_now_playing() -> void:
 	_update_banner_inset()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if _now_playing == null or not _now_playing.visible:
 		return
+	if _now_eq != null and _now_eq_frames.size() > 1:
+		_now_eq_wait += delta
+		if _now_eq_wait >= 0.18:
+			_now_eq_wait = 0.0
+			_now_eq_frame = (_now_eq_frame + 1) % _now_eq_frames.size()
+			_now_eq.texture = _now_eq_frames[_now_eq_frame]
 	var left := AudioController.get_stop_seconds_left()
 	if left < 0:
 		if _now_hint.visible:

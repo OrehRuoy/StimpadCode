@@ -5,6 +5,7 @@ signal home_content_ready
 const SOUND_TILE_SCENE := preload("res://scenes/ui/sound_tile.tscn")
 const PLUS_ICON := "res://assets/ui/icon_plus_badge.png"
 const SETTINGS_ICON := "res://assets/ui/icon_settings_gear.png"
+const PLAY_BADGE := "res://assets/ui/icon_play.png"
 ## Stagger tile art so iOS doesn't jetsam from decoding ~95 textures in one frame.
 const TILE_BATCH := 6
 
@@ -308,7 +309,27 @@ func _style_filters(vs: Vector2) -> void:
 	var drop_font := DROPDOWN_FONT_TABLET if is_tablet else DROPDOWN_FONT_PHONE
 	var popup_font := POPUP_FONT_TABLET if is_tablet else POPUP_FONT_PHONE
 	UiLook.style_large_dropdown(_category_select, drop_h, drop_font, popup_font)
+	var margins := Responsive.safe_outer_margins(Responsive.content_margins(vs))
+	if _content_width(vs, margins) < 340.0:
+		_tighten_scope_chips()
 	_rebuild_play_again()
+
+
+func _tighten_scope_chips() -> void:
+	## Four scope pills do not fit a tall narrow Android column at the normal padding.
+	for id in _scope_chips.keys():
+		var btn := _scope_chips[id] as Button
+		if btn == null:
+			continue
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var style := btn.get_theme_stylebox(state)
+			if style == null:
+				continue
+			var copy := style.duplicate()
+			if copy is StyleBoxFlat:
+				(copy as StyleBoxFlat).content_margin_left = 8
+				(copy as StyleBoxFlat).content_margin_right = 8
+				btn.add_theme_stylebox_override(state, copy)
 
 
 func _clear_row(row: HBoxContainer) -> void:
@@ -513,9 +534,15 @@ func _build_play_again() -> void:
 	_play_again_column.add_theme_constant_override("separation", 6)
 	_play_again_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_play_again_caption = Label.new()
+	_play_again_caption.name = "PlayAgainCaption"
 	_play_again_caption.text = tr("Play again")
-	_play_again_caption.add_theme_font_size_override("font_size", 13)
-	_play_again_caption.add_theme_color_override("font_color", Color(0.7, 0.78, 0.86, 1))
+	_play_again_caption.clip_text = false
+	_play_again_caption.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_play_again_caption.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	_play_again_caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_play_again_caption.custom_minimum_size = Vector2(0, 26)
+	_play_again_caption.add_theme_font_size_override("font_size", 17)
+	_play_again_caption.add_theme_color_override("font_color", Color(0.98, 0.94, 0.92, 1))
 	_play_again_column.add_child(_play_again_caption)
 	_play_again_scroll = ScrollContainer.new()
 	_play_again_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
@@ -592,33 +619,72 @@ func _rebuild_play_again() -> void:
 	var vs := get_viewport_rect().size
 	var is_tablet := Responsive.is_tablet(vs)
 	var small_phone := vs.y < 740.0 and not is_tablet
-	var chip_h := 40.0 if small_phone else (CHIP_H_TABLET if is_tablet else CHIP_H_PHONE)
-	var font_size := 14 if small_phone else (CHIP_FONT_TABLET if is_tablet else CHIP_FONT_PHONE)
-	var min_w := 110.0 if is_tablet else 96.0
-	var max_w := 220.0 if is_tablet else 170.0
+	var chip_h := 70.0 if small_phone else (78.0 if is_tablet else 74.0)
+	var font_size := 13 if small_phone else (15 if is_tablet else 14)
+	var margins := Responsive.safe_outer_margins(Responsive.content_margins(vs))
+	var content_w := _content_width(vs, margins)
+	## Two complete cards fit the row, so a name is not sliced at the screen edge.
+	var slot_w := minf(220.0, floorf((content_w - 8.0) / 2.0))
 	var position := 0
 	for entry in entries:
 		var sound: Dictionary = entry["sound"]
 		var slot := str(entry["slot"])
 		var sound_name := tr(str(sound.get("name", "")))
-		var btn := Button.new()
-		btn.text = sound_name
-		btn.clip_text = true
-		btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		btn.tooltip_text = tr("Play %s") % sound_name
-		btn.focus_mode = Control.FOCUS_ALL
-		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		UiLook.style_chip(btn, slot == "last")
-		btn.add_theme_font_size_override("font_size", font_size)
-		var font := btn.get_theme_font("font")
-		var text_w := min_w
-		if font != null:
-			text_w = font.get_string_size(sound_name, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-		btn.custom_minimum_size = Vector2(clampf(text_w + 32.0, min_w, max_w), chip_h)
+		var btn := _make_sound_shortcut(sound, sound_name, font_size, chip_h, slot_w)
 		btn.pressed.connect(_on_play_again_pressed.bind(sound, slot, position))
 		_play_again_box.add_child(btn)
 		position += 1
-	_play_again_scroll.custom_minimum_size = Vector2(0, chip_h)
+	_play_again_scroll.custom_minimum_size = Vector2(0, chip_h + 4.0)
+
+
+func _make_sound_shortcut(sound: Dictionary, sound_name: String, font_size: int, chip_h: float, slot_w: float) -> Button:
+	var btn := Button.new()
+	btn.text = ""
+	btn.tooltip_text = tr("Play %s") % sound_name
+	btn.focus_mode = Control.FOCUS_ALL
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.clip_contents = false
+	UiLook.style_sound_shortcut(btn)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 6)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 10
+	row.offset_top = 6
+	row.offset_right = -10
+	row.offset_bottom = -6
+	var play := TextureRect.new()
+	play.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	play.custom_minimum_size = Vector2(18, 18)
+	play.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	play.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	play.texture = UiLook.load_tex(PLAY_BADGE)
+	row.add_child(play)
+	var art := TextureRect.new()
+	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	art.custom_minimum_size = Vector2(30, 30)
+	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var art_path := str(sound.get("art", ""))
+	art.texture = UiLook.load_tex(art_path)
+	row.add_child(art)
+	var name := Label.new()
+	name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name.text = sound_name
+	name.clip_text = false
+	name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name.custom_minimum_size = Vector2(maxf(72.0, slot_w - 78.0), 36.0)
+	name.add_theme_font_size_override("font_size", font_size)
+	name.add_theme_color_override("font_color", Color(0.98, 0.96, 0.95, 1))
+	row.add_child(name)
+	btn.add_child(row)
+	btn.custom_minimum_size = Vector2(slot_w, chip_h)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return btn
 
 
 func _on_play_again_pressed(sound: Dictionary, slot: String, position: int) -> void:
