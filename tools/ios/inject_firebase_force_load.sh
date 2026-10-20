@@ -35,21 +35,48 @@ if [[ "$CORRUPTED" -eq 0 ]] && grep -q 'force_load' "$PBX"; then
   echo "WARNING: force_load present but -Wl,-U,_swift_entry_point missing — rewriting"
 fi
 
-DEVICE_FLAGS=()
-SIM_FLAGS=()
+# Analytics closure plus the GDExtension. Anything else in frameworks/ is
+# removed so a full GodotFirebaseiOS drop cannot force-load gRPC or Firestore.
+ANALYTICS_FRAMEWORKS=(
+  FBLPromises
+  FirebaseAnalytics
+  FirebaseCore
+  FirebaseCoreExtension
+  FirebaseCoreInternal
+  FirebaseInstallations
+  GoogleAppMeasurement
+  GoogleAppMeasurementIdentitySupport
+  GoogleDataTransport
+  GoogleUtilities
+  nanopb
+  GodotFirebaseiOS
+)
+allowed=" $(printf '%s ' "${ANALYTICS_FRAMEWORKS[@]}") "
 while IFS= read -r -d '' xcfw; do
   name="$(basename "$xcfw" .xcframework)"
+  if [[ "$allowed" != *" $name "* ]]; then
+    echo "Removing non-analytics framework: $name"
+    rm -rf "$xcfw"
+  fi
+done < <(find "$FRAMEWORKS_DIR" -maxdepth 1 -type d -name "*.xcframework" -print0 | sort -z)
+
+DEVICE_FLAGS=()
+SIM_FLAGS=()
+for name in "${ANALYTICS_FRAMEWORKS[@]}"; do
+  xcfw="${FRAMEWORKS_DIR}/${name}.xcframework"
   device_lib="${xcfw}/ios-arm64/${name}.framework/${name}"
   sim_lib="${xcfw}/ios-arm64_x86_64-simulator/${name}.framework/${name}"
   rel_device="\$(PROJECT_DIR)/${PROJECT_NAME}/frameworks/${name}.xcframework/ios-arm64/${name}.framework/${name}"
   rel_sim="\$(PROJECT_DIR)/${PROJECT_NAME}/frameworks/${name}.xcframework/ios-arm64_x86_64-simulator/${name}.framework/${name}"
-  if [[ -f "$device_lib" ]]; then
-    DEVICE_FLAGS+=("-force_load ${rel_device}")
+  if [[ ! -f "$device_lib" ]]; then
+    echo "ERROR: missing analytics device library $device_lib"
+    exit 1
   fi
+  DEVICE_FLAGS+=("-force_load ${rel_device}")
   if [[ -f "$sim_lib" ]]; then
     SIM_FLAGS+=("-force_load ${rel_sim}")
   fi
-done < <(find "$FRAMEWORKS_DIR" -maxdepth 1 -type d -name "*.xcframework" -print0 | sort -z)
+done
 
 if [[ ${#DEVICE_FLAGS[@]} -eq 0 ]]; then
   echo "ERROR: no device Firebase libraries found under $FRAMEWORKS_DIR"

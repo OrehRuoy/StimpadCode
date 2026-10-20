@@ -19,6 +19,95 @@ if [ -f tools/ios/GodotFirebaseiOS_export_plugin.gd ]; then
   cp tools/ios/GodotFirebaseiOS_export_plugin.gd addons/GodotFirebaseiOS/export_plugin.gd
   echo "Installed patched GodotFirebaseiOS export_plugin.gd"
 fi
+
+# Rebuild the GDExtension with Analytics + Core only, then keep that closure.
+# The stock 0.5.6 dylib undefined-links Auth, Firestore, gRPC, and the rest.
+build_analytics_only() {
+  local src="$TMP/src"
+  git clone --depth 1 --branch "$VERSION" https://github.com/SomniGameStudios/godot-firebase-ios.git "$src"
+  python3 - "$src" <<'PY'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1])
+swift = root / "GodotFirebaseiOS/Sources/GodotFirebaseiOS/GodotFirebaseiOS.swift"
+swift.write_text(
+    "import SwiftGodotRuntime\n\n"
+    "#initSwiftExtension(\n"
+    "    cdecl: \"swift_entry_point\",\n"
+    "    types: [\n"
+    "        FirebaseCorePlugin.self,\n"
+    "        FirebaseAnalyticsPlugin.self,\n"
+    "    ],\n"
+    "    registerDocs: false\n"
+    ")\n",
+    encoding="utf-8",
+)
+for name in (
+    "FirebaseAuthPlugin.swift",
+    "FirebaseCloudMessagingPlugin.swift",
+    "FirebaseDatabasePlugin.swift",
+    "FirebaseFirestorePlugin.swift",
+    "FirebaseRemoteConfigPlugin.swift",
+):
+    (root / "GodotFirebaseiOS/Sources/GodotFirebaseiOS" / name).unlink()
+pkg = root / "GodotFirebaseiOS/Package.swift"
+text = pkg.read_text(encoding="utf-8")
+text = re.sub(
+    r'\s*\.package\(url: "https://github.com/google/GoogleSignIn-iOS"[^\n]*\n',
+    "\n",
+    text,
+    count=1,
+)
+text, n = re.subn(
+    r"\.product\(name: \"(?:FirebaseAuth|FirebaseFirestore|FirebaseDatabase|FirebaseRemoteConfig|FirebaseMessaging|GoogleSignIn)\"[^\n]*\n",
+    "",
+    text,
+)
+if n < 6:
+    raise SystemExit(f"Package.swift: expected to drop 6 products, dropped {n}")
+if "FirebaseAnalytics" not in text or "SwiftGodotRuntime" not in text:
+    raise SystemExit("Package.swift lost Analytics or SwiftGodot")
+pkg.write_text(text, encoding="utf-8")
+make = (root / "Makefile").read_text(encoding="utf-8")
+start = make.index("FRAMEWORKS =")
+end = make.index(".PHONY:", start)
+replacement = """FRAMEWORKS = \\
+	FBLPromises.xcframework \\
+	FirebaseAnalytics.xcframework \\
+	FirebaseCore.xcframework \\
+	FirebaseCoreExtension.xcframework \\
+	FirebaseCoreInternal.xcframework \\
+	FirebaseInstallations.xcframework \\
+	GoogleAppMeasurement.xcframework \\
+	GoogleAppMeasurementIdentitySupport.xcframework \\
+	GoogleDataTransport.xcframework \\
+	GoogleUtilities.xcframework \\
+	nanopb.xcframework
+
+"""
+(root / "Makefile").write_text(make[:start] + replacement + make[end:], encoding="utf-8")
+print("Patched godot-firebase-ios for Analytics only")
+PY
+  if ! command -v xcodegen >/dev/null 2>&1; then
+    brew install xcodegen
+  fi
+  make -C "$src"
+  rm -rf addons/GodotFirebaseiOS/frameworks
+  cp -R "$src/demo/addons/GodotFirebaseiOS/frameworks" addons/GodotFirebaseiOS/frameworks
+  touch addons/GodotFirebaseiOS/frameworks/.gdignore
+  local bin="addons/GodotFirebaseiOS/frameworks/GodotFirebaseiOS.xcframework/ios-arm64/GodotFirebaseiOS.framework/GodotFirebaseiOS"
+  test -f "$bin"
+  if nm -u "$bin" | grep -E 'FIRFirestore|FirebaseAuth|FIRDatabase|FIRMessaging|FIRRemoteConfig'; then
+    echo "ERROR: Analytics-only dylib still references unused Firebase products"
+    exit 1
+  fi
+  if find addons/GodotFirebaseiOS/frameworks -maxdepth 1 \( -name 'grpc*.xcframework' -o -name 'FirebaseFirestore*.xcframework' -o -name 'FirebaseAuth*.xcframework' \) | grep -q .; then
+    echo "ERROR: unused Firebase frameworks are still in the addon"
+    exit 1
+  fi
+  echo "Analytics-only GodotFirebaseiOS frameworks installed"
+}
+
+build_analytics_only
 rm -rf "$TMP"
 
 # Prefer CI-injected or local plist locations.

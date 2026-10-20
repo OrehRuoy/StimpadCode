@@ -26,41 +26,21 @@ class iOSExportPlugin extends EditorExportPlugin:
 
 	var _export_path := ""
 
+	# Analytics closure only. Auth, Firestore, Database, Messaging, Remote
+	# Config, and gRPC are not linked. GodotFirebaseiOS.xcframework is the
+	# GDExtension and is copied with the frameworks directory.
 	const FIREBASE_FRAMEWORKS: PackedStringArray = [
-		"AppAuth.xcframework",
-		"AppCheckCore.xcframework",
 		"FBLPromises.xcframework",
-		"FirebaseABTesting.xcframework",
 		"FirebaseAnalytics.xcframework",
-		"FirebaseAppCheckInterop.xcframework",
-		"FirebaseAuth.xcframework",
-		"FirebaseAuthInterop.xcframework",
 		"FirebaseCore.xcframework",
 		"FirebaseCoreExtension.xcframework",
 		"FirebaseCoreInternal.xcframework",
-		"FirebaseDatabase.xcframework",
-		"FirebaseFirestore.xcframework",
-		"FirebaseFirestoreInternal.xcframework",
 		"FirebaseInstallations.xcframework",
-		"FirebaseMessaging.xcframework",
-		"FirebaseMessagingInterop.xcframework",
-		"FirebaseRemoteConfig.xcframework",
-		"FirebaseRemoteConfigInterop.xcframework",
-		"FirebaseSharedSwift.xcframework",
-		"GTMAppAuth.xcframework",
-		"GTMSessionFetcher.xcframework",
 		"GoogleAppMeasurement.xcframework",
 		"GoogleAppMeasurementIdentitySupport.xcframework",
 		"GoogleDataTransport.xcframework",
-		"GoogleSignIn.xcframework",
 		"GoogleUtilities.xcframework",
-		"RecaptchaInterop.xcframework",
-		"absl.xcframework",
-		"grpc.xcframework",
-		"grpcpp.xcframework",
-		"leveldb.xcframework",
 		"nanopb.xcframework",
-		"openssl_grpc.xcframework",
 	]
 
 	func _get_name() -> String:
