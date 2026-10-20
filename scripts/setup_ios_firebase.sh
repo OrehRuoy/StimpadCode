@@ -90,7 +90,8 @@ PY
   if ! command -v xcodegen >/dev/null 2>&1; then
     brew install xcodegen
   fi
-  make -C "$src"
+  # `make` alone skips setup-sdk, so FirebaseCore is not on the search path.
+  make -C "$src" setup build
   rm -rf addons/GodotFirebaseiOS/frameworks
   cp -R "$src/demo/addons/GodotFirebaseiOS/frameworks" addons/GodotFirebaseiOS/frameworks
   touch addons/GodotFirebaseiOS/frameworks/.gdignore
