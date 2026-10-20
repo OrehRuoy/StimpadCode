@@ -12,7 +12,7 @@ Keep these in sync when a store version changes:
 - `project.godot` `config/version` is still `1.0.5` (Android marketing name). Do not raise it until Play moves to 1.0.6.
 - `export_presets.cfg` iOS `application/short_version` is **1.0.6**
 - `export_presets.cfg` Android `version/name` stays `1.0.5`
-- Android `version/code` is **3**. Version code 2 was the previous Play build. Add 1 for each later Play upload.
+- Android `version/code` is **4**. Version code 3 was the previous Play build. Add 1 for each later Play upload. The iOS preset build number is **3**; GitHub Actions still replaces it with `GITHUB_RUN_NUMBER` on upload.
 
 The next App Store upload after 1.0.6 must be **1.0.7** unless the user asks for a larger bump. 1.0.1, 1.0.2, 1.0.3, 1.0.4, and 1.0.5 are closed. Uploading a short version that is not higher than the approved release fails with Apple 90186 (train closed) and 90062 (version must be higher than the approved release).
 

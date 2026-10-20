@@ -150,15 +150,15 @@ theme_override_constants/v_separation = 14
 columns = 2
 
 [node name="PlusBtn" type="Button" parent="."]
-custom_minimum_size = Vector2(92, 40)
+custom_minimum_size = Vector2(44, 44)
 layout_mode = 1
 offset_left = 16.0
 offset_top = 16.0
-offset_right = 108.0
-offset_bottom = 56.0
+offset_right = 60.0
+offset_bottom = 60.0
 z_index = 2
-flat = false
-text = "Plus"
+flat = true
+text = ""
 
 [node name="SettingsBtn" type="Button" parent="."]
 custom_minimum_size = Vector2(44, 44)
