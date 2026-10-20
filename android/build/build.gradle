@@ -274,8 +274,9 @@ android {
             // Signing and zip-aligning are skipped for prebuilt builds, but
             // performed for Godot gradle builds.
             zipAlignEnabled shouldZipAlign()
-            // Play Console R8 recommendation: shrink/obfuscate Java plugin layer only.
-            // GDScript / native Godot code is unaffected. Keep rules live in proguard-rules.pro.
+            // Release only. debug and dev stay unminified. R8 writes the Play
+            // deobfuscation file at build/outputs/mapping/standardRelease/mapping.txt
+            // (under android/build/). GDScript and libgodot.so are not in the DEX.
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

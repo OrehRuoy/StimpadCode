@@ -1,14 +1,17 @@
-# StimPad — R8 / ProGuard keep rules (release minify only).
-# JavaClassWrapper + Godot Android plugins resolve classes by name; do not strip them.
+# R8 / ProGuard for the Android release build only (minifyEnabled on release).
+# GDScript and libgodot.so are not in the DEX. Keep only types loaded by name
+# (JNI, manifest meta-data, JavaClassWrapper). SDK AARs ship their own consumer
+# rules; a blanket -keep on those packages leaves names intact and fails Play's
+# 25% DEX obfuscation check.
 
-####################################
-# Godot engine / JNI
-####################################
--keep class org.godotengine.godot.** { *; }
--keep interface org.godotengine.godot.** { *; }
--dontwarn org.godotengine.godot.**
+-keepattributes Signature
+-keepattributes *Annotation*
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
--keepclasseswithmembernames class * {
+-keepclasseswithmembernames,includedescriptorclasses class * {
     native <methods>;
 }
 
@@ -16,100 +19,70 @@
     @android.webkit.JavascriptInterface <methods>;
 }
 
--keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,EnclosingClass,Exceptions,SourceFile,LineNumberTable,RuntimeVisibleAnnotations,RuntimeInvisibleAnnotations
-
-####################################
-# App package — GodotApp + JavaClassWrapper bridges
-####################################
--keep class com.godot.game.** { *; }
--keepclassmembers class com.godot.game.** { *; }
-
-# ConsentBridge is called only from GDScript (JavaClassWrapper.wrap). R8 cannot
-# see that call, so without this it removes the class and the EU form never opens.
-# The $* rule keeps the main-thread lambdas that present the UMP form.
--keep class com.godot.game.ConsentBridge { *; }
--keepclassmembers class com.godot.game.ConsentBridge { *; }
--keep class com.godot.game.ConsentBridge$* { *; }
-
-####################################
-# Godot Android plugins (AAR singletons — discovered via manifest meta-data)
-####################################
-# AdMob / UMP / mediation
--keep class org.godotengine.plugin.admob.** { *; }
--keep class org.godotengine.plugin.admob.AdmobPlugin { *; }
--dontwarn org.godotengine.plugin.admob.**
-
-# Play Games Services plugin (Kotlin AAR)
--keep class com.jacobibanez.plugin.android.godotplaygameservices.** { *; }
--keep class com.jacobibanez.plugin.android.godotplaygameservices.GodotAndroidPlugin { *; }
--dontwarn com.jacobibanez.plugin.android.godotplaygameservices.**
-
-# Google Play Billing plugin
--keep class org.godotengine.plugin.googleplaybilling.** { *; }
--keep class org.godotengine.plugin.googleplaybilling.GodotGooglePlayBilling { *; }
--dontwarn org.godotengine.plugin.googleplaybilling.**
-
-# Any other Godot v2 plugins that may be injected at export time
--keep class org.godotengine.plugin.** { *; }
-
-####################################
-# Google Play / Ads / Firebase / Billing / Mediation SDKs
-####################################
--keep class com.google.android.gms.** { *; }
--dontwarn com.google.android.gms.**
-
--keep class com.google.android.play.** { *; }
--dontwarn com.google.android.play.**
-
--keep class com.google.firebase.** { *; }
--dontwarn com.google.firebase.**
-
--keep class com.android.billingclient.** { *; }
--dontwarn com.android.billingclient.**
-
--keep class com.google.android.ump.** { *; }
--keep class com.google.android.gms.internal.consent_sdk.** { *; }
--dontwarn com.google.android.ump.**
--dontwarn com.google.android.gms.internal.consent_sdk.**
-
-# Unity mediation adapter (loaded by reflection from AdMob)
--keep class com.unity3d.** { *; }
--keep class com.google.ads.mediation.unity.** { *; }
--dontwarn com.unity3d.**
--dontwarn com.google.ads.mediation.unity.**
--keep class com.ironsource.** { *; }
--dontwarn com.ironsource.**
-
-# Play Games plugin uses Gson for JSON marshalling
--keep class com.google.gson.** { *; }
--dontwarn com.google.gson.**
--keepclassmembers,allowobfuscation class * {
-  @com.google.gson.annotations.SerializedName <fields>;
-}
-
-####################################
-# AndroidX / Kotlin (Play Games AAR is Kotlin)
-####################################
--dontwarn androidx.**
--keep class androidx.lifecycle.** { *; }
--keep class androidx.core.app.NotificationCompat** { *; }
--keep class androidx.core.app.NotificationManagerCompat { *; }
--keep class androidx.core.content.ContextCompat { *; }
-
--keep class kotlin.Metadata { *; }
--keepclassmembers class kotlin.Metadata {
-    public <methods>;
-}
--dontwarn kotlin.**
--dontwarn kotlinx.**
-
-####################################
-# Parcelable / enums used by GMS
-####################################
 -keepclassmembers class * implements android.os.Parcelable {
     public static final ** CREATOR;
 }
+
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
 }
+
+-keepclassmembers class ** {
+    @kotlin.Metadata *;
+}
+
+# Godot engine. JNI and the plugin registry look these up by name.
+-keep class org.godotengine.** { *; }
+
+# App classes Godot instantiates from the manifest or JavaClassWrapper.
+-keep class com.godot.game.GodotApp { *; }
+-keep class com.godot.game.ConsentBridge { *; }
+-keep class com.godot.game.ConsentBridge$* { *; }
+-keep class com.godot.game.DeviceLayoutBridge { *; }
+-keep class com.godot.game.AudioNoisyBridge { *; }
+-keep class com.godot.game.AudioNoisyBridge$* { *; }
+-keep class com.godot.game.FirebaseAnalyticsBridge { *; }
+
+# GodotGooglePlayBilling — manifest value org.godotengine.plugin.googleplaybilling.GodotGooglePlayBilling
+-keep class org.godotengine.plugin.googleplaybilling.** { *; }
+
+# Play Billing client. The plugin calls this API; the AAR's consumer rules cover the rest.
+-keep class com.android.billingclient.** { *; }
+
+# AdmobPlugin — manifest value org.godotengine.plugin.admob.AdmobPlugin
+-keep class org.godotengine.plugin.admob.** { *; }
+
+# Google Mobile Ads. Names stay on the types AdMob loads by reflection.
+# allowobfuscation keeps the rest of the SDK from being stripped while R8
+# renames classes the AAR's own rules do not pin (needed for Play's 25% check).
+-keep class com.google.android.gms.ads.MobileAds { *; }
+-keep class com.google.android.gms.ads.AdRequest { *; }
+-keep class com.google.android.gms.ads.initialization.** { *; }
+-keep class com.google.ads.mediation.** { *; }
+-keep,allowobfuscation class com.google.android.gms.ads.** { public protected *; }
+
+# UMP consent forms, called from ConsentBridge and loaded by the SDK by name.
+-keep class com.google.android.ump.** { *; }
+-keep class com.google.android.gms.internal.consent_sdk.** { *; }
+
+# InappReviewPlugin — manifest value org.godotengine.plugin.inappreview.InappReviewPlugin
+-keep class org.godotengine.plugin.inappreview.** { *; }
+
+# Firebase / Play services. Entry points keep their names; other classes may be renamed.
+-keep class com.google.firebase.FirebaseApp { *; }
+-keep class com.google.firebase.analytics.FirebaseAnalytics { *; }
+-keep,allowobfuscation class com.google.firebase.** { public protected *; }
+-keep,allowobfuscation class com.google.android.gms.** { public protected *; }
+
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.ump.**
+-dontwarn com.android.billingclient.**
+-dontwarn com.unity3d.**
+-dontwarn com.google.ads.mediation.**
+-dontwarn com.google.gson.**
+-keepclassmembers,allowobfuscation class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-dontwarn org.godotengine.**
