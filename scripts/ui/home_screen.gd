@@ -24,13 +24,12 @@ const POPUP_FONT_TABLET := 22
 @onready var _grid: GridContainer = $Margin/VBox/Scroll/Grid
 @onready var _scroll: ScrollContainer = $Margin/VBox/Scroll
 @onready var _empty_state: Label = $Margin/VBox/EmptyState
-@onready var _settings_btn: Button = $Margin/VBox/TopBar/RightCluster/SettingsBtn
-@onready var _plus_btn: Button = $Margin/VBox/TopBar/RightCluster/PlusBtn
-@onready var _logo: TextureRect = $Margin/VBox/TopBar/Logo
-@onready var _top_bar: HBoxContainer = $Margin/VBox/TopBar
-@onready var _left_balance: Control = $Margin/VBox/TopBar/LeftBalance
-@onready var _right_cluster: HBoxContainer = $Margin/VBox/TopBar/RightCluster
-@onready var _scope_row: HBoxContainer = $Margin/VBox/ScopeRow
+@onready var _settings_btn: Button = $SettingsBtn
+@onready var _plus_btn: Button = $Margin/VBox/TopBar/BrandRow/PlusBtn
+@onready var _logo: TextureRect = $Margin/VBox/TopBar/BrandRow/Logo
+@onready var _top_bar: CenterContainer = $Margin/VBox/TopBar
+@onready var _scope_scroll: ScrollContainer = $Margin/VBox/ScopeScroll
+@onready var _scope_row: HBoxContainer = $Margin/VBox/ScopeScroll/ScopeRow
 @onready var _category_select: OptionButton = $Margin/VBox/CategorySelect
 @onready var _features_banner: HBoxContainer = $Margin/VBox/FeaturesBanner
 @onready var _features_dismiss: Button = $Margin/VBox/FeaturesBanner/FeaturesDismiss
@@ -82,8 +81,16 @@ func _ready() -> void:
 	_setup_dev_menu()
 	_refresh_features_banner()
 	_scroll.scroll_deadzone = 24
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	_scroll.clip_contents = true
 	_hide_scroll_bar(_scroll.get_v_scroll_bar())
+	_hide_scroll_bar(_scroll.get_h_scroll_bar())
+	_scope_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_scope_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scope_scroll.clip_contents = true
+	_hide_scroll_bar(_scope_scroll.get_h_scroll_bar())
+	_hide_scroll_bar(_scope_scroll.get_v_scroll_bar())
 	_rebuild_filters()
 	_build_play_again()
 	_build_library_banner()
@@ -164,7 +171,7 @@ func _style_top_buttons() -> void:
 
 func _on_plus_changed(is_plus: bool) -> void:
 	_plus_btn.visible = not is_plus
-	_balance_top_bar()
+	_apply_responsive_layout()
 	_refresh_grid()
 	_rebuild_play_again()
 
@@ -176,34 +183,47 @@ func _apply_responsive_layout() -> void:
 	_margin.add_theme_constant_override("margin_top", int(margins.y))
 	_margin.add_theme_constant_override("margin_right", int(margins.z))
 	_margin.add_theme_constant_override("margin_bottom", int(margins.w))
-	_logo.custom_minimum_size = Responsive.logo_min_size(vs)
-	var icon_s := 56.0 if Responsive.is_tablet(vs) else 48.0
-	_plus_btn.custom_minimum_size = Vector2(icon_s, icon_s)
-	_settings_btn.custom_minimum_size = Vector2(icon_s, icon_s)
-	_top_bar.custom_minimum_size = Vector2(0, icon_s + 12.0)
-	_balance_top_bar()
+	_margin.clip_contents = true
+	_layout_header(vs, margins)
 	_wire_android_popups()
 	_style_filters(vs)
-	var columns := Responsive.grid_columns(vs)
+	var columns := _column_count(vs)
 	if columns != _last_columns and _grid.get_child_count() > 0:
 		_refresh_grid()
 	elif _last_columns < 0:
 		_last_columns = columns
 
 
-func _balance_top_bar() -> void:
-	## Match left spacer to right icon cluster so the logo is optically screen-centered.
-	await get_tree().process_frame
-	if not is_instance_valid(_right_cluster) or not is_instance_valid(_left_balance):
-		return
-	var right_w := _right_cluster.get_combined_minimum_size().x
-	if Responsive.use_android_layout() and _right_cluster.size.x > 1.0:
-		right_w = _right_cluster.size.x
-	if right_w < 1.0:
-		right_w = _settings_btn.custom_minimum_size.x
-		if _plus_btn.visible:
-			right_w += _plus_btn.custom_minimum_size.x + 10.0
-	_left_balance.custom_minimum_size = Vector2(right_w, 0)
+func _content_width(vs: Vector2, margins: Vector4) -> float:
+	return maxf(120.0, vs.x - margins.x - margins.z)
+
+
+func _column_count(vs: Vector2) -> int:
+	var margins := Responsive.safe_outer_margins(Responsive.content_margins(vs))
+	return Responsive.grid_columns_for_width(_content_width(vs, margins))
+
+
+func _layout_header(vs: Vector2, margins: Vector4) -> void:
+	## Logo and Plus are one centered group. The gear is a corner overlay, so it
+	## does not add to that group's width.
+	var icon_s := 52.0 if Responsive.is_tablet(vs) else 44.0
+	_plus_btn.custom_minimum_size = Vector2(icon_s, icon_s)
+	_settings_btn.custom_minimum_size = Vector2(icon_s, icon_s)
+	var plus_w := icon_s if _plus_btn.visible else 0.0
+	var sep := 8.0 if _plus_btn.visible else 0.0
+	var content_w := _content_width(vs, margins)
+	var brand_cap := maxf(120.0, content_w - icon_s * 2.0)
+	var logo_h := 72.0 if Responsive.is_tablet(vs) else 52.0
+	var logo_pref := 260.0 if Responsive.is_tablet(vs) else 168.0
+	var logo_w := minf(logo_pref, maxf(96.0, brand_cap - plus_w - sep))
+	_logo.custom_minimum_size = Vector2(logo_w, logo_h)
+	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_top_bar.custom_minimum_size = Vector2(0, maxf(logo_h, icon_s) + 8.0)
+	var side := maxf(margins.x, margins.z)
+	_settings_btn.offset_right = -side
+	_settings_btn.offset_left = -(side + icon_s)
+	_settings_btn.offset_top = margins.y
+	_settings_btn.offset_bottom = margins.y + icon_s
 
 
 func _wire_android_popups() -> void:
@@ -267,8 +287,10 @@ func _style_filters(vs: Vector2) -> void:
 	var is_tablet := Responsive.is_tablet(vs)
 	var chip_h := CHIP_H_TABLET if is_tablet else CHIP_H_PHONE
 	var chip_font := CHIP_FONT_TABLET if is_tablet else CHIP_FONT_PHONE
+	_scope_scroll.custom_minimum_size = Vector2(0, chip_h + 4.0)
 	_scope_row.custom_minimum_size = Vector2(0, chip_h + 4.0)
 	_scope_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_category_select.clip_text = true
 	for id in _scope_chips.keys():
 		var btn := _scope_chips[id] as Button
 		btn.custom_minimum_size = Vector2(0, chip_h)
@@ -353,9 +375,17 @@ func _refresh_grid() -> void:
 	if gen != _grid_gen or not is_inside_tree():
 		return
 	var sounds := _filtered_sounds()
-	_last_columns = Responsive.grid_columns(get_viewport_rect().size)
+	var vs := get_viewport_rect().size
+	var margins := Responsive.safe_outer_margins(Responsive.content_margins(vs))
+	var content_w := _scroll.size.x
+	if content_w < 8.0:
+		content_w = _content_width(vs, margins)
+	_last_columns = Responsive.grid_columns_for_width(content_w)
 	_grid.columns = _last_columns
-	var gap := 16 if Responsive.is_tablet(get_viewport_rect().size) else 12
+	var gap := 16 if Responsive.is_tablet(vs) else 12
+	var tile_w := Responsive.tile_width(content_w, _last_columns, float(gap))
+	_grid.custom_minimum_size = Vector2(0, 0)
+	_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_grid.add_theme_constant_override("h_separation", gap)
 	_grid.add_theme_constant_override("v_separation", gap)
 
@@ -376,6 +406,8 @@ func _refresh_grid() -> void:
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.size_flags_stretch_ratio = 1.0
 		tile.call("setup", sound)
+		tile.custom_minimum_size = Vector2(0, tile.custom_minimum_size.y)
+		tile.set_meta("tile_width", tile_w)
 		tile.pressed.connect(_on_tile_pressed.bind(sound))
 		i += 1
 		## First batch paints under splash; then emit ready so splash can fade.
@@ -481,6 +513,8 @@ func _build_play_again() -> void:
 	_play_again_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_play_again_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_play_again_scroll.scroll_deadzone = 24
+	_play_again_scroll.clip_contents = true
+	_play_again_scroll.custom_minimum_size = Vector2(0, 0)
 	_play_again_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_play_again_box = HBoxContainer.new()
 	_play_again_box.add_theme_constant_override("separation", 8)

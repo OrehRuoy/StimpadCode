@@ -7,6 +7,7 @@ _tmp/
 
 # Build artifacts (repo-root export output only; android/build is the Gradle template)
 /build/
+/_exclude/
 *.apk
 *.aab
 *.ipa

@@ -11,19 +11,21 @@ static func is_tablet(viewport_size: Vector2) -> bool:
 
 
 static func grid_columns(viewport_size: Vector2) -> int:
-	var w := viewport_size.x
-	var h := viewport_size.y
-	var shortest := mini(w, h)
-	var is_tab := shortest >= PHONE_SHORTEST
-	# Phone portrait
-	if not is_tab:
-		if w >= 500.0:
-			return 3
+	return grid_columns_for_width(viewport_size.x)
+
+
+static func grid_columns_for_width(content_width: float) -> int:
+	## Phones (about 360–480 dp) stay at 2. Wider content adds columns.
+	if content_width < 520.0:
 		return 2
-	# Tablet
-	if w >= 1100.0:
-		return 4
-	return 3
+	if content_width < 900.0:
+		return 3
+	return 4
+
+
+static func tile_width(content_width: float, columns: int, gap: float) -> float:
+	var cols := maxi(columns, 1)
+	return maxf(1.0, (content_width - gap * float(cols - 1)) / float(cols))
 
 
 static func content_margins(viewport_size: Vector2) -> Vector4:
@@ -124,11 +126,15 @@ static func _android_safe_outer_margins(base: Vector4) -> Vector4:
 	var win_x := float(win.x)
 	var win_y := float(win.y)
 	var side_px := maxf(inset.x, inset.z)
-	var side := px_to_viewport(side_px, win_x, view.x) + 8.0
-	var left := maxf(base.x, side)
-	var right := maxf(base.z, side)
-	var top := maxf(base.y, px_to_viewport(inset.y, win_y, view.y) + 8.0)
-	var bottom := maxf(base.w, px_to_viewport(inset.w, win_y, view.y) + 8.0)
+	var extra := px_to_viewport(side_px, win_x, view.x)
+	var left := base.x + extra
+	var right := base.z + extra
+	var top := base.y + px_to_viewport(inset.y, win_y, view.y)
+	var bottom := base.w + px_to_viewport(inset.w, win_y, view.y)
+	## A cutout inset must not eat the column. Keep at least ~220px for two tiles.
+	var max_side := maxf(base.x, (view.x - 220.0) * 0.5)
+	left = minf(left, max_side)
+	right = minf(right, max_side)
 	if OS.has_feature("mobile") and top < 40.0:
 		top = 40.0
 	var ads = tree_ads()

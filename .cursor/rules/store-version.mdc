@@ -12,7 +12,7 @@ Keep these in sync when the version changes:
 - `project.godot` `config/version`
 - `export_presets.cfg` iOS `application/short_version`
 - `export_presets.cfg` Android `version/name`
-- Android `version/code` is **2**. Version code 1 was the previous Play build. Add 1 for each later Play upload. `version/name` stays the marketing version.
+- Android `version/code` is **3**. Version code 2 was the previous Play build. Add 1 for each later Play upload. `version/name` stays the marketing version.
 
 The next upload after 1.0.5 must be **1.0.6** unless the user asks for a larger bump. 1.0.1, 1.0.2, 1.0.3, and 1.0.4 are closed. Uploading a short version that is not higher than the approved release fails with Apple 90186 (train closed) and 90062 (version must be higher than the approved release).
 
