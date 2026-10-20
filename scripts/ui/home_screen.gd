@@ -45,6 +45,7 @@ var _scope_chips: Dictionary = {} ## id -> Button
 var _syncing_dev_menu: bool = false
 var _grid_gen: int = 0
 var _first_home_ready_emitted: bool = false
+var _popup_clamps: Dictionary = {}
 var _play_again_column: VBoxContainer
 var _play_again_caption: Label
 var _play_again_scroll: ScrollContainer
@@ -87,6 +88,7 @@ func _ready() -> void:
 	_build_play_again()
 	_build_library_banner()
 	_apply_responsive_layout()
+	_wire_android_popups()
 	if SoundCatalog.sounds.size() > 0:
 		_refresh_grid()
 
@@ -180,6 +182,7 @@ func _apply_responsive_layout() -> void:
 	_settings_btn.custom_minimum_size = Vector2(icon_s, icon_s)
 	_top_bar.custom_minimum_size = Vector2(0, icon_s + 12.0)
 	_balance_top_bar()
+	_wire_android_popups()
 	_style_filters(vs)
 	var columns := Responsive.grid_columns(vs)
 	if columns != _last_columns and _grid.get_child_count() > 0:
@@ -194,11 +197,70 @@ func _balance_top_bar() -> void:
 	if not is_instance_valid(_right_cluster) or not is_instance_valid(_left_balance):
 		return
 	var right_w := _right_cluster.get_combined_minimum_size().x
+	if Responsive.use_android_layout() and _right_cluster.size.x > 1.0:
+		right_w = _right_cluster.size.x
 	if right_w < 1.0:
 		right_w = _settings_btn.custom_minimum_size.x
 		if _plus_btn.visible:
 			right_w += _plus_btn.custom_minimum_size.x + 10.0
 	_left_balance.custom_minimum_size = Vector2(right_w, 0)
+
+
+func _wire_android_popups() -> void:
+	if not Responsive.use_android_layout():
+		return
+	_bind_popup_clamp(_category_select)
+	_bind_popup_clamp(_dev_menu)
+
+
+func _bind_popup_clamp(dropdown: OptionButton) -> void:
+	if dropdown == null or _popup_clamps.has(dropdown):
+		return
+	var popup := dropdown.get_popup()
+	var callback := _on_android_popup_about_to_show.bind(dropdown)
+	popup.about_to_popup.connect(callback)
+	_popup_clamps[dropdown] = callback
+
+
+func _on_android_popup_about_to_show(dropdown: OptionButton) -> void:
+	_clamp_android_popup_soon(dropdown)
+
+
+func _clamp_android_popup_soon(dropdown: OptionButton) -> void:
+	await get_tree().process_frame
+	_clamp_android_popup(dropdown)
+	await get_tree().process_frame
+	_clamp_android_popup(dropdown)
+
+
+func _clamp_android_popup(dropdown: OptionButton) -> void:
+	if not Responsive.use_android_layout() or not is_instance_valid(dropdown):
+		return
+	var popup := dropdown.get_popup()
+	var margin := 12.0
+	var view := get_viewport().get_visible_rect()
+	var limit := Rect2(view.position + Vector2(margin, margin), view.size - Vector2(margin, margin) * 2.0)
+	if limit.size.x < 1.0 or limit.size.y < 1.0:
+		return
+	var embedded := get_tree().root.gui_embed_subwindows
+	var origin := Vector2.ZERO
+	var to_view := Vector2.ONE
+	var win := Vector2(DisplayServer.window_get_size())
+	if not embedded:
+		origin = Vector2(DisplayServer.window_get_position())
+		if win.x < 1.0 or win.y < 1.0 or view.size.x < 1.0 or view.size.y < 1.0:
+			return
+		to_view = Vector2(view.size.x / win.x, view.size.y / win.y)
+	var pos := (Vector2(popup.position) - origin) * to_view
+	var sz := Vector2(popup.size) * to_view
+	sz.x = minf(maxf(sz.x, 1.0), limit.size.x)
+	sz.y = minf(maxf(sz.y, 1.0), limit.size.y)
+	pos.x = clampf(pos.x, limit.position.x, limit.end.x - sz.x)
+	pos.y = clampf(pos.y, limit.position.y, limit.end.y - sz.y)
+	var from_view := Vector2(1.0 / to_view.x, 1.0 / to_view.y)
+	popup.max_size = Vector2i(int(round(limit.size.x * from_view.x)), int(round(limit.size.y * from_view.y)))
+	popup.size = Vector2i(int(round(sz.x * from_view.x)), int(round(sz.y * from_view.y)))
+	popup.position = Vector2i(int(round(pos.x * from_view.x + origin.x)), int(round(pos.y * from_view.y + origin.y)))
 
 
 func _style_filters(vs: Vector2) -> void:
@@ -288,7 +350,7 @@ func _refresh_grid() -> void:
 		child.queue_free()
 	## Let queue_free settle before adding a big batch (avoids one-frame spike).
 	await get_tree().process_frame
-	if gen != _grid_gen:
+	if gen != _grid_gen or not is_inside_tree():
 		return
 	var sounds := _filtered_sounds()
 	_last_columns = Responsive.grid_columns(get_viewport_rect().size)
@@ -321,6 +383,8 @@ func _refresh_grid() -> void:
 			_emit_first_home_ready()
 		if i % TILE_BATCH == 0:
 			await get_tree().process_frame
+			if gen != _grid_gen or not is_inside_tree():
+				return
 	_emit_first_home_ready()
 
 

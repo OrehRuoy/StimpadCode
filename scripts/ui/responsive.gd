@@ -72,7 +72,26 @@ static func viewport_size() -> Vector2:
 	return Vector2.ZERO
 
 
+## Headless layout shots set these. They do not make Platform.is_android() true.
+static var force_android_layout: bool = false
+static var test_insets_enabled: bool = false
+static var test_inset_px: Vector4 = Vector4.ZERO
+
+
+static func use_android_layout() -> bool:
+	if force_android_layout:
+		return true
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		var platform := (tree as SceneTree).root.get_node_or_null("Platform")
+		if platform != null and platform.has_method("is_android"):
+			return bool(platform.call("is_android"))
+	return OS.get_name() == "Android"
+
+
 static func safe_outer_margins(base: Vector4) -> Vector4:
+	if use_android_layout():
+		return _android_safe_outer_margins(base)
 	var sa := DisplayServer.get_display_safe_area()
 	var win := DisplayServer.window_get_size()
 	var view := viewport_size()
@@ -93,6 +112,45 @@ static func safe_outer_margins(base: Vector4) -> Vector4:
 	var ads = tree_ads()
 	if ads != null and ads.has_method("banner_reserved_height") and ads.banner_reserved_height() > 1.0:
 		bottom = base.w
+	return Vector4(left, top, right, bottom)
+
+
+static func _android_safe_outer_margins(base: Vector4) -> Vector4:
+	## Symmetric horizontal insets keep the column, and the logo, on the screen center
+	## while still clearing a one-sided cutout.
+	var inset := _android_inset_px()
+	var win := DisplayServer.window_get_size()
+	var view := viewport_size()
+	var win_x := float(win.x)
+	var win_y := float(win.y)
+	var side_px := maxf(inset.x, inset.z)
+	var side := px_to_viewport(side_px, win_x, view.x) + 8.0
+	var left := maxf(base.x, side)
+	var right := maxf(base.z, side)
+	var top := maxf(base.y, px_to_viewport(inset.y, win_y, view.y) + 8.0)
+	var bottom := maxf(base.w, px_to_viewport(inset.w, win_y, view.y) + 8.0)
+	if OS.has_feature("mobile") and top < 40.0:
+		top = 40.0
+	var ads = tree_ads()
+	if ads != null and ads.has_method("banner_reserved_height") and ads.banner_reserved_height() > 1.0:
+		bottom = base.w
+	return Vector4(left, top, right, bottom)
+
+
+static func _android_inset_px() -> Vector4:
+	if test_insets_enabled:
+		return test_inset_px
+	if not ClassDB.class_exists("JavaClassWrapper"):
+		return Vector4.ZERO
+	var bridge: Variant = JavaClassWrapper.wrap("com.godot.game.DeviceLayoutBridge")
+	if JavaClassWrapper.get_exception() != null or bridge == null:
+		return Vector4.ZERO
+	var left := float(bridge.getSafeInsetLeft())
+	var top := float(bridge.getSafeInsetTop())
+	var right := float(bridge.getSafeInsetRight())
+	var bottom := float(bridge.getSafeInsetBottom())
+	if JavaClassWrapper.get_exception() != null:
+		return Vector4.ZERO
 	return Vector4(left, top, right, bottom)
 
 

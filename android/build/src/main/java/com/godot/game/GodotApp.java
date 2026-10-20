@@ -77,6 +77,7 @@ public class GodotApp extends GodotActivity {
 		EdgeToEdge.enable(this);
 		super.onCreate(savedInstanceState);
 		instance = this;
+		DeviceLayoutBridge.refresh();
 	}
 
 	@Override
@@ -84,6 +85,7 @@ public class GodotApp extends GodotActivity {
 		super.onResume();
 		updateWindowAppearance.run();
 		AudioNoisyBridge.register(this);
+		DeviceLayoutBridge.refresh();
 	}
 
 	@Override
