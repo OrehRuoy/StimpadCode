@@ -55,7 +55,7 @@ jobs:
           grep -q 'application/bundle_identifier="com.stimpad.soundboard"' export_presets.cfg
           grep -q 'plugins/AdmobPlugin=true' export_presets.cfg
           grep -q 'application/app_store_team_id="9WRNQYQZTB"' export_presets.cfg
-          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1 || true)
           if [ -z "$UUID" ] || [ "$UUID" = "PASTE_PROFILE_UUID_HERE" ]; then
             echo "::error::Missing release provisioning profile UUID in export_presets.cfg"
             exit 1
@@ -151,7 +151,7 @@ jobs:
         env:
           APPLE_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_PROVISIONING_PROFILE_BASE64 }}
         run: |
-          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1 || true)
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           echo "$APPLE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
 
@@ -239,7 +239,7 @@ jobs:
 
       - name: Archive and export IPA
         run: |
-          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1)
+          UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1 || true)
           PROFILE="$HOME/Library/MobileDevice/Provisioning Profiles/${UUID}.mobileprovision"
           PROFILE_NAME=$(security cms -D -i "$PROFILE" 2>/dev/null | plutil -extract Name raw -)
           echo "Provisioning profile name: $PROFILE_NAME"
