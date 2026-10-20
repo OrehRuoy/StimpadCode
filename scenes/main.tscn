@@ -101,7 +101,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-color = Color(0.102, 0.133, 0.188, 1)
+color = Color(0, 0.051, 0.063, 1)
 
 [node name="SplashImage" type="TextureRect" parent="BootOverlay"]
 layout_mode = 1

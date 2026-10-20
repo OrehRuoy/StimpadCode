@@ -9,12 +9,20 @@ signal review_requested(method: String)
 const IOS_APP_STORE_ID := "6796806236"
 const ANDROID_PACKAGE := "com.stimpad.soundboard"
 
-var _inapp_review: Node = null
+var _inapp_review: InappReview = null
+var _android_review_active: bool = false
+var _android_fallback_to_store: bool = false
 
 
-## Explicit Rate action. Always opens the store write-review page.
-## Apple's in-app sheet is quota-limited and must not be tied to a button.
+## Settings → Rate StimPad.
+## Android uses Play In-App Review and opens the store only if that API errors.
+## iOS keeps the App Store write-review page. Apple's sheet is quota-limited
+## and must not be tied to a button.
 func open_write_review() -> void:
+	if OS.has_feature("android"):
+		_start_android_review(true)
+		return
+	print("[ReviewService] path=store_url platform=ios")
 	_fallback_store_url()
 
 
@@ -22,10 +30,8 @@ func request_review() -> bool:
 	if OS.has_feature("ios"):
 		return _request_ios_sheet()
 	if OS.has_feature("android"):
-		var ok: bool = await _request_android()
-		if not ok:
-			_fallback_store_url()
-		return ok
+		_start_android_review(false)
+		return true
 	print("[ReviewService] In-app review (editor/desktop stub)")
 	review_requested.emit("editor_stub")
 	return true
@@ -46,43 +52,79 @@ func _request_ios_sheet() -> bool:
 	return false
 
 
-func _request_android() -> bool:
-	if Engine.has_singleton("InappReviewPlugin"):
-		Engine.get_singleton("InappReviewPlugin").launch_review_flow()
-		AnalyticsService.log_event("review_request_attempted", {"method": "inapp_plugin", "os": "android"})
-		return true
-	if _inapp_review != null:
-		return await _launch_inapp_review_plugin()
-	if Engine.has_singleton("GodotInAppReview"):
-		var s = Engine.get_singleton("GodotInAppReview")
-		if s != null and s.has_method("requestReview"):
-			s.requestReview()
-			review_requested.emit("GodotInAppReview")
-			return true
-	push_warning("ReviewService: no Android in-app review plugin — using Play Store URL fallback")
-	return false
+func _start_android_review(fallback_to_store: bool) -> void:
+	## Play ReviewManager: requestReviewFlow, then launchReviewFlow.
+	## A successful launch can still show nothing. That is not an error.
+	if _android_review_active:
+		print("[ReviewService] path=in_app_review ignored=already_running")
+		return
+	var node := _ensure_android_review()
+	if node == null:
+		print("[ReviewService] path=store_fallback reason=plugin_missing")
+		if fallback_to_store:
+			_fallback_store_url()
+		return
+	_android_review_active = true
+	_android_fallback_to_store = fallback_to_store
+	print("[ReviewService] path=requestReviewFlow")
+	AnalyticsService.log_event("review_request_attempted", {"method": "requestReviewFlow", "os": "android"})
+	node.generate_review_info()
+	var timer := get_tree().create_timer(8.0)
+	timer.timeout.connect(func() -> void:
+		if not _android_review_active:
+			return
+		_finish_android_review(false, "timeout")
+	, CONNECT_ONE_SHOT)
 
 
-func _launch_inapp_review_plugin() -> bool:
-	if _inapp_review == null:
-		return false
-	## cengiz-pz In-app Review Plugin (iOS + Android unified API).
-	if _inapp_review.has_method("generate_review_info") and _inapp_review.has_signal("review_info_generated"):
-		_inapp_review.generate_review_info()
-		await _inapp_review.review_info_generated
-		if _inapp_review.has_method("launch_review_flow"):
-			_inapp_review.launch_review_flow()
-			review_requested.emit("InappReview")
-			return true
-	if _inapp_review.has_method("launch_review_flow"):
-		_inapp_review.launch_review_flow()
-		review_requested.emit("InappReview")
-		return true
-	if _inapp_review.has_method("request_review"):
-		_inapp_review.request_review()
-		review_requested.emit("InappReview")
-		return true
-	return false
+func _ensure_android_review() -> InappReview:
+	if _inapp_review != null and is_instance_valid(_inapp_review):
+		return _inapp_review
+	if not Engine.has_singleton("InappReviewPlugin"):
+		return null
+	var node := InappReview.new()
+	node.name = "InappReview"
+	add_child(node)
+	_inapp_review = node
+	node.review_info_generated.connect(_on_android_review_info_generated)
+	node.review_info_generation_failed.connect(_on_android_review_info_failed)
+	node.review_flow_launched.connect(_on_android_review_flow_launched)
+	node.review_flow_launch_failed.connect(_on_android_review_flow_failed)
+	return node
+
+
+func _on_android_review_info_generated() -> void:
+	if not _android_review_active or _inapp_review == null:
+		return
+	print("[ReviewService] path=launchReviewFlow")
+	_inapp_review.launch_review_flow()
+
+
+func _on_android_review_info_failed() -> void:
+	_finish_android_review(false, "requestReviewFlow_failed")
+
+
+func _on_android_review_flow_launched() -> void:
+	_finish_android_review(true, "")
+
+
+func _on_android_review_flow_failed() -> void:
+	_finish_android_review(false, "launchReviewFlow_failed")
+
+
+func _finish_android_review(launched: bool, reason: String) -> void:
+	if not _android_review_active:
+		return
+	_android_review_active = false
+	if launched:
+		print("[ReviewService] path=in_app_review result=launched")
+		review_requested.emit("in_app_review")
+		AnalyticsService.log_event("review_request_attempted", {"method": "launchReviewFlow", "os": "android"})
+		return
+	print("[ReviewService] path=store_fallback reason=%s" % reason)
+	AnalyticsService.log_event("review_request_unavailable", {"reason": reason, "os": "android"})
+	if _android_fallback_to_store:
+		_fallback_store_url()
 
 
 func _fallback_store_url() -> void:

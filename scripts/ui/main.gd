@@ -27,6 +27,7 @@ var _now_hint: Label
 var _preview_started_unix: float = 0.0
 ## -2 unknown, 0 no nav buttons, 1 has on-screen Home.
 var _nav_buttons_cached: int = -2
+var _house_banner: TextureButton
 
 
 func _ready() -> void:
@@ -39,6 +40,8 @@ func _ready() -> void:
 	_ensure_ripple_layer()
 	_show_screen(_home)
 	AdsService.banner_visibility_changed.connect(_on_banner_visibility_changed)
+	AdsService.house_banner_changed.connect(_update_banner_inset)
+	_ensure_house_banner()
 	Entitlements.plus_changed.connect(func(_v): _update_banner_inset())
 	get_viewport().size_changed.connect(_update_banner_inset)
 	AudioController.preview_finished.connect(_on_preview_finished)
@@ -59,15 +62,15 @@ func _setup_boot_overlay() -> void:
 	_boot_overlay.visible = true
 	_boot_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	_boot_overlay.z_index = 100
-	_boot_overlay.color = Color(0.102, 0.133, 0.188, 1)
+	_boot_overlay.color = Color(0, 0.051, 0.063, 1)
 	_boot_overlay.modulate = Color.WHITE
 	if _boot_image:
 		_boot_image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		_boot_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		## Match Godot engine splash (aspect fit / centered). Cover mode caused the
-		## "full → bars → full" flash vs the engine letterbox step.
+		## Cover the screen. The art keeps its aspect and the matching background
+		## fills anything the crop does not. Letterbox bars were the gray bands.
 		_boot_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		_boot_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		_boot_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		if ResourceLoader.exists("res://assets/branding/boot_splash.png"):
 			_boot_image.texture = load("res://assets/branding/boot_splash.png")
 
@@ -292,6 +295,39 @@ func _three_button_gap_viewport() -> float:
 	return Responsive.px_to_viewport(extra_px, win_h, view_h)
 
 
+func _ensure_house_banner() -> void:
+	if _house_banner != null:
+		return
+	var button := TextureButton.new()
+	button.name = "HouseBanner"
+	button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.ignore_texture_size = true
+	button.stretch_mode = TextureButton.STRETCH_KEEP_ASPECT_COVERED
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.focus_mode = Control.FOCUS_NONE
+	button.visible = false
+	button.pressed.connect(func() -> void:
+		AdsService.open_current_house_ad()
+	)
+	_banner_placeholder.add_child(button)
+	_house_banner = button
+
+
+func _sync_house_banner(banner_h: float) -> void:
+	if _house_banner == null:
+		return
+	var show := banner_h > 1.0 and AdsService.should_show_house_banner()
+	_house_banner.visible = show
+	if not show:
+		return
+	var ad: Dictionary = AdsService.current_house_ad()
+	var path := str(ad.get("banner", ""))
+	if path.is_empty() or not ResourceLoader.exists(path):
+		_house_banner.texture_normal = null
+		return
+	_house_banner.texture_normal = load(path)
+
+
 func _update_banner_inset() -> void:
 	## The native banner owns the bottom strip. Every screen lives above it.
 	## The spacer stays empty so it cannot paint over the AdMob view.
@@ -313,6 +349,7 @@ func _update_banner_inset() -> void:
 	## Never paint the scene's gray panel. That box sat above a shorter ad.
 	_banner_placeholder.add_theme_stylebox_override("panel", StyleBoxEmpty.new())
 	_banner_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sync_house_banner(banner_h)
 	var label := _banner_placeholder.get_node_or_null("Label") as Label
 	if label:
 		var show_label := not OS.has_feature("mobile") and OS.is_debug_build()

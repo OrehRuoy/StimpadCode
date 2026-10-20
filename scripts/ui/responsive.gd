@@ -94,6 +94,8 @@ static func use_android_layout() -> bool:
 static func safe_outer_margins(base: Vector4) -> Vector4:
 	if use_android_layout():
 		return _android_safe_outer_margins(base)
+	if test_insets_enabled:
+		return _insets_as_margins(base, test_inset_px)
 	var sa := DisplayServer.get_display_safe_area()
 	var win := DisplayServer.window_get_size()
 	var view := viewport_size()
@@ -114,6 +116,16 @@ static func safe_outer_margins(base: Vector4) -> Vector4:
 	var ads = tree_ads()
 	if ads != null and ads.has_method("banner_reserved_height") and ads.banner_reserved_height() > 1.0:
 		bottom = base.w
+	return Vector4(left, top, right, bottom)
+
+
+static func _insets_as_margins(base: Vector4, inset: Vector4) -> Vector4:
+	var win := DisplayServer.window_get_size()
+	var view := viewport_size()
+	var left := maxf(base.x, px_to_viewport(inset.x, float(win.x), view.x))
+	var top := maxf(base.y, px_to_viewport(inset.y, float(win.y), view.y))
+	var right := maxf(base.z, px_to_viewport(inset.z, float(win.x), view.x))
+	var bottom := maxf(base.w, px_to_viewport(inset.w, float(win.y), view.y))
 	return Vector4(left, top, right, bottom)
 
 

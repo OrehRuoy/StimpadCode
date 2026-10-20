@@ -49,6 +49,7 @@
             android:windowSoftInputMode="adjustResize"
             android:configChanges="layoutDirection|locale|orientation|keyboardHidden|screenSize|smallestScreenSize|density|keyboard|navigation|screenLayout|uiMode"
             android:resizeableActivity="true"
+            android:windowLayoutInDisplayCutoutMode="shortEdges"
             tools:ignore="UnusedAttribute" />
         <activity-alias
             android:name=".GodotAppLauncher"

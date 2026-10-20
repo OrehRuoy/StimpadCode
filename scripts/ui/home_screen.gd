@@ -3,7 +3,6 @@ extends Control
 signal home_content_ready
 
 const SOUND_TILE_SCENE := preload("res://scenes/ui/sound_tile.tscn")
-const PLUS_ICON := "res://assets/ui/icon_plus_badge.png"
 const SETTINGS_ICON := "res://assets/ui/icon_settings_gear.png"
 ## Stagger tile art so iOS doesn't jetsam from decoding ~95 textures in one frame.
 const TILE_BATCH := 6
@@ -25,9 +24,10 @@ const POPUP_FONT_TABLET := 22
 @onready var _scroll: ScrollContainer = $Margin/VBox/Scroll
 @onready var _empty_state: Label = $Margin/VBox/EmptyState
 @onready var _settings_btn: Button = $SettingsBtn
-@onready var _plus_btn: Button = $Margin/VBox/TopBar/BrandRow/PlusBtn
+@onready var _plus_btn: Button = $PlusBtn
 @onready var _logo: TextureRect = $Margin/VBox/TopBar/BrandRow/Logo
-@onready var _top_bar: CenterContainer = $Margin/VBox/TopBar
+@onready var _top_bar: VBoxContainer = $Margin/VBox/TopBar
+@onready var _corner_spacer: Control = $Margin/VBox/TopBar/CornerSpacer
 @onready var _scope_scroll: ScrollContainer = $Margin/VBox/ScopeScroll
 @onready var _scope_row: HBoxContainer = $Margin/VBox/ScopeScroll/ScopeRow
 @onready var _category_select: OptionButton = $Margin/VBox/CategorySelect
@@ -164,7 +164,7 @@ func _on_features_dismiss() -> void:
 
 
 func _style_top_buttons() -> void:
-	UiLook.style_icon_button(_plus_btn, PLUS_ICON, true)
+	_style_plus_pill()
 	UiLook.style_icon_button(_settings_btn, SETTINGS_ICON, true)
 	_plus_btn.visible = not Entitlements.has_plus()
 
@@ -203,23 +203,59 @@ func _column_count(vs: Vector2) -> int:
 	return Responsive.grid_columns_for_width(_content_width(vs, margins))
 
 
+func _style_plus_pill() -> void:
+	_plus_btn.text = "Plus"
+	_plus_btn.icon = null
+	_plus_btn.flat = false
+	_plus_btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.16, 0.62, 0.58, 1)
+	style.set_corner_radius_all(20)
+	style.shadow_color = Color(0, 0, 0, 0.45)
+	style.shadow_size = 8
+	style.shadow_offset = Vector2(0, 3)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	var pressed := style.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(0.12, 0.48, 0.46, 1)
+	_plus_btn.add_theme_stylebox_override("normal", style)
+	_plus_btn.add_theme_stylebox_override("hover", style)
+	_plus_btn.add_theme_stylebox_override("pressed", pressed)
+	_plus_btn.add_theme_stylebox_override("focus", style)
+	_plus_btn.add_theme_color_override("font_color", Color(0.96, 0.98, 0.97, 1))
+	_plus_btn.add_theme_color_override("font_hover_color", Color(0.96, 0.98, 0.97, 1))
+	_plus_btn.add_theme_color_override("font_pressed_color", Color(0.96, 0.98, 0.97, 1))
+	_plus_btn.add_theme_font_size_override("font_size", 16)
+
+
 func _layout_header(vs: Vector2, margins: Vector4) -> void:
-	## Logo and Plus are one centered group. The gear is a corner overlay, so it
-	## does not add to that group's width.
-	var icon_s := 52.0 if Responsive.is_tablet(vs) else 44.0
-	_plus_btn.custom_minimum_size = Vector2(icon_s, icon_s)
+	## Logo is centered on its own. Plus is the top-left corner. The gear is
+	## the top-right corner. Neither sits beside the wordmark.
+	var tablet := Responsive.is_tablet(vs)
+	var icon_s := 52.0 if tablet else 44.0
+	var plus_w := 112.0 if tablet else 92.0
+	var plus_h := 48.0 if tablet else 40.0
+	_plus_btn.custom_minimum_size = Vector2(plus_w, plus_h)
 	_settings_btn.custom_minimum_size = Vector2(icon_s, icon_s)
-	var plus_w := icon_s if _plus_btn.visible else 0.0
-	var sep := 8.0 if _plus_btn.visible else 0.0
 	var content_w := _content_width(vs, margins)
-	var brand_cap := maxf(120.0, content_w - icon_s * 2.0)
-	var logo_h := 72.0 if Responsive.is_tablet(vs) else 52.0
-	var logo_pref := 260.0 if Responsive.is_tablet(vs) else 168.0
-	var logo_w := minf(logo_pref, maxf(96.0, brand_cap - plus_w - sep))
+	var logo_h := 72.0 if tablet else 52.0
+	var logo_pref := 260.0 if tablet else 188.0
+	var logo_w := minf(logo_pref, content_w)
 	_logo.custom_minimum_size = Vector2(logo_w, logo_h)
 	_logo.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_top_bar.custom_minimum_size = Vector2(0, maxf(logo_h, icon_s) + 8.0)
+	var brand := _logo.get_parent() as HBoxContainer
+	if brand != null:
+		brand.alignment = BoxContainer.ALIGNMENT_CENTER
+		brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_corner_spacer.custom_minimum_size = Vector2(0, maxf(plus_h, icon_s))
+	_top_bar.custom_minimum_size = Vector2(0, maxf(plus_h, icon_s) + 8.0 + logo_h)
 	var side := maxf(margins.x, margins.z)
+	_plus_btn.offset_left = side
+	_plus_btn.offset_right = side + plus_w
+	_plus_btn.offset_top = margins.y
+	_plus_btn.offset_bottom = margins.y + plus_h
 	_settings_btn.offset_right = -side
 	_settings_btn.offset_left = -(side + icon_s)
 	_settings_btn.offset_top = margins.y
