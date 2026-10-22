@@ -62,6 +62,7 @@ enum DevMenuItem {
 	PAID = 1,
 	FORCE_ENJOY_PROMPT = 2,
 	FORCE_FEATURE_TIP = 3,
+	IGNORE_PREMIUM = 4,
 }
 
 
@@ -126,6 +127,7 @@ func _setup_dev_menu() -> void:
 	_dev_menu.add_item("Dev: Paid (Plus)", DevMenuItem.PAID)
 	_dev_menu.add_item("Dev: Force enjoy prompt", DevMenuItem.FORCE_ENJOY_PROMPT)
 	_dev_menu.add_item("Dev: Force feature tip", DevMenuItem.FORCE_FEATURE_TIP)
+	_dev_menu.add_item("Dev: Ignore premium (show ads)", DevMenuItem.IGNORE_PREMIUM)
 	_sync_dev_menu_to_entitlements(Entitlements.has_plus())
 	_dev_menu.item_selected.connect(_on_dev_menu_selected)
 	Entitlements.plus_changed.connect(_sync_dev_menu_to_entitlements)
@@ -157,6 +159,10 @@ func _on_dev_menu_selected(index: int) -> void:
 			LocalPrefs.reset_feature_tips_for_debug()
 			FeatureTipService.force_show_now()
 			_sync_dev_menu_to_entitlements(Entitlements.has_plus())
+		DevMenuItem.IGNORE_PREMIUM:
+			Entitlements.set_plus_for_debug(false)
+			AdsService.set_ads_enabled(true)
+			_sync_dev_menu_to_entitlements(false)
 
 
 func _refresh_features_banner() -> void:

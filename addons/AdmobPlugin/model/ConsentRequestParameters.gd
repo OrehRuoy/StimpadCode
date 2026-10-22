@@ -43,7 +43,7 @@ func set_tag_for_under_age_of_consent(a_value: AdmobConfig.TagForUnderAgeOfConse
 	return self
 
 
-func set_debug_geography(a_value: DebugGeography) -> ConsentRequestParameters:
+func set_debug_geography(a_value: int) -> ConsentRequestParameters:
 	_data[DEBUG_GEOGRAPHY_PROPERTY] = a_value
 
 	return self

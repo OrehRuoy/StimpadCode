@@ -8,7 +8,8 @@ extends EditorPlugin
 const PLUGIN_NODE_TYPE_NAME = "Admob"
 const PLUGIN_PARENT_NODE_TYPE = "Node"
 const PLUGIN_NAME: String = "AdmobPlugin"
-const ANDROID_DEPENDENCIES: Array = [ "androidx.appcompat:appcompat:1.7.1", "androidx.lifecycle:lifecycle-process:2.8.3", "com.google.android.gms:play-services-ads:24.9.0" ]
+# Same Android artifacts Circuit Sort exports. UMP is not pulled in by play-services-ads.
+const ANDROID_DEPENDENCIES: Array = [ "androidx.appcompat:appcompat:1.7.1", "androidx.lifecycle:lifecycle-process:2.8.3", "com.google.android.gms:play-services-ads:25.4.0", "com.google.android.ump:user-messaging-platform:4.0.0" ]
 const IOS_PLATFORM_VERSION: String = "14.3"
 const IOS_FRAMEWORKS: Array = [ "Foundation.framework", "AppTrackingTransparency.framework" ]
 const IOS_EMBEDDED_FRAMEWORKS: Array = [ "res://ios/framework/GoogleMobileAds.xcframework", "res://ios/framework/UserMessagingPlatform.xcframework" ]
@@ -64,6 +65,8 @@ class AndroidExportPlugin extends EditorExportPlugin:
 			_export_config = AdmobAndroidExportConfig.new()
 			if not _export_config.export_config_file_exists() or _export_config.load_export_config_from_file() != OK:
 				_export_config.load_export_config_from_node()
+			# Release export uses [Release] app_id. Debug export uses [Debug] app_id.
+			_export_config.is_real = not is_debug
 
 
 	func _get_android_dependencies(platform: EditorExportPlatform, debug: bool) -> PackedStringArray:

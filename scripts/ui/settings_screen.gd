@@ -20,6 +20,10 @@ extends Control
 @onready var _scroll: ScrollContainer = $Margin/VBox/Scroll
 
 const PRIVACY_URL := "https://orehruoy.github.io/StimPad/privacy-policy.html"
+const VERSION_TAP_WINDOW_SEC := 3.0
+
+var _version_taps: int = 0
+var _version_tap_at: float = 0.0
 
 
 func _ready() -> void:
@@ -38,6 +42,8 @@ func _ready() -> void:
 	_back_btn.pressed.connect(_on_back)
 	visibility_changed.connect(_on_visibility_changed)
 	_version.text = tr("StimPad v%s") % AppInfo.version_line()
+	_version.mouse_filter = Control.MOUSE_FILTER_STOP
+	_version.gui_input.connect(_on_version_gui_input)
 	Entitlements.plus_changed.connect(func(_v): _refresh_plus_status())
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
@@ -166,6 +172,26 @@ func _on_feedback() -> void:
 
 func _on_rate() -> void:
 	ReviewService.open_write_review()
+
+
+func _on_version_gui_input(event: InputEvent) -> void:
+	## Five quick taps open the ads status panel. A shake must not, on a release build.
+	if not Platform.is_android():
+		return
+	if not (event is InputEventMouseButton):
+		return
+	var press := event as InputEventMouseButton
+	if not press.pressed or press.button_index != MOUSE_BUTTON_LEFT:
+		return
+	var now := Time.get_ticks_msec() / 1000.0
+	if _version_taps == 0 or now - _version_tap_at > VERSION_TAP_WINDOW_SEC:
+		_version_taps = 0
+	_version_tap_at = now
+	_version_taps += 1
+	if _version_taps < 5:
+		return
+	_version_taps = 0
+	AdsService.open_status_panel()
 
 
 func _on_ad_privacy() -> void:

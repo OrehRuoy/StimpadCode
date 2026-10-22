@@ -75,6 +75,8 @@ func _ready() -> void:
 		_home.home_content_ready.connect(_on_home_content_ready, CONNECT_ONE_SHOT)
 	else:
 		call_deferred("_on_home_content_ready")
+	## If the home grid never signals, the overlay is nearly black. Reveal anyway.
+	get_tree().create_timer(8.0).timeout.connect(_on_boot_timeout, CONNECT_ONE_SHOT)
 
 
 func _setup_boot_overlay() -> void:
@@ -96,12 +98,24 @@ func _setup_boot_overlay() -> void:
 			_boot_image.texture = load("res://assets/branding/boot_splash.png")
 
 
+func _on_boot_timeout() -> void:
+	if _boot_dismissed:
+		return
+	push_warning("Main: home did not become ready in 8s — showing UI anyway")
+	_finish_boot(true)
+
+
 func _on_home_content_ready() -> void:
+	_finish_boot(false)
+
+
+func _finish_boot(from_timeout: bool) -> void:
 	if _boot_dismissed:
 		return
 	_boot_dismissed = true
 	## Wait until several tile batches are on screen before revealing home.
-	await get_tree().create_timer(0.35).timeout
+	if not from_timeout:
+		await get_tree().create_timer(0.35).timeout
 	if _boot_overlay != null and is_instance_valid(_boot_overlay):
 		var tw := create_tween()
 		tw.tween_property(_boot_overlay, "modulate:a", 0.0, 0.35)

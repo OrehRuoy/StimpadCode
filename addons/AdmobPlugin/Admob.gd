@@ -6,6 +6,9 @@
 @icon("icon.png")
 class_name Admob extends Node
 
+## UMP debug geography (Google SDK values). Use ints so @tool parses without global class_name ordering issues.
+const CONSENT_DEBUG_GEO_NOT_SET := -1
+
 signal initialization_completed(status_data: InitializationStatus)
 signal banner_ad_loaded(ad_info: AdInfo, response_info: ResponseInfo)
 signal banner_ad_failed_to_load(ad_info: AdInfo, error_data: LoadAdError)
@@ -306,7 +309,7 @@ const MAXIMUM_CACHE_SIZE: int = 1000
 @export_category("Debug")
 @export_group("Settings")
 ## The user location used when testing the consent management functionality.
-@export var debug_geography: ConsentRequestParameters.DebugGeography = ConsentRequestParameters.DebugGeography.NOT_SET : set = set_debug_geography
+@export var debug_geography: int = CONSENT_DEBUG_GEO_NOT_SET : set = set_debug_geography
 
 ## A list of SHA-256–hashed device IDs that should be registered as test devices in AdMob.
 @export var test_device_hashed_ids: Array[String] = []
@@ -560,7 +563,7 @@ func set_max_rewarded_interstitial_ad_cache(a_value: int) -> void:
 func set_max_native_ad_cache(a_value: int) -> void:
 	max_native_ad_cache = clampi(a_value, MINIMUM_CACHE_SIZE, MAXIMUM_CACHE_SIZE)
 
-func set_debug_geography(a_value: ConsentRequestParameters.DebugGeography) -> void:
+func set_debug_geography(a_value: int) -> void:
 	debug_geography = a_value
 
 
@@ -1105,14 +1108,12 @@ func show_consent_form() -> void:
 
 
 func get_consent_status() -> UserConsent:
-	var __result: String
-
 	if _plugin_singleton == null:
 		Admob.log_error("%s plugin not initialized" % PLUGIN_SINGLETON_NAME)
-	else:
-		__result = _plugin_singleton.get_consent_status()
-
-	return UserConsent.new(__result) if __result else null
+		return UserConsent.from_ump(null)
+	# Native plugin returns Google's ConsentStatus int (REQUIRED=1, NOT_REQUIRED=2).
+	# Do not treat that int as a Status name string — the plugin enum order differs.
+	return UserConsent.from_ump(_plugin_singleton.get_consent_status())
 
 
 func is_consent_form_available() -> bool:
@@ -1134,7 +1135,7 @@ func update_consent_info(a_parameters: ConsentRequestParameters = null) -> void:
 				a_parameters.set_tag_for_under_age_of_consent(under_age_of_consent)
 
 			if not is_real:
-				if debug_geography != ConsentRequestParameters.DebugGeography.NOT_SET:
+				if debug_geography != CONSENT_DEBUG_GEO_NOT_SET:
 					a_parameters.set_debug_geography(debug_geography)
 
 				for __device_id in test_device_hashed_ids:

@@ -29,6 +29,7 @@ var _focus_sound: Dictionary = {}
 var _open_reason: String = ""
 var _countdown_accum := 0.0
 var _paywall_scroll: ScrollContainer
+var _house_offer_btn: Button
 
 
 func _ready() -> void:
@@ -47,6 +48,7 @@ func _ready() -> void:
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
 	_make_content_scroll()
+	_ensure_house_offer_button()
 	_apply_responsive_layout()
 	_refresh()
 	set_process(true)
@@ -244,6 +246,7 @@ func _refresh() -> void:
 		_status.text = tr("You have StimPad Plus. All sounds unlocked, ads removed.")
 		_price_label.text = tr("Owned")
 		_set_watch_visible(false)
+		_sync_house_offer_button()
 		_reveal_actions()
 		return
 	_price_label.text = _price_copy()
@@ -252,6 +255,7 @@ func _refresh() -> void:
 		_subtitle.text = tr("Plus unlocked: %s left") % _library_clock()
 		_status.text = tr("Everything is open for now. Get Plus to keep it, with no ads.")
 		_set_watch_visible(false)
+		_sync_house_offer_button()
 		_reveal_actions()
 		return
 
@@ -271,6 +275,7 @@ func _refresh() -> void:
 	else:
 		_subtitle.text = tr("All sounds · No ads · One purchase")
 		_status.text = _all_sounds_status()
+	_sync_house_offer_button()
 	_reveal_actions()
 
 
@@ -288,8 +293,34 @@ func _on_rewarded_done() -> void:
 		_nav_call("show_home")
 
 
+func _ensure_house_offer_button() -> void:
+	## Opening the partner app does not grant the 20-minute unlock.
+	var btn := Button.new()
+	btn.name = "HouseOfferBtn"
+	btn.text = tr("Open a partner app")
+	btn.visible = false
+	btn.custom_minimum_size = Vector2(0, 48)
+	btn.pressed.connect(func() -> void:
+		AdsService.open_current_house_ad()
+	)
+	var actions := _vbox.get_parent().get_parent().get_node_or_null("PaywallActions")
+	if actions == null:
+		_vbox.add_child(btn)
+	else:
+		actions.add_child(btn)
+		actions.move_child(btn, mini(2, actions.get_child_count() - 1))
+	_house_offer_btn = btn
+
+
+func _sync_house_offer_button() -> void:
+	if _house_offer_btn == null:
+		return
+	_house_offer_btn.visible = AdsService.house_reward_offer_visible()
+
+
 func _on_rewarded_failed(reason: String) -> void:
 	_status.text = reason
+	_sync_house_offer_button()
 
 
 func _on_buy() -> void:

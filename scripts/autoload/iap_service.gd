@@ -314,12 +314,28 @@ func _query_owned_purchases(report_empty: bool) -> bool:
 		for purchase in result.get("purchases", []):
 			if typeof(purchase) != TYPE_DICTIONARY:
 				continue
+			if _purchase_was_revoked(purchase):
+				print("[IAPService] Play reports Plus refunded or revoked — clearing saved Plus")
+				Entitlements.revoke_plus_for_debug()
+				continue
 			if await _apply_owned_purchase(purchase):
 				owned = true
+		## An empty owned list is also what a failed or slow Play response can look like
+		## after the response code is OK. Do not clear Plus unless a purchase record
+		## itself says refunded or revoked.
 	if report_empty and not owned:
 		purchase_restored.emit([])
 	_purchase_query_lock = false
 	return owned
+
+
+func _purchase_was_revoked(purchase: Dictionary) -> bool:
+	## BillingClient.PurchaseState is only unspecified, purchased, or pending.
+	## A missing purchase is not a refund. Clear Plus only when this record says so.
+	if not _purchase_contains_plus(purchase):
+		return false
+	var state_name := str(purchase.get("purchase_state_name", "")).strip_edges().to_upper()
+	return state_name == "REFUNDED" or state_name == "REVOKED" or state_name == "CANCELED"
 
 
 func _apply_owned_purchase(purchase: Dictionary) -> bool:

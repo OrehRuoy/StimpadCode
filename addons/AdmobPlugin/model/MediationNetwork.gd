@@ -174,7 +174,7 @@ const MEDIATION_NETWORKS: Dictionary = {
 	Flag.UNITY: {
 			FLAG_PROPERTY: Flag.UNITY,
 			TAG_PROPERTY: "unity",
-			DEPENDENCIES_PROPERTY: [ "com.unity3d.ads:unity-ads:4.16.2", "com.google.ads.mediation:unity:4.16.3.0" ],
+			DEPENDENCIES_PROPERTY: [ "com.unity3d.ads:unity-ads:4.18.0", "com.google.ads.mediation:unity:4.18.0.0" ],
 			MAVEN_REPO_PROPERTY: "",
 			POD_PROPERTY: "GoogleMobileAdsMediationUnity",
 			POD_VERSION_PROPERTY: "4.16.2.0",

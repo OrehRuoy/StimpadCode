@@ -92,6 +92,22 @@ var _banner_ad_id: String = ""
 var _last_banner_creative_unix: float = -99999.0
 var _house_ad: Dictionary = {}
 var _house_logged: bool = false
+## House creative only after a no-fill or load error, not during the first request.
+var _house_fallback_active: bool = false
+var _banner_unit: String = ""
+var _rewarded_unit: String = ""
+var _last_accel := Vector3.ZERO
+var _shake_cool := 0.0
+var _singleton_found: bool = false
+var _ump_status: String = ""
+var _last_ump_state: int = -2
+var _last_banner_result: String = "none"
+var _last_rewarded_result: String = "none"
+var _last_banner_error: String = ""
+var _last_rewarded_error: String = ""
+var _house_reward_offer: bool = false
+var _ads_debug_layer: CanvasLayer
+var _ads_debug_body: Label
 var _pending_reward_active: bool = false
 var _fullscreen_ad_since_unix: float = 0.0
 var _reward_earned_pending: bool = false
@@ -105,8 +121,9 @@ func _ready() -> void:
 	AudioController.playback_finished.connect(_on_playback_stopped)
 	## Do not start AdMob until Main dismisses the boot overlay (home content ready).
 	## Starting during cold load / texture spike crashes TestFlight devices.
-	## _process only polls the Android consent bridge.
-	set_process(false)
+	## Consent polling turns processing on when a gather starts.
+	## Shake is debug-only so a release player cannot open the status panel.
+	set_process(Platform.is_android() and OS.is_debug_build())
 
 
 func _notification(what: int) -> void:
@@ -118,6 +135,7 @@ func notify_ui_ready() -> void:
 	if _ui_ready:
 		return
 	_ui_ready = true
+	print("[AdsService] ui ready")
 	if not ENABLE_COLD_START_ADS:
 		print("[AdsService] Cold-start ads disabled — skipping AdMob init (crash isolation)")
 		return
@@ -155,7 +173,17 @@ func is_native_banner_showing() -> bool:
 
 
 func should_show_house_banner() -> bool:
-	return _banner_slot_open() and not _banner_mounted
+	if not _banner_slot_open() or _banner_mounted:
+		return false
+	## Android keeps a house creative in the slot while consent is pending,
+	## during the first request, and after no-fill. iOS still waits for a load error.
+	if Platform.is_android():
+		return true
+	return _house_fallback_active
+
+
+func house_reward_offer_visible() -> bool:
+	return _house_reward_offer and Platform.is_android() and not Entitlements.has_plus()
 
 
 func current_house_ad() -> Dictionary:
@@ -187,6 +215,12 @@ func _rotate_house_ad(avoid_current: bool) -> void:
 	if choices.is_empty():
 		choices = pool
 	_house_ad = choices[randi() % choices.size()]
+
+
+func _activate_house_fallback() -> void:
+	_house_fallback_active = true
+	_show_house_banner(true)
+	house_banner_changed.emit()
 
 
 func _show_house_banner(rotate: bool) -> void:
@@ -409,19 +443,19 @@ func try_show_rewarded_for_library() -> void:
 			await get_tree().create_timer(0.4).timeout
 			waited += 0.4
 		if not _sdk_ready or _admob == null:
-			_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
+			_on_rewarded_not_ready("no_sdk")
 			return
 		if not _pending_reward_active:
 			return
 	if _admob == null:
-		_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
+		_on_rewarded_not_ready("no_sdk")
 		return
 	_pending_reward_active = true
 	_reward_earned_pending = false
 	_apply_request_config_before_ad_load()
 	if _rewarded_ready:
 		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
-		print("[AdsService] rewarded show")
+		print("[AdsService] rewarded show unit=%s" % _rewarded_unit)
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 		return
@@ -432,13 +466,15 @@ func try_show_rewarded_for_library() -> void:
 		return
 	if loaded and _admob and _rewarded_ready:
 		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
-		print("[AdsService] rewarded show")
+		print("[AdsService] rewarded show unit=%s" % _rewarded_unit)
 		_admob.show_rewarded_ad()
 		_rewarded_ready = false
 	elif _rewarded_load_in_flight:
-		_emit_rewarded_failed("loading", tr("Ad is still loading — try again in a moment."))
+		_offer_android_house_reward("loading")
+		_emit_rewarded_failed("loading", tr("The video ad is still loading. Try again in a moment, or open a partner app.") if Platform.is_android() else tr("Ad is still loading — try again in a moment."))
 	else:
-		_emit_rewarded_failed("no_ad", tr("No ad available right now — try again in a bit."))
+		_offer_android_house_reward("load_error")
+		_emit_rewarded_failed("no_ad", tr("No video ad yet. Try again in a moment, or open a partner app.") if Platform.is_android() else tr("No ad available right now — try again in a bit."))
 
 
 func privacy_choices_available() -> bool:
@@ -471,8 +507,11 @@ func open_privacy_choices_from_settings() -> void:
 	_admob.update_consent_info()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	var keep_running := false
+	if OS.is_debug_build() and Platform.is_android():
+		keep_running = true
+		_poll_debug_shake(delta)
 	if _android_gather_active:
 		keep_running = true
 		_poll_android_gather()
@@ -481,6 +520,91 @@ func _process(_delta: float) -> void:
 		_poll_android_privacy_form()
 	if not keep_running:
 		set_process(false)
+
+
+func _poll_debug_shake(delta: float) -> void:
+	_shake_cool = maxf(0.0, _shake_cool - delta)
+	var accel := Input.get_accelerometer()
+	if _last_accel == Vector3.ZERO:
+		_last_accel = accel
+		return
+	var jerk := (accel - _last_accel).length()
+	_last_accel = accel
+	if _shake_cool > 0.0 or jerk < 15.0:
+		return
+	_shake_cool = 2.0
+	_open_ads_status_panel()
+
+
+func open_status_panel() -> void:
+	_open_ads_status_panel()
+
+
+func _open_ads_status_panel() -> void:
+	## v6.0 has no open_ad_inspector. The shake panel is the release-build diagnostic.
+	print("[AdsService] ads status panel open")
+	if _ads_debug_layer != null and is_instance_valid(_ads_debug_layer):
+		_ads_debug_layer.visible = true
+		_refresh_ads_status_panel()
+		return
+	var layer := CanvasLayer.new()
+	layer.layer = 120
+	layer.name = "AdsStatusPanel"
+	add_child(layer)
+	_ads_debug_layer = layer
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -170.0
+	panel.offset_right = 170.0
+	panel.offset_top = -230.0
+	panel.offset_bottom = 230.0
+	layer.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	panel.add_child(box)
+	var title := Label.new()
+	title.text = "Ads status"
+	box.add_child(title)
+	var body := Label.new()
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.custom_minimum_size = Vector2(300, 0)
+	box.add_child(body)
+	_ads_debug_body = body
+	var close := Button.new()
+	close.text = "Close"
+	close.pressed.connect(func() -> void:
+		layer.visible = false
+	)
+	box.add_child(close)
+	if OS.is_debug_build():
+		var ignore := Button.new()
+		ignore.text = "Ignore premium (show ads)"
+		ignore.pressed.connect(func() -> void:
+			Entitlements.set_plus_for_debug(false)
+			set_ads_enabled(true)
+			_refresh_ads_status_panel()
+		)
+		box.add_child(ignore)
+	_refresh_ads_status_panel()
+
+
+func _refresh_ads_status_panel() -> void:
+	if _ads_debug_body == null:
+		return
+	_ads_debug_body.text = "\n".join([
+		"singleton=%s" % str(_singleton_found),
+		"plus=%s" % str(Entitlements.has_plus()),
+		"ads_enabled=%s" % str(_ads_enabled),
+		"consent=%s" % (_ump_status if not _ump_status.is_empty() else "unknown"),
+		"init_started=%s" % str(_mobile_ads_init_started),
+		"sdk_ready=%s" % str(_sdk_ready),
+		"banner_unit=%s" % _banner_unit,
+		"banner_result=%s" % _last_banner_result,
+		"banner_error=%s" % _last_banner_error,
+		"rewarded_unit=%s" % _rewarded_unit,
+		"rewarded_result=%s" % _last_rewarded_result,
+		"rewarded_error=%s" % _last_rewarded_error,
+	])
 
 
 func _android_release_ids_blocked() -> bool:
@@ -495,17 +619,21 @@ func _android_release_ids_blocked() -> bool:
 func _begin_android_consent_gather() -> void:
 	if _android_gather_active or _sdk_ready:
 		return
+	print("[AdsService] UMP gather start")
+	_show_android_house_slot()
 	var bridge: Variant = _consent_bridge()
 	if bridge == null:
-		_block_ads_for_consent("ConsentBridge missing")
+		_retry_android_consent("ConsentBridge missing")
 		return
 	_android_gather_active = true
+	_last_ump_state = -2
 	set_process(true)
 	get_tree().create_timer(12.0).timeout.connect(_on_android_gather_timeout, CONNECT_ONE_SHOT)
+	print("[AdsService] UMP form requested")
 	bridge.gatherConsent()
 	if JavaClassWrapper.get_exception() != null:
 		_android_gather_active = false
-		_block_ads_for_consent("gatherConsent failed to start")
+		_retry_android_consent("gatherConsent failed to start")
 
 
 func _on_android_gather_timeout() -> void:
@@ -522,10 +650,11 @@ func _on_android_gather_timeout() -> void:
 		return
 	## Still running: the form may be on screen. Do not request, and do not abandon it.
 	if state == 1:
+		print("[AdsService] UMP form still open")
 		get_tree().create_timer(12.0).timeout.connect(_on_android_gather_timeout, CONNECT_ONE_SHOT)
 		return
 	_android_gather_active = false
-	_block_ads_for_consent("consent gather timed out")
+	_retry_android_consent("consent gather timed out")
 
 
 func _poll_android_gather() -> void:
@@ -534,10 +663,18 @@ func _poll_android_gather() -> void:
 	var bridge: Variant = _consent_bridge()
 	if bridge == null:
 		_android_gather_active = false
-		_block_ads_for_consent("ConsentBridge missing")
+		_retry_android_consent("ConsentBridge missing")
 		return
 	var state := int(bridge.getGatherState())
-	if JavaClassWrapper.get_exception() != null or state != 2:
+	if JavaClassWrapper.get_exception() != null:
+		return
+	if state != _last_ump_state:
+		_last_ump_state = state
+		var status_now := str(bridge.getConsentStatusName())
+		if JavaClassWrapper.get_exception() == null and not status_now.is_empty():
+			_ump_status = status_now
+		print("[AdsService] UMP state=%s status=%s" % [_ump_state_name(state), _ump_status])
+	if state != 2:
 		return
 	_finish_android_gather()
 
@@ -546,7 +683,6 @@ func _finish_android_gather() -> void:
 	if not _android_gather_active:
 		return
 	_android_gather_active = false
-	_android_consent_finished = true
 	var bridge: Variant = _consent_bridge()
 	var err := ""
 	if bridge != null:
@@ -556,23 +692,31 @@ func _finish_android_gather() -> void:
 	var status := ""
 	if bridge != null:
 		status = str(bridge.getConsentStatusName())
+	_ump_status = status
 	print("[AdsService] UMP gather finished status=%s error=%s" % [status, err])
+	## NOT_REQUIRED (and a completed OBTAINED choice that allows requests) may load ads.
+	## UNKNOWN, REQUIRED, or a failed gather waits. A finished denial stays blocked.
 	if _android_may_request_ads():
+		_android_consent_finished = true
 		_ads_blocked_by_consent = false
-		print("[AdsService] UMP allows ad requests")
+		if status == "NOT_REQUIRED":
+			print("[AdsService] UMP NOT_REQUIRED — initializing")
+		else:
+			print("[AdsService] UMP allows ad requests status=%s" % status)
 		_apply_mediation_and_request_config(_android_has_ads_consent())
+		_emit_privacy_choices_availability()
 		_begin_mobile_ads_initialization()
 		return
-	## A denial after the form is a real block. A failed info update is not:
-	## iOS already fail-opens, and non-EEA users must still get ads.
-	if status == "OBTAINED" or status == "REQUIRED":
+	if status == "OBTAINED":
+		_android_consent_finished = true
 		var reason := err if not err.is_empty() else "consent does not allow ad requests"
 		_block_ads_for_consent(reason)
 		return
-	push_warning("AdMob UMP: Android consent failed (%s) — fail-open NPA" % err)
-	_ads_blocked_by_consent = false
-	_apply_mediation_and_request_config(false)
-	_begin_mobile_ads_initialization()
+	if status == "REQUIRED":
+		print("[AdsService] UMP waiting status=REQUIRED — house banner, form still required")
+		_show_android_house_slot()
+		_emit_privacy_choices_availability()
+	_retry_android_consent("status=%s error=%s" % [status, err])
 
 
 func _android_may_request_ads() -> bool:
@@ -605,7 +749,9 @@ func _android_has_ads_consent() -> bool:
 func _open_android_privacy_options() -> void:
 	var bridge: Variant = _consent_bridge()
 	if bridge == null:
+		print("[AdsService] privacy options unavailable — ConsentBridge missing")
 		return
+	print("[AdsService] privacy options open")
 	_android_privacy_form_open = true
 	set_process(true)
 	bridge.showPrivacyOptionsForm()
@@ -642,12 +788,91 @@ func _poll_android_privacy_form() -> void:
 	_emit_privacy_choices_availability()
 
 
+func _retry_android_consent(reason: String) -> void:
+	## Europe still needs a consent choice for non-personalized ads. Only
+	## NOT_REQUIRED may continue. A failed or unknown gather waits and tries again.
+	if _sdk_ready or _mobile_ads_init_started:
+		return
+	_android_gather_active = false
+	push_warning("AdMob UMP: Android consent not ready (%s) — retrying" % reason)
+	print("[AdsService] UMP waiting status=%s — house banner, retry in 30s" % _ump_status)
+	print("[AdsService] UMP retry in 30s reason=%s" % reason)
+	_show_android_house_slot()
+	_emit_privacy_choices_availability()
+	get_tree().create_timer(30.0).timeout.connect(func() -> void:
+		if _sdk_ready or _mobile_ads_init_started or _android_gather_active:
+			return
+		_begin_android_consent_gather()
+	, CONNECT_ONE_SHOT)
+
+
+func _show_android_house_slot() -> void:
+	if not Platform.is_android() or not _banner_slot_open():
+		house_banner_changed.emit()
+		return
+	if _house_ad.is_empty():
+		_rotate_house_ad(false)
+	house_banner_changed.emit()
+	banner_visibility_changed.emit(should_show_banner())
+
+
+func _ump_state_name(state: int) -> String:
+	match state:
+		0:
+			return "idle"
+		1:
+			return "running"
+		2:
+			return "done"
+		_:
+			return str(state)
+
+
+func _android_consent_label() -> String:
+	var bridge: Variant = _consent_bridge()
+	if bridge == null:
+		return ""
+	var status := str(bridge.getConsentStatusName())
+	if JavaClassWrapper.get_exception() != null:
+		return ""
+	_ump_status = status
+	return status
+
+
+func _on_rewarded_not_ready(fallback: String) -> void:
+	var reason := fallback
+	if Entitlements.has_plus():
+		reason = "plus"
+	elif Platform.is_android() and not _android_consent_finished:
+		reason = "consent"
+	print("[AdsService] rewarded not ready reason=%s" % reason)
+	_last_rewarded_result = "not_ready"
+	_last_rewarded_error = reason
+	if Platform.is_android() and _android_consent_label() == "REQUIRED" and not _android_gather_active and not _sdk_ready:
+		_begin_android_consent_gather()
+	if Platform.is_android():
+		_house_reward_offer = true
+		_emit_rewarded_failed("not_ready", tr("The video ad is still loading. Try again in a moment, or open a partner app."))
+		return
+	_emit_rewarded_failed("not_ready", tr("Ads aren't ready yet — try again in a moment."))
+
+
+func _offer_android_house_reward(reason: String) -> void:
+	if not Platform.is_android():
+		return
+	print("[AdsService] rewarded not ready reason=%s" % reason)
+	_last_rewarded_result = "not_ready"
+	_last_rewarded_error = reason
+	_house_reward_offer = true
+
+
 func _block_ads_for_consent(reason: String) -> void:
 	_ads_blocked_by_consent = true
 	push_warning("AdMob: ads blocked by consent (%s)" % reason)
 	AnalyticsService.log_event("ads_blocked_by_consent", {"reason": reason})
 	if _banner_mounted:
 		hide_banner()
+	house_banner_changed.emit()
 	_emit_privacy_choices_availability()
 
 
@@ -683,12 +908,14 @@ func _initialize_ads() -> void:
 	if _admob_setup_started:
 		return
 	_admob_setup_started = true
+	print("[AdsService] plus=%s ads_enabled=%s" % [str(Entitlements.has_plus()), str(_ads_enabled)])
 
 	var admob_script: Script = load("res://addons/AdmobPlugin/Admob.gd")
 	_admob = admob_script.new()
 	_admob.name = "Admob"
-	## Debug exports use Google's demo units. Release and TestFlight use production units.
-	_admob.is_real = not OS.is_debug_build()
+	## Android always requests StimPad's own units, including debug exports.
+	## iOS debug exports still use Google's demo units.
+	_admob.is_real = true if Platform.is_android() else not OS.is_debug_build()
 	_admob.auto_configure_on_initialize = false
 	_admob.remove_banner_ads_after_scene = false
 	_admob.remove_interstitial_ads_after_displayed = true
@@ -723,14 +950,18 @@ func _initialize_ads() -> void:
 	_admob.android_debug_interstitial_id = Admob.ANDROID_INTERSTITIAL_DEMO_AD_UNIT_ID
 	_admob.android_debug_rewarded_id = Admob.ANDROID_REWARDED_DEMO_AD_UNIT_ID
 	var test_mode := not _admob.is_real
-	var banner_unit := PROD_BANNER_IOS if OS.has_feature("ios") else PROD_BANNER_ANDROID
+	var on_ios := OS.has_feature("ios")
+	_banner_unit = PROD_BANNER_IOS if on_ios else PROD_BANNER_ANDROID
+	_rewarded_unit = PROD_REWARDED_IOS if on_ios else PROD_REWARDED_ANDROID
 	if test_mode:
-		banner_unit = Admob.IOS_BANNER_DEMO_AD_UNIT_ID if OS.has_feature("ios") else Admob.ANDROID_BANNER_DEMO_AD_UNIT_ID
-	print("[AdsService] init platform=%s test_mode=%s app_id=%s banner_unit=%s" % [
-		"ios" if OS.has_feature("ios") else "android",
+		_banner_unit = Admob.IOS_BANNER_DEMO_AD_UNIT_ID if on_ios else Admob.ANDROID_BANNER_DEMO_AD_UNIT_ID
+		_rewarded_unit = Admob.IOS_REWARDED_DEMO_AD_UNIT_ID if on_ios else Admob.ANDROID_REWARDED_DEMO_AD_UNIT_ID
+	print("[AdsService] init platform=%s test_mode=%s app_id=%s banner_unit=%s rewarded_unit=%s" % [
+		"ios" if on_ios else "android",
 		str(test_mode),
-		PROD_APP_ID_IOS if OS.has_feature("ios") else PROD_APP_ID_ANDROID,
-		banner_unit,
+		PROD_APP_ID_IOS if on_ios else PROD_APP_ID_ANDROID,
+		_banner_unit,
+		_rewarded_unit,
 	])
 	if OS.get_name() == "iOS":
 		_admob.att_enabled = true
@@ -762,7 +993,10 @@ func _initialize_ads() -> void:
 		_rewarded_ready = true
 		_rewarded_load_in_flight = false
 		_rewarded_retry_count = 0
-		print("[AdsService] rewarded load success")
+		_last_rewarded_result = "success"
+		_last_rewarded_error = ""
+		_house_reward_offer = false
+		print("[AdsService] rewarded load success unit=%s" % _rewarded_unit)
 	)
 	_admob.rewarded_ad_failed_to_load.connect(_on_rewarded_failed_to_load)
 	_admob.rewarded_ad_user_earned_reward.connect(_on_rewarded_earned)
@@ -779,8 +1013,11 @@ func _initialize_ads() -> void:
 	await get_tree().create_timer(1.2).timeout
 	if _admob == null:
 		return
-	if not Engine.has_singleton("AdmobPlugin"):
+	_singleton_found = Engine.has_singleton("AdmobPlugin")
+	print("[AdsService] AdmobPlugin singleton found=%s" % str(_singleton_found))
+	if not _singleton_found:
 		push_error("AdMob: AdmobPlugin singleton missing — enable plugins/AdmobPlugin in export preset")
+		_activate_house_fallback()
 		return
 
 	## iOS: ATT → Mobile Ads initialize() → plugin UMP → load ads.
@@ -1040,6 +1277,9 @@ func _on_banner_loaded(ad_info: AdInfo, _response = null) -> void:
 	_banner_load_in_flight = false
 	_banner_retry_count = 0
 	_banner_load_requested = true
+	_last_banner_result = "success"
+	_last_banner_error = ""
+	print("[AdsService] banner load success unit=%s" % _banner_unit)
 	var new_id := ""
 	if ad_info != null:
 		new_id = ad_info.get_ad_id()
@@ -1057,8 +1297,9 @@ func _on_banner_loaded(ad_info: AdInfo, _response = null) -> void:
 	else:
 		_admob.show_banner_ad()
 	_banner_mounted = true
+	_house_fallback_active = false
 	_house_logged = false
-	print("[AdsService] banner show id=%s" % _banner_ad_id)
+	print("[AdsService] banner show id=%s unit=%s" % [_banner_ad_id, _banner_unit])
 	_last_banner_creative_unix = Time.get_unix_time_from_system()
 	if not previous.is_empty() and previous != _banner_ad_id:
 		_admob.remove_banner_ad(previous)
@@ -1099,8 +1340,9 @@ func _on_banner_failed_to_load(_ad_info, error) -> void:
 	if not still_up:
 		_banner_mounted = false
 	_log_ad_error("banner", error)
-	_show_house_banner(true)
-	var delay := _retry_delay(error, _banner_retry_count, BANNER_RETRY_MAX)
+	if not still_up:
+		_activate_house_fallback()
+	var delay := _retry_delay(error, _banner_retry_count, BANNER_RETRY_MAX, true)
 	if delay < 0.0:
 		if still_up:
 			_arm_banner_refresh()
@@ -1165,7 +1407,16 @@ func _log_ad_error(kind: String, error) -> void:
 	var message := "unknown"
 	if error != null and error.has_method("get_message"):
 		message = str(error.get_message())
-	push_warning("AdMob %s failed: code=%s message=%s" % [kind, str(code), message])
+	var line := "[AdsService] %s fail code=%s message=%s" % [kind, str(code), message]
+	print(line)
+	push_warning(line)
+	var detail := "code=%s message=%s" % [str(code), message]
+	if kind.begins_with("banner"):
+		_last_banner_result = "fail"
+		_last_banner_error = detail
+	elif kind.begins_with("rewarded"):
+		_last_rewarded_result = "fail"
+		_last_rewarded_error = detail
 
 
 func _ad_error_code(error) -> int:
@@ -1174,11 +1425,14 @@ func _ad_error_code(error) -> int:
 	return -1
 
 
-## Returns seconds to wait, or -1 to stop. No-fill retries once after 2 minutes.
-func _retry_delay(error, retry_count: int, max_retries: int) -> float:
+## Returns seconds to wait, or -1 to stop. Banner and rewarded keep retrying
+## every BANNER_REFRESH_SEC except on an invalid request. Interstitials stay capped.
+func _retry_delay(error, retry_count: int, max_retries: int, persistent: bool = false) -> float:
 	var code := _ad_error_code(error)
 	if code == AD_ERROR_INVALID_REQUEST:
 		return -1.0
+	if persistent:
+		return BANNER_REFRESH_SEC
 	if retry_count >= max_retries:
 		return -1.0
 	if code == AD_ERROR_NO_FILL:
@@ -1203,6 +1457,8 @@ func _preload_rewarded() -> void:
 		return
 	_rewarded_load_in_flight = true
 	_apply_request_config_before_ad_load()
+	_last_rewarded_result = "requested"
+	print("[AdsService] rewarded load unit=%s" % _rewarded_unit)
 	_admob.load_rewarded_ad()
 
 
@@ -1220,8 +1476,8 @@ func _show_banner_native() -> void:
 		return
 	_banner_load_requested = true
 	_banner_load_in_flight = true
-	print("[AdsService] banner load")
-	_show_house_banner(false)
+	_last_banner_result = "requested"
+	print("[AdsService] banner load unit=%s" % _banner_unit)
 	var req := _admob.create_banner_ad_request()
 	var width_dp := _banner_width_dp()
 	if width_dp >= 320:
@@ -1256,7 +1512,7 @@ func _on_rewarded_failed_to_load(_ad_info, error) -> void:
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
 	_log_ad_error("rewarded", error)
-	var delay := _retry_delay(error, _rewarded_retry_count, REWARDED_RETRY_MAX)
+	var delay := _retry_delay(error, _rewarded_retry_count, REWARDED_RETRY_MAX, true)
 	if delay < 0.0:
 		return
 	_rewarded_retry_count += 1
