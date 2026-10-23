@@ -86,3 +86,11 @@
     @com.google.gson.annotations.SerializedName <fields>;
 }
 -dontwarn org.godotengine.**
+
+# Unity mediation adapter (loaded by reflection from AdMob).
+-keep class com.unity3d.** { *; }
+-keep class com.google.ads.mediation.unity.** { *; }
+-dontwarn com.unity3d.**
+-dontwarn com.google.ads.mediation.unity.**
+-keep class com.ironsource.** { *; }
+-dontwarn com.ironsource.**

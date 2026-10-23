@@ -42,6 +42,8 @@ var previewed_ids: Array[String] = []
 var library_unlock_until_unix: int = 0
 var library_unlock_started_unix: int = 0
 var library_unlock_last_day: String = ""
+## Android ads panel only. When true, ignore Plus and request Google's test units.
+var android_test_ads: bool = false
 
 
 func _ready() -> void:
@@ -98,6 +100,7 @@ func load_prefs() -> void:
 	library_unlock_until_unix = int(parsed.get("library_unlock_until_unix", 0))
 	library_unlock_started_unix = int(parsed.get("library_unlock_started_unix", 0))
 	library_unlock_last_day = str(parsed.get("library_unlock_last_day", ""))
+	android_test_ads = bool(parsed.get("android_test_ads", false))
 	if parsed.has("last_scope"):
 		last_scope = str(parsed.get("last_scope", "All"))
 		last_sound_category = str(parsed.get("last_sound_category", "All"))
@@ -143,6 +146,7 @@ func save_prefs() -> void:
 		"library_unlock_until_unix": library_unlock_until_unix,
 		"library_unlock_started_unix": library_unlock_started_unix,
 		"library_unlock_last_day": library_unlock_last_day,
+		"android_test_ads": android_test_ads,
 	}
 	var file := FileAccess.open(PREFS_PATH, FileAccess.WRITE)
 	if file == null:

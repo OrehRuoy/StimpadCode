@@ -408,8 +408,7 @@ func _sync_house_banner(banner_h: float) -> void:
 func _update_banner_inset() -> void:
 	## The banner slot is the bottom of the screen. The grid runs under the
 	## mini-player and fades there; it is not chopped off above a gray band.
-	var reserve := not Entitlements.has_plus()
-	var banner_h := AdsService.banner_reserved_height() if reserve else 0.0
+	var banner_h := AdsService.banner_reserved_height()
 	## Android anchors the banner above the system nav. That strip is painted
 	## with the same dark fill so it is not a gray bar under the ad.
 	var system_bottom := _android_bottom_chrome() if Platform.is_android() and banner_h > 1.0 else 0.0

@@ -15,6 +15,10 @@ _tmp/
 *.apk
 *.aab
 *.ipa
+/StimPad.aab
+/StimPad.apk
+StimPad-privacy/
+android/build/src/debug/
 # Play bundles (*.aab) are ignored above. AdMob plugin libraries are .aar and must stay:
 # addons/AdmobPlugin/bin/debug/AdmobPlugin-debug.aar
 # addons/AdmobPlugin/bin/release/AdmobPlugin-release.aar

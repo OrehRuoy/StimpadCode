@@ -234,6 +234,18 @@ ext.getExportPath = {
     if (exportPath == null || exportPath.isEmpty()) {
         exportPath = "."
     }
+    // Godot 4.6 passes the destination as file:C:/... which Gradle 8.11 rejects.
+    if (exportPath.startsWith("file:")) {
+        String rest = exportPath.substring("file:".length())
+        if (rest.startsWith("///")) {
+            rest = rest.substring(3)
+            boolean windowsDrive = rest.length() >= 2 && rest.charAt(1) == ':'
+            if (!windowsDrive) {
+                rest = "/" + rest
+            }
+        }
+        exportPath = rest
+    }
     return exportPath
 }
 

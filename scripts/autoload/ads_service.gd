@@ -19,6 +19,9 @@ const PROD_INTERSTITIAL_ANDROID := "ca-app-pub-5356882403986713/9366961309"
 const PROD_REWARDED_ANDROID := "ca-app-pub-5356882403986713/8333081239"
 
 const GOOGLE_TEST_APP_ID := "ca-app-pub-3940256099942544~3347511713"
+const GOOGLE_TEST_BANNER_ANDROID := "ca-app-pub-3940256099942544/6300978111"
+const GOOGLE_TEST_INTERSTITIAL_ANDROID := "ca-app-pub-3940256099942544/1033173712"
+const GOOGLE_TEST_REWARDED_ANDROID := "ca-app-pub-3940256099942544/5224354917"
 const ATT_TEXT := (
 	"StimPad uses this to show more relevant ads on the free tier. "
 	+ "You can change this anytime in Settings."
@@ -44,6 +47,7 @@ var _consent_bridge_lookup_failed: bool = false
 var _playback_active: bool = false
 var _admob: Admob
 var _interstitial_ready: bool = false
+var _interstitial_fail_code: int = -1
 var _rewarded_ready: bool = false
 var _admob_setup_started: bool = false
 
@@ -56,7 +60,8 @@ var _banner_load_requested: bool = false
 var _banner_load_in_flight: bool = false
 var _banner_retry_count: int = 0
 var _rewarded_load_in_flight: bool = false
-var _rewarded_retry_count: int = 0
+var _rewarded_retry_armed: bool = false
+var _requested_interstitial_unit: String = ""
 var _interstitial_load_in_flight: bool = false
 var _interstitial_retry_count: int = 0
 ## True after AdMob reports a banner impression (ad actually on screen).
@@ -64,7 +69,6 @@ var _banner_impression_recorded: bool = false
 var _banner_measured_height: float = 0.0
 
 const BANNER_RETRY_MAX := 4
-const REWARDED_RETRY_MAX := 3
 const INTERSTITIAL_RETRY_MAX := 3
 ## Google: do not immediately re-request after no-fill (code 3). One late retry
 ## lets fill appear if AdMob verifies the app mid-session.
@@ -80,6 +84,8 @@ const INTERSTITIAL_MIN_INTERVAL_SEC := 90.0
 ## One banner stays on every screen. A new creative is requested this often.
 ## AdMob's own refresh, if it fires, resets this wait so two requests are not stacked.
 const BANNER_REFRESH_SEC := 45.0
+## Wait after a rewarded load failure before requesting that unit again.
+const REWARDED_LOAD_FAIL_COOLDOWN_SEC := 60.0
 ## A few points so the last control does not sit on the ad's top edge.
 const BANNER_UI_GAP := 4.0
 
@@ -108,6 +114,9 @@ var _last_rewarded_error: String = ""
 var _house_reward_offer: bool = false
 var _ads_debug_layer: CanvasLayer
 var _ads_debug_body: Label
+var _test_ads_check: CheckButton
+var _house_rotate_armed: bool = false
+var _house_rotate_gen: int = 0
 var _pending_reward_active: bool = false
 var _fullscreen_ad_since_unix: float = 0.0
 var _reward_earned_pending: bool = false
@@ -143,6 +152,9 @@ func notify_ui_ready() -> void:
 
 
 func set_ads_enabled(enabled: bool) -> void:
+	## Test ads stays on even when Plus would turn the ad layer off.
+	if not enabled and _android_test_ads_on():
+		enabled = true
 	_ads_enabled = enabled
 	if not enabled:
 		_banner_load_requested = false
@@ -151,13 +163,14 @@ func set_ads_enabled(enabled: bool) -> void:
 		hide_banner()
 	else:
 		ensure_banner_mounted()
+		_preload_interstitial()
 	banner_visibility_changed.emit(should_show_banner())
 
 
 func _banner_slot_open() -> bool:
 	## The bottom slot stays reserved for non-Plus players even before AdMob
 	## is ready, so the bar is a house ad instead of an empty gray strip.
-	return _ads_enabled and not Entitlements.has_plus() and not _ads_blocked_by_consent
+	return _ads_enabled and not _plus_blocks_ads() and not _ads_blocked_by_consent
 
 
 func should_show_banner() -> bool:
@@ -221,6 +234,7 @@ func _activate_house_fallback() -> void:
 	_house_fallback_active = true
 	_show_house_banner(true)
 	house_banner_changed.emit()
+	_arm_house_rotation()
 
 
 func _show_house_banner(rotate: bool) -> void:
@@ -317,25 +331,23 @@ func banner_reserved_height() -> float:
 
 
 func can_show_interstitial() -> bool:
-	if not (
-		_ads_enabled
-		and not Entitlements.has_plus()
-		and not Entitlements.is_library_unlocked()
-		and not _playback_active
-		and not _ads_blocked_by_consent
-		and _has_mobile_ads()
-		and _sdk_ready
-		and _interstitial_ready
-	):
+	var reason := _interstitial_block_reason()
+	var cooldown := _interstitial_cooldown_remaining()
+	if not reason.is_empty():
+		print("[AdsService] interstitial blocked reason=%s exits=%d cooldown=%.0f" % [
+			reason, _safe_exit_count, cooldown,
+		])
 		return false
-	var now := Time.get_unix_time_from_system()
-	if now - _last_interstitial_unix < INTERSTITIAL_MIN_INTERVAL_SEC:
+	if cooldown > 0.0:
+		print("[AdsService] interstitial blocked reason=cooldown exits=%d cooldown=%.0f" % [
+			_safe_exit_count, cooldown,
+		])
 		return false
 	return true
 
 
 func can_offer_rewarded() -> bool:
-	if Entitlements.has_plus():
+	if _plus_blocks_ads():
 		return false
 	if not _ads_enabled or _ads_blocked_by_consent:
 		return false
@@ -401,7 +413,18 @@ func hide_banner() -> void:
 
 func try_show_interstitial_on_safe_exit() -> void:
 	_safe_exit_count += 1
+	var cooldown := _interstitial_cooldown_remaining()
 	if _safe_exit_count % INTERSTITIAL_EVERY_N_EXITS != 0:
+		print("[AdsService] interstitial blocked reason=exit_count exits=%d cooldown=%.0f" % [
+			_safe_exit_count, cooldown,
+		])
+		return
+	var reason := _interstitial_block_reason()
+	if reason == "not loaded":
+		print("[AdsService] interstitial blocked reason=not loaded exits=%d cooldown=%.0f" % [
+			_safe_exit_count, cooldown,
+		])
+		_preload_interstitial()
 		return
 	if not can_show_interstitial():
 		return
@@ -420,7 +443,7 @@ func _emit_rewarded_failed(code: String, message: String) -> void:
 
 
 func try_show_rewarded_for_library() -> void:
-	if Entitlements.has_plus() or Entitlements.is_library_unlocked():
+	if _plus_blocks_ads() or Entitlements.is_library_unlocked():
 		rewarded_unlock_completed.emit()
 		return
 	if not Entitlements.can_start_library_unlock():
@@ -545,6 +568,8 @@ func _open_ads_status_panel() -> void:
 	print("[AdsService] ads status panel open")
 	if _ads_debug_layer != null and is_instance_valid(_ads_debug_layer):
 		_ads_debug_layer.visible = true
+		if _test_ads_check != null:
+			_test_ads_check.set_pressed_no_signal(LocalPrefs.android_test_ads)
 		_refresh_ads_status_panel()
 		return
 	var layer := CanvasLayer.new()
@@ -556,8 +581,8 @@ func _open_ads_status_panel() -> void:
 	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.offset_left = -170.0
 	panel.offset_right = 170.0
-	panel.offset_top = -230.0
-	panel.offset_bottom = 230.0
+	panel.offset_top = -280.0
+	panel.offset_bottom = 280.0
 	layer.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 8)
@@ -576,12 +601,19 @@ func _open_ads_status_panel() -> void:
 		layer.visible = false
 	)
 	box.add_child(close)
+	var test_ads := CheckButton.new()
+	test_ads.text = "Test ads"
+	test_ads.button_pressed = LocalPrefs.android_test_ads
+	test_ads.toggled.connect(_on_test_ads_toggled)
+	box.add_child(test_ads)
+	_test_ads_check = test_ads
 	if OS.is_debug_build():
 		var ignore := Button.new()
 		ignore.text = "Ignore premium (show ads)"
 		ignore.pressed.connect(func() -> void:
 			Entitlements.set_plus_for_debug(false)
 			set_ads_enabled(true)
+			_preload_interstitial()
 			_refresh_ads_status_panel()
 		)
 		box.add_child(ignore)
@@ -596,15 +628,98 @@ func _refresh_ads_status_panel() -> void:
 		"plus=%s" % str(Entitlements.has_plus()),
 		"ads_enabled=%s" % str(_ads_enabled),
 		"consent=%s" % (_ump_status if not _ump_status.is_empty() else "unknown"),
-		"init_started=%s" % str(_mobile_ads_init_started),
-		"sdk_ready=%s" % str(_sdk_ready),
+		"init_done=%s" % str(_admob_init_cb_fired),
+		"banner=%s" % _format_load_status(_last_banner_result, _last_banner_error, _banner_mounted),
+		"rewarded=%s" % _format_load_status(_last_rewarded_result, _last_rewarded_error, _rewarded_ready),
+		"interstitial=%s" % _interstitial_status_label(),
+		"test_ads=%s" % str(LocalPrefs.android_test_ads),
 		"banner_unit=%s" % _banner_unit,
-		"banner_result=%s" % _last_banner_result,
-		"banner_error=%s" % _last_banner_error,
 		"rewarded_unit=%s" % _rewarded_unit,
-		"rewarded_result=%s" % _last_rewarded_result,
-		"rewarded_error=%s" % _last_rewarded_error,
 	])
+
+
+func _format_load_status(result: String, error_text: String, loaded: bool) -> String:
+	if loaded or result == "success":
+		return "loaded"
+	if result == "fail":
+		return error_text if not error_text.is_empty() else "fail"
+	return result
+
+
+func _android_test_ads_on() -> bool:
+	return Platform.is_android() and LocalPrefs.android_test_ads
+
+
+func _plus_blocks_ads() -> bool:
+	if _android_test_ads_on():
+		return false
+	return Entitlements.has_plus()
+
+
+func _on_test_ads_toggled(on: bool) -> void:
+	if not Platform.is_android() or LocalPrefs.android_test_ads == on:
+		return
+	LocalPrefs.android_test_ads = on
+	LocalPrefs.save_prefs()
+	print("[AdsService] test ads=%s" % str(on))
+	_apply_android_unit_ids()
+	_drop_loaded_ads_for_unit_change()
+	if on:
+		set_ads_enabled(true)
+	elif Entitlements.has_plus():
+		set_ads_enabled(false)
+	elif _sdk_ready:
+		ensure_banner_mounted()
+		_preload_rewarded()
+		_preload_interstitial()
+	_show_android_house_slot()
+	_refresh_ads_status_panel()
+
+
+func _apply_android_unit_ids() -> void:
+	if _admob == null or not Platform.is_android():
+		return
+	var banner := GOOGLE_TEST_BANNER_ANDROID if LocalPrefs.android_test_ads else PROD_BANNER_ANDROID
+	var interstitial := GOOGLE_TEST_INTERSTITIAL_ANDROID if LocalPrefs.android_test_ads else PROD_INTERSTITIAL_ANDROID
+	var rewarded := GOOGLE_TEST_REWARDED_ANDROID if LocalPrefs.android_test_ads else PROD_REWARDED_ANDROID
+	_admob.android_real_banner_id = banner
+	_admob.android_real_interstitial_id = interstitial
+	_admob.android_real_rewarded_id = rewarded
+	## Admob copies these into private ids in _ready. Update both so a later toggle is used.
+	_admob._banner_id = banner
+	_admob._interstitial_id = interstitial
+	_admob._rewarded_id = rewarded
+	_banner_unit = banner
+	_rewarded_unit = rewarded
+
+
+func _drop_loaded_ads_for_unit_change() -> void:
+	if _admob == null:
+		return
+	if not _banner_ad_id.is_empty():
+		_admob.remove_banner_ad(_banner_ad_id)
+	elif _admob.is_banner_ad_loaded():
+		_admob.hide_banner_ad()
+		_admob.remove_banner_ad()
+	_banner_mounted = false
+	_banner_impression_recorded = false
+	_banner_load_requested = false
+	_banner_load_in_flight = false
+	_banner_ad_id = ""
+	_last_banner_result = "none"
+	_last_banner_error = ""
+	if _admob.is_rewarded_ad_loaded():
+		_admob.remove_rewarded_ad()
+	_rewarded_ready = false
+	_rewarded_load_in_flight = false
+	_last_rewarded_result = "none"
+	_last_rewarded_error = ""
+	if _admob.is_interstitial_ad_loaded():
+		_admob.remove_interstitial_ad()
+	_interstitial_ready = false
+	_interstitial_load_in_flight = false
+	house_banner_changed.emit()
+	banner_visibility_changed.emit(false)
 
 
 func _android_release_ids_blocked() -> bool:
@@ -703,7 +818,6 @@ func _finish_android_gather() -> void:
 			print("[AdsService] UMP NOT_REQUIRED — initializing")
 		else:
 			print("[AdsService] UMP allows ad requests status=%s" % status)
-		_apply_mediation_and_request_config(_android_has_ads_consent())
 		_emit_privacy_choices_availability()
 		_begin_mobile_ads_initialization()
 		return
@@ -777,7 +891,8 @@ func _poll_android_privacy_form() -> void:
 		_block_ads_for_consent("privacy options denied")
 		return
 	_ads_blocked_by_consent = false
-	_apply_mediation_and_request_config(_android_has_ads_consent())
+	if _mobile_ads_init_started:
+		_apply_android_mediation_privacy()
 	if not _mobile_ads_init_started:
 		_begin_mobile_ads_initialization()
 		return
@@ -814,6 +929,32 @@ func _show_android_house_slot() -> void:
 		_rotate_house_ad(false)
 	house_banner_changed.emit()
 	banner_visibility_changed.emit(should_show_banner())
+	_arm_house_rotation()
+
+
+func _arm_house_rotation() -> void:
+	## House art only. A mounted AdMob banner is left to the SDK's own refresh.
+	if not Platform.is_android() or _house_rotate_armed:
+		return
+	if _banner_mounted or not should_show_house_banner():
+		return
+	_house_rotate_armed = true
+	var gen := _house_rotate_gen
+	get_tree().create_timer(BANNER_REFRESH_SEC).timeout.connect(func() -> void:
+		_house_rotate_armed = false
+		if gen != _house_rotate_gen:
+			return
+		if _banner_mounted or not should_show_house_banner():
+			return
+		_rotate_house_ad(true)
+		house_banner_changed.emit()
+		_arm_house_rotation()
+	, CONNECT_ONE_SHOT)
+
+
+func _stop_house_rotation() -> void:
+	_house_rotate_gen += 1
+	_house_rotate_armed = false
 
 
 func _ump_state_name(state: int) -> String:
@@ -956,6 +1097,7 @@ func _initialize_ads() -> void:
 	if test_mode:
 		_banner_unit = Admob.IOS_BANNER_DEMO_AD_UNIT_ID if on_ios else Admob.ANDROID_BANNER_DEMO_AD_UNIT_ID
 		_rewarded_unit = Admob.IOS_REWARDED_DEMO_AD_UNIT_ID if on_ios else Admob.ANDROID_REWARDED_DEMO_AD_UNIT_ID
+	_apply_android_unit_ids()
 	print("[AdsService] init platform=%s test_mode=%s app_id=%s banner_unit=%s rewarded_unit=%s" % [
 		"ios" if on_ios else "android",
 		str(test_mode),
@@ -983,7 +1125,9 @@ func _initialize_ads() -> void:
 		_interstitial_ready = true
 		_interstitial_load_in_flight = false
 		_interstitial_retry_count = 0
-		print("[AdsService] interstitial load success")
+		_interstitial_fail_code = -1
+		print("[AdsService] interstitial loaded")
+		_refresh_ads_status_panel()
 	)
 	_admob.interstitial_ad_failed_to_load.connect(_on_interstitial_failed_to_load)
 	_admob.interstitial_ad_showed_full_screen_content.connect(_on_interstitial_showed)
@@ -992,7 +1136,6 @@ func _initialize_ads() -> void:
 	_admob.rewarded_ad_loaded.connect(func(_a, _r):
 		_rewarded_ready = true
 		_rewarded_load_in_flight = false
-		_rewarded_retry_count = 0
 		_last_rewarded_result = "success"
 		_last_rewarded_error = ""
 		_house_reward_offer = false
@@ -1189,7 +1332,56 @@ func _apply_mediation_and_request_config(gdpr_override: Variant = null) -> void:
 
 
 func _apply_request_config_before_ad_load() -> void:
+	## Android applies mediation privacy once, before MobileAds.initialize().
+	## A per-load request configuration fights Unity mediation. iOS keeps this call.
+	if Platform.is_android():
+		return
 	_apply_mediation_and_request_config()
+
+
+func _apply_android_mediation_privacy() -> void:
+	if _admob == null or not Platform.is_android():
+		return
+	var status := _android_consent_label()
+	## NOT_REQUIRED (US and other non-EEA) is a yes for Unity. OBTAINED uses the real choice.
+	var granted := status == "NOT_REQUIRED" or _android_has_ads_consent()
+	var privacy := NetworkPrivacySettings.new()
+	privacy.set_has_gdpr_consent(granted)
+	privacy.set_has_ccpa_sale_consent(granted)
+	if privacy.has_method("set_enabled_networks"):
+		privacy.set_enabled_networks(MediationNetwork.get_all_enabled_tags(_admob.enabled_networks))
+	_admob.set_mediation_privacy_settings(privacy)
+	if granted:
+		_admob.personalization_state = AdmobConfig.PersonalizationState.DEFAULT
+	else:
+		_admob.personalization_state = AdmobConfig.PersonalizationState.DISABLED
+	print("[AdsService] mediation privacy gdpr=%s ccpa=%s personalization=%s" % [
+		str(granted),
+		str(granted),
+		"DEFAULT" if granted else "DISABLED",
+	])
+
+
+func _log_android_consent_before_init() -> void:
+	var bridge: Variant = _consent_bridge()
+	var status := _ump_status
+	var allows := false
+	var granted := false
+	if bridge != null:
+		status = str(bridge.getConsentStatusName())
+		if JavaClassWrapper.get_exception() == null and not status.is_empty():
+			_ump_status = status
+		allows = bool(bridge.allowsAdRequests())
+		if JavaClassWrapper.get_exception() != null:
+			allows = false
+		granted = bool(bridge.hasAdsConsent())
+		if JavaClassWrapper.get_exception() != null:
+			granted = false
+	print("[AdsService] ConsentBridge status=%s allowsAdRequests=%s hasAdsConsent=%s" % [
+		status,
+		str(allows),
+		str(granted),
+	])
 
 
 func _fail_open_and_serve_ads() -> void:
@@ -1215,6 +1407,9 @@ func _begin_mobile_ads_initialization() -> void:
 	## Only after ATT. UMP + ad loads happen after initialization_completed.
 	if _admob == null or _mobile_ads_init_started:
 		return
+	if Platform.is_android():
+		_apply_android_mediation_privacy()
+		_log_android_consent_before_init()
 	_mobile_ads_init_started = true
 	print("[AdsService] MobileAds.initialize")
 	_admob.initialize()
@@ -1303,7 +1498,7 @@ func _on_banner_loaded(ad_info: AdInfo, _response = null) -> void:
 	_last_banner_creative_unix = Time.get_unix_time_from_system()
 	if not previous.is_empty() and previous != _banner_ad_id:
 		_admob.remove_banner_ad(previous)
-	_arm_banner_refresh()
+	_stop_house_rotation()
 	banner_visibility_changed.emit(true)
 	house_banner_changed.emit()
 
@@ -1312,7 +1507,6 @@ func _on_banner_impression() -> void:
 	_banner_impression_recorded = true
 	_banner_mounted = true
 	print("[AdsService] banner impression")
-	_arm_banner_refresh()
 	banner_visibility_changed.emit(true)
 
 
@@ -1342,34 +1536,34 @@ func _on_banner_failed_to_load(_ad_info, error) -> void:
 	_log_ad_error("banner", error)
 	if not still_up:
 		_activate_house_fallback()
+	## A banner that is already on screen stays there. Retry only when the load failed
+	## and nothing is mounted. AdMob refreshes a visible banner itself.
+	if still_up:
+		return
 	var delay := _retry_delay(error, _banner_retry_count, BANNER_RETRY_MAX, true)
 	if delay < 0.0:
-		if still_up:
-			_arm_banner_refresh()
-		else:
-			banner_visibility_changed.emit(false)
+		banner_visibility_changed.emit(false)
 		return
 	_banner_retry_count += 1
 	get_tree().create_timer(delay).timeout.connect(func() -> void:
-		if not should_show_banner() or _banner_load_in_flight:
+		if not should_show_banner() or _banner_load_in_flight or _banner_mounted:
 			return
-		if still_up:
-			_on_banner_refresh_due()
-		elif not _banner_mounted:
-			ensure_banner_mounted()
+		ensure_banner_mounted()
 	)
 
 
 func _on_interstitial_failed_to_load(_ad_info, error) -> void:
 	_interstitial_ready = false
 	_interstitial_load_in_flight = false
-	_log_ad_error("interstitial", error)
+	_interstitial_fail_code = _ad_error_code(error)
+	_log_ad_error("interstitial", error, _requested_interstitial_unit)
+	_refresh_ads_status_panel()
 	var delay := _retry_delay(error, _interstitial_retry_count, INTERSTITIAL_RETRY_MAX)
 	if delay < 0.0:
-		return
+		delay = 60.0
 	_interstitial_retry_count += 1
 	get_tree().create_timer(delay).timeout.connect(func() -> void:
-		if _ads_enabled and not Entitlements.has_plus() and not _interstitial_ready:
+		if _ads_enabled and not _plus_blocks_ads() and not _interstitial_ready:
 			_preload_interstitial()
 	)
 
@@ -1385,32 +1579,65 @@ func is_fullscreen_ad_showing() -> bool:
 func _on_interstitial_showed(_ad_info) -> void:
 	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 	_last_interstitial_unix = Time.get_unix_time_from_system()
-	print("[AdsService] interstitial show")
+	print("[AdsService] interstitial shown")
 	_preload_interstitial()
 
 
 func _on_interstitial_failed_to_show(_ad_info, error) -> void:
 	_fullscreen_ad_since_unix = 0.0
 	_interstitial_ready = false
-	_log_ad_error("interstitial show", error)
+	_interstitial_fail_code = _ad_error_code(error)
+	_log_ad_error("interstitial", error, _requested_interstitial_unit)
+	_refresh_ads_status_panel()
 	_preload_interstitial()
 
 
 func _on_interstitial_dismissed(_ad_info) -> void:
 	_fullscreen_ad_since_unix = 0.0
+	print("[AdsService] interstitial closed")
 	_preload_interstitial()
 	keep_banner_visible()
 
 
-func _log_ad_error(kind: String, error) -> void:
+func _log_ad_error(kind: String, error, unit: String = "") -> void:
 	var code := _ad_error_code(error)
 	var message := "unknown"
 	if error != null and error.has_method("get_message"):
 		message = str(error.get_message())
+	var domain := ""
+	if error != null and error.has_method("get_domain"):
+		domain = str(error.get_domain())
+	var fullscreen_load := kind == "rewarded" or kind == "interstitial"
+	var detailed := fullscreen_load or (Platform.is_android() and kind.begins_with("banner"))
+	var adapters := _adapter_failure_text(error) if detailed else ""
 	var line := "[AdsService] %s fail code=%s message=%s" % [kind, str(code), message]
+	if kind == "interstitial":
+		line = "[AdsService] interstitial failed code=%s message=%s domain=%s adapters=%s" % [
+			str(code),
+			message,
+			domain,
+			adapters,
+		]
+	elif fullscreen_load:
+		line = "[AdsService] %s fail unit=%s code=%s message=%s domain=%s adapters=%s" % [
+			kind,
+			unit,
+			str(code),
+			message,
+			domain,
+			adapters,
+		]
+	elif Platform.is_android() and kind.begins_with("banner"):
+		line = "[AdsService] %s fail code=%s message=%s domain=%s adapters=%s" % [
+			kind,
+			str(code),
+			message,
+			domain,
+			adapters,
+		]
 	print(line)
 	push_warning(line)
-	var detail := "code=%s message=%s" % [str(code), message]
+	var detail := "code=%s message=%s domain=%s" % [str(code), message, domain]
 	if kind.begins_with("banner"):
 		_last_banner_result = "fail"
 		_last_banner_error = detail
@@ -1419,14 +1646,41 @@ func _log_ad_error(kind: String, error) -> void:
 		_last_rewarded_error = detail
 
 
+func _adapter_failure_text(error) -> String:
+	if error == null or not error.has_method("get_response_info"):
+		return ""
+	var info: Variant = error.get_response_info()
+	if info == null or not info.has_method("get_adapter_responses"):
+		return ""
+	var raw: Variant = info.get("_data")
+	if not (raw is Dictionary) or not (raw as Dictionary).has("adapter_responses"):
+		return ""
+	var parts: PackedStringArray = []
+	for adapter in info.get_adapter_responses():
+		var source := str(adapter.get_ad_source_name()) if adapter.has_method("get_ad_source_name") else ""
+		var klass := str(adapter.get_adapter_class_name()) if adapter.has_method("get_adapter_class_name") else ""
+		var err_bit := ""
+		if adapter.has_method("get_ad_error"):
+			var ad_err: Variant = adapter.get_ad_error()
+			if ad_err != null and ad_err.has_method("get_code"):
+				err_bit = " code=%s message=%s domain=%s" % [
+					str(ad_err.get_code()),
+					str(ad_err.get_message()) if ad_err.has_method("get_message") else "",
+					str(ad_err.get_domain()) if ad_err.has_method("get_domain") else "",
+				]
+		parts.append("%s/%s%s" % [klass, source, err_bit])
+	return "; ".join(parts)
+
+
 func _ad_error_code(error) -> int:
 	if error != null and error.has_method("get_code"):
 		return int(error.get_code())
 	return -1
 
 
-## Returns seconds to wait, or -1 to stop. Banner and rewarded keep retrying
+## Returns seconds to wait, or -1 to stop. A failed banner keeps retrying
 ## every BANNER_REFRESH_SEC except on an invalid request. Interstitials stay capped.
+## Rewarded load failures use REWARDED_LOAD_FAIL_COOLDOWN_SEC instead of this.
 func _retry_delay(error, retry_count: int, max_retries: int, persistent: bool = false) -> float:
 	var code := _ad_error_code(error)
 	if code == AD_ERROR_INVALID_REQUEST:
@@ -1440,18 +1694,80 @@ func _retry_delay(error, retry_count: int, max_retries: int, persistent: bool = 
 	return 20.0 * float(retry_count + 1)
 
 
+func _interstitial_unit_id() -> String:
+	if Platform.is_android():
+		## Production Android interstitial (.../9366961309). Test-ads uses Google's unit.
+		return GOOGLE_TEST_INTERSTITIAL_ANDROID if _android_test_ads_on() else PROD_INTERSTITIAL_ANDROID
+	if _admob != null and not _admob.is_real:
+		return Admob.IOS_INTERSTITIAL_DEMO_AD_UNIT_ID
+	return PROD_INTERSTITIAL_IOS
+
+
+func _interstitial_block_reason() -> String:
+	if not _ads_enabled:
+		return "ads off"
+	if _plus_blocks_ads():
+		return "Plus"
+	if Entitlements.is_library_unlocked():
+		return "library unlock"
+	if _playback_active:
+		return "playback"
+	if _ads_blocked_by_consent:
+		return "consent"
+	if not _has_mobile_ads() or not _sdk_ready:
+		return "SDK"
+	if not _interstitial_ready:
+		return "not loaded"
+	return ""
+
+
+func _interstitial_cooldown_remaining() -> float:
+	var elapsed := Time.get_unix_time_from_system() - _last_interstitial_unix
+	return maxf(0.0, INTERSTITIAL_MIN_INTERVAL_SEC - elapsed)
+
+
+func _interstitial_status_label() -> String:
+	if _interstitial_load_in_flight:
+		return "loading"
+	if _interstitial_ready:
+		return "loaded"
+	if _interstitial_fail_code >= 0:
+		return "failed:%d" % _interstitial_fail_code
+	return "not_loaded"
+
+
 func _preload_interstitial() -> void:
-	if not _admob or not _sdk_ready or not _ads_enabled or Entitlements.has_plus():
+	print("[AdsService] interstitial preload called")
+	if not _admob or not _sdk_ready:
+		print("[AdsService] interstitial blocked reason=SDK exits=%d cooldown=%.0f" % [
+			_safe_exit_count, _interstitial_cooldown_remaining(),
+		])
+		return
+	if not _ads_enabled:
+		print("[AdsService] interstitial blocked reason=ads off exits=%d cooldown=%.0f" % [
+			_safe_exit_count, _interstitial_cooldown_remaining(),
+		])
+		return
+	if _plus_blocks_ads():
+		print("[AdsService] interstitial blocked reason=Plus exits=%d cooldown=%.0f" % [
+			_safe_exit_count, _interstitial_cooldown_remaining(),
+		])
 		return
 	if _interstitial_ready or _interstitial_load_in_flight:
 		return
 	_interstitial_load_in_flight = true
 	_apply_request_config_before_ad_load()
-	_admob.load_interstitial_ad()
+	var unit := _interstitial_unit_id()
+	_requested_interstitial_unit = unit
+	var req := _admob.create_interstitial_ad_request()
+	req.set_ad_unit_id(unit)
+	print("[AdsService] interstitial preload unit=%s" % unit)
+	_admob.load_interstitial_ad(req)
+	_refresh_ads_status_panel()
 
 
 func _preload_rewarded() -> void:
-	if not _admob or not _sdk_ready or not _ads_enabled or Entitlements.has_plus():
+	if not _admob or not _sdk_ready or not _ads_enabled or _plus_blocks_ads():
 		return
 	if _rewarded_ready or _rewarded_load_in_flight:
 		return
@@ -1459,7 +1775,22 @@ func _preload_rewarded() -> void:
 	_apply_request_config_before_ad_load()
 	_last_rewarded_result = "requested"
 	print("[AdsService] rewarded load unit=%s" % _rewarded_unit)
-	_admob.load_rewarded_ad()
+	var req := _admob.create_rewarded_ad_request()
+	req.set_ad_unit_id(_rewarded_unit)
+	_admob.load_rewarded_ad(req)
+
+
+func _schedule_rewarded_preload(delay_sec: float) -> void:
+	if _rewarded_retry_armed:
+		return
+	_rewarded_retry_armed = true
+	get_tree().create_timer(delay_sec).timeout.connect(func() -> void:
+		_rewarded_retry_armed = false
+		if _plus_blocks_ads() or not _ads_enabled:
+			return
+		if not _rewarded_ready:
+			_preload_rewarded()
+	, CONNECT_ONE_SHOT)
 
 
 func _show_banner_native() -> void:
@@ -1478,11 +1809,15 @@ func _show_banner_native() -> void:
 	_banner_load_in_flight = true
 	_last_banner_result = "requested"
 	print("[AdsService] banner load unit=%s" % _banner_unit)
-	var req := _admob.create_banner_ad_request()
-	var width_dp := _banner_width_dp()
-	if width_dp >= 320:
-		req.set_adaptive_width(width_dp)
-	_admob.load_banner_ad(req)
+	if Platform.is_android():
+		## ADAPTIVE, BOTTOM, and safe-area anchoring are already on the Admob node.
+		_admob.load_banner_ad()
+	else:
+		var req := _admob.create_banner_ad_request()
+		var width_dp := _banner_width_dp()
+		if width_dp >= 320:
+			req.set_adaptive_width(width_dp)
+		_admob.load_banner_ad(req)
 	banner_visibility_changed.emit(false)
 
 
@@ -1492,6 +1827,8 @@ func _on_rewarded_earned(_ad_info, _reward) -> void:
 
 func _on_rewarded_dismissed(_ad_info) -> void:
 	_fullscreen_ad_since_unix = 0.0
+	_rewarded_ready = false
+	_rewarded_load_in_flight = false
 	var active := _pending_reward_active
 	var earned := _reward_earned_pending
 	_pending_reward_active = false
@@ -1511,17 +1848,8 @@ func _on_rewarded_dismissed(_ad_info) -> void:
 func _on_rewarded_failed_to_load(_ad_info, error) -> void:
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
-	_log_ad_error("rewarded", error)
-	var delay := _retry_delay(error, _rewarded_retry_count, REWARDED_RETRY_MAX, true)
-	if delay < 0.0:
-		return
-	_rewarded_retry_count += 1
-	get_tree().create_timer(delay).timeout.connect(func() -> void:
-		if Entitlements.has_plus() or not _ads_enabled:
-			return
-		if not _rewarded_ready:
-			_preload_rewarded()
-	)
+	_log_ad_error("rewarded", error, _rewarded_unit)
+	_schedule_rewarded_preload(REWARDED_LOAD_FAIL_COOLDOWN_SEC)
 
 
 func _on_rewarded_failed_to_show(_ad_info, error) -> void:
@@ -1564,44 +1892,5 @@ func _show_current_banner() -> void:
 	else:
 		_admob.show_banner_ad()
 	_banner_mounted = true
-	_arm_banner_refresh()
+	_stop_house_rotation()
 	banner_visibility_changed.emit(true)
-
-
-func _arm_banner_refresh() -> void:
-	if _banner_refresh_armed or not should_show_banner():
-		return
-	_banner_refresh_armed = true
-	var gen := _banner_refresh_gen
-	get_tree().create_timer(BANNER_REFRESH_SEC).timeout.connect(func() -> void:
-		if gen != _banner_refresh_gen:
-			return
-		_on_banner_refresh_due()
-	)
-
-
-func _on_banner_refresh_due() -> void:
-	_banner_refresh_armed = false
-	if not should_show_banner() or _admob == null:
-		return
-	## Leave the current banner up. A fullscreen ad is covering it; try again later.
-	if _fullscreen_ad_since_unix > 0.0 or _banner_load_in_flight:
-		_arm_banner_refresh()
-		return
-	var elapsed := Time.get_unix_time_from_system() - _last_banner_creative_unix
-	if elapsed < BANNER_REFRESH_SEC - 1.0:
-		_show_current_banner()
-		return
-	if _admob.is_banner_ad_loaded():
-		if not _banner_ad_id.is_empty():
-			_admob.show_banner_ad(_banner_ad_id)
-		else:
-			_admob.show_banner_ad()
-		_banner_mounted = true
-	_banner_load_in_flight = true
-	_apply_request_config_before_ad_load()
-	var req := _admob.create_banner_ad_request()
-	var width_dp := _banner_width_dp()
-	if width_dp >= 320:
-		req.set_adaptive_width(width_dp)
-	_admob.load_banner_ad(req)
