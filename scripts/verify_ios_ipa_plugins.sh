@@ -8,12 +8,12 @@ APP=$(find "$TMP/Payload" -maxdepth 1 -name '*.app' | head -1)
 BIN="$APP/$(basename "$APP" .app)"
 strings "$BIN" > "$TMP/strings.txt"
 grep -q 'AdmobPlugin' "$TMP/strings.txt" || { echo 'AdmobPlugin not found in binary'; exit 1; }
-if grep -q 'local_notification_init' "$TMP/strings.txt"; then
-  echo "LocalNotificationPlugin init symbol present"
-else
-  echo 'local_notification_init not found in binary'
+plugin_strings="$(cat "$TMP/strings.txt" || true)"
+if ! printf '%s\n' "$plugin_strings" | grep -c 'StimPadLocalNotifications' >/dev/null; then
+  echo 'StimPadLocalNotifications not found in binary'
   exit 1
 fi
+echo "LocalNotificationPlugin class present"
 # Soft-check Unity mediation adapter (present when pods linked).
 if grep -qE 'UnityAds|GADMediationAdapterUnity|UMSUnity' "$TMP/strings.txt"; then
   echo "Unity Ads mediation symbols present in binary"
