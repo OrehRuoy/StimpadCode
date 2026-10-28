@@ -18,6 +18,9 @@ var _highlight_pending := false
 var _opened_token := 0
 var _delay_timer: SceneTreeTimer
 var _prompt_retries := 0
+var _last_skip := ""
+
+const PROMPT_RETRY_MAX := 40
 
 
 func _ready() -> void:
@@ -136,7 +139,10 @@ func _notification(what: int) -> void:
 
 
 func _arm_trigger(trigger: String) -> void:
+	_debug("trigger %s opens=%d" % [trigger, LocalPrefs.app_open_count])
 	_pending_trigger = trigger
+	_prompt_retries = 0
+	_last_skip = ""
 	LocalPrefs.reminder_pending_trigger = trigger
 	LocalPrefs.save_prefs()
 	_schedule_prompt()
@@ -155,10 +161,14 @@ func _on_prompt_delay() -> void:
 	_delay_timer = null
 	if not _can_prompt():
 		return
-	if _blocked():
+	var block := _block_reason()
+	if not block.is_empty():
+		_debug("wait: %s" % block)
 		_prompt_retries += 1
-		if _prompt_retries <= 8:
+		if _prompt_retries <= PROMPT_RETRY_MAX:
 			_schedule_prompt()
+		else:
+			_debug("gave up while blocked: %s" % block)
 		return
 	_prompt_retries = 0
 	_show_prompt()
@@ -166,35 +176,52 @@ func _on_prompt_delay() -> void:
 
 func _can_prompt() -> bool:
 	if Platform.is_android():
+		_debug("skip: android")
 		return false
-	if not Platform.is_ios() and not OS.has_feature("editor"):
+	## Editor play does not set the "editor" feature tag. Debug builds cover that.
+	if not Platform.is_ios() and not OS.has_feature("editor") and not OS.is_debug_build():
+		_debug("skip: not ios")
 		return false
 	if LocalPrefs.app_open_count < 2:
+		_debug("skip: first launch opens=%d" % LocalPrefs.app_open_count)
 		return false
 	if LocalPrefs.reminder_enabled:
+		_debug("skip: already on")
 		return false
 	if LocalPrefs.reminder_decline_count >= 2:
+		_debug("skip: declined %d" % LocalPrefs.reminder_decline_count)
 		return false
 	if _pending_trigger != "listen_45s" and _pending_trigger != "timer_finished":
+		_debug("skip: no trigger")
 		return false
 	var now := int(Time.get_unix_time_from_system())
 	if LocalPrefs.reminder_prompt_last_unix > 0 and now - LocalPrefs.reminder_prompt_last_unix < PROMPT_WEEK_SEC:
+		_debug("skip: cooldown")
 		return false
 	return true
 
 
 func _blocked() -> bool:
-	if is_showing() or EnjoyPromptService.is_showing() or FeatureTipService.is_showing():
-		return true
+	return not _block_reason().is_empty()
+
+
+## Empty when the dialog may show over the current screen. Home is not required.
+func _block_reason() -> String:
+	if is_showing():
+		return "already showing"
+	if EnjoyPromptService.is_showing():
+		return "enjoy prompt"
+	if FeatureTipService.is_showing():
+		return "feature tip"
 	if AdsService.is_fullscreen_ad_showing():
-		return true
+		return "fullscreen ad"
 	var nav := get_tree().get_first_node_in_group("main_nav")
 	if nav == null:
-		return true
-	if nav.has_method("is_home_visible") and not bool(nav.call("is_home_visible")):
-		return true
+		return "no main"
 	var paywall := nav.get_node_or_null("Screens/PaywallScreen")
-	return paywall != null and paywall.visible
+	if paywall != null and paywall.visible:
+		return "paywall"
+	return ""
 
 
 func _show_prompt() -> void:
@@ -212,7 +239,17 @@ func _show_prompt() -> void:
 	_prompt.present_opt_in()
 	LocalPrefs.reminder_prompt_last_unix = int(Time.get_unix_time_from_system())
 	LocalPrefs.save_prefs()
+	_debug("show %s" % trigger)
 	AnalyticsService.log_event("reminder_prompt_shown", {"trigger": trigger})
+
+
+func _debug(msg: String) -> void:
+	if not OS.is_debug_build():
+		return
+	if msg == _last_skip:
+		return
+	_last_skip = msg
+	print("[Reminder] ", msg)
 
 
 func _on_declined() -> void:
