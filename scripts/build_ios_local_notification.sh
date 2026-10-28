@@ -99,5 +99,10 @@ for cfg in debug release; do
   write_plist "$dest"
 done
 
-nm "$OUT/LocalNotificationPlugin.release.xcframework/ios-arm64/LocalNotificationPlugin.a" | grep -q local_notification_init
+LIB="$OUT/LocalNotificationPlugin.release.xcframework/ios-arm64/LocalNotificationPlugin.a"
+syms="$(nm -gU "$LIB" 2>/dev/null || true)"
+if ! printf '%s\n' "$syms" | grep -c local_notification_init >/dev/null; then
+  echo "missing local_notification_init in $LIB"
+  exit 1
+fi
 echo "LocalNotificationPlugin xcframeworks ready"
