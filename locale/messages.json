@@ -258,6 +258,13 @@
     "pt_BR": "Plástico bolha",
     "ja": "プチプチ"
   },
+  "Cancel": {
+    "de": "Abbrechen",
+    "es": "Cancelar",
+    "fr": "Annuler",
+    "pt_BR": "Cancelar",
+    "ja": "キャンセル"
+  },
   "Camera Shutter Click": {
     "de": "Kameraauslöser",
     "es": "Obturador",
@@ -383,6 +390,13 @@
     "fr": "Glaçons croquants",
     "pt_BR": "Gelo crocante",
     "ja": "氷を噛む音"
+  },
+  "Daily reminder": {
+    "de": "Tägliche Erinnerung",
+    "es": "Aviso diario",
+    "fr": "Rappel du jour",
+    "pt_BR": "Lembrete diário",
+    "ja": "毎日の通知"
   },
   "Dawn Bird Chorus": {
     "de": "Vogelchor am Morgen",
@@ -530,6 +544,13 @@
     "fr": "Gratuit",
     "pt_BR": "Grátis",
     "ja": "無料"
+  },
+  "Free today": {
+    "de": "Heute gratis",
+    "es": "Gratis hoy",
+    "fr": "Gratuit aujourd’hui",
+    "pt_BR": "Grátis hoje",
+    "ja": "今日無料"
   },
   "Front-Load Washer": {
     "de": "Waschmaschine",
@@ -825,6 +846,13 @@
     "pt_BR": "Não há sons neste filtro.",
     "ja": "このフィルターに音はありません。"
   },
+  "No thanks": {
+    "de": "Nein danke",
+    "es": "No, gracias",
+    "fr": "Non merci",
+    "pt_BR": "Agora não",
+    "ja": "今回はしない"
+  },
   "Noise": {
     "de": "Rauschen",
     "es": "Ruido",
@@ -894,6 +922,13 @@
     "fr": "Tonalité",
     "pt_BR": "Tom de discagem",
     "ja": "発信音"
+  },
+  "Pick a time": {
+    "de": "Uhrzeit wählen",
+    "es": "Elegir hora",
+    "fr": "Choisir l’heure",
+    "pt_BR": "Escolher hora",
+    "ja": "時刻を選ぶ"
   },
   "Pink Noise": {
     "de": "Rosa Rauschen",
@@ -1070,6 +1105,20 @@
     "pt_BR": "Clique de relé",
     "ja": "リレーのカチッ"
   },
+  "Reminder time": {
+    "de": "Uhrzeit",
+    "es": "Hora del aviso",
+    "fr": "Heure du rappel",
+    "pt_BR": "Hora do lembrete",
+    "ja": "通知の時刻"
+  },
+  "Reminder time  ·  %s": {
+    "de": "Uhrzeit  ·  %s",
+    "es": "Hora  ·  %s",
+    "fr": "Heure  ·  %s",
+    "pt_BR": "Hora  ·  %s",
+    "ja": "時刻  ·  %s"
+  },
   "Remove favorite": {
     "de": "Favorit entfernen",
     "es": "Quitar de favoritos",
@@ -1147,6 +1196,13 @@
     "pt_BR": "Seletor giratório",
     "ja": "ロータリースイッチ"
   },
+  "Save": {
+    "de": "Speichern",
+    "es": "Guardar",
+    "fr": "Enregistrer",
+    "pt_BR": "Salvar",
+    "ja": "保存"
+  },
   "School Hall Bell": {
     "de": "Schulklingel",
     "es": "Timbre de escuela",
@@ -1188,6 +1244,13 @@
     "fr": "Réglages",
     "pt_BR": "Ajustes",
     "ja": "設定"
+  },
+  "Set reminder": {
+    "de": "Erinnerung setzen",
+    "es": "Activar aviso",
+    "fr": "Activer le rappel",
+    "pt_BR": "Ativar lembrete",
+    "ja": "設定する"
   },
   "Short sounds keep replaying until you stop": {
     "de": "Kurze Sounds laufen weiter, bis du stoppst",
@@ -1553,6 +1616,13 @@
     "pt_BR": "Até eu parar",
     "ja": "停止するまで"
   },
+  "Today's sound: %s": {
+    "de": "Sound heute: %s",
+    "es": "Sonido de hoy: %s",
+    "fr": "Son du jour : %s",
+    "pt_BR": "Som de hoje: %s",
+    "ja": "今日のサウンド: %s"
+  },
   "Upright Vacuum Hum": {
     "de": "Staubsauger",
     "es": "Aspiradora",
@@ -1608,6 +1678,13 @@
     "fr": "Interrupteur",
     "pt_BR": "Interruptor",
     "ja": "壁のスイッチ"
+  },
+  "Want a quiet daily nudge with today's free sound?": {
+    "de": "Täglich leise an den Gratissound erinnern?",
+    "es": "¿Un aviso suave con el sonido gratis de hoy?",
+    "fr": "Un rappel discret pour le son offert du jour ?",
+    "pt_BR": "Um lembrete leve com o som grátis de hoje?",
+    "ja": "今日の無料音をそっと知らせますか？"
   },
   "Want a soft visual burst when you tap? Turn on Tap Ripples in Settings.": {
     "de": "Möchtest du beim Tippen einen sanften visuellen Impuls? Aktiviere Tipp-Wellen in den Einstellungen.",
