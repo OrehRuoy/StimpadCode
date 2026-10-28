@@ -11,6 +11,10 @@ signal pressed
 
 const DRAG_CANCEL_PX := 28.0
 const SCROLL_DAMP := 0.55
+const _ROUNDED_THUMB := preload("res://assets/ui/rounded_thumb.gdshader")
+const _FRAME_TEX := preload("res://assets/ui/tile_frame.png")
+## Matches the outer corner of tile_frame.png so the enlarged icon stays inside it.
+const FRAME_CLIP_RADIUS := 0.23
 
 var _sound: Dictionary = {}
 var _unlocked: bool = true
@@ -21,6 +25,8 @@ var _dragged: bool = false
 var _parent_scroll: ScrollContainer
 var _daily_badge: Control
 var _watch_daily := false
+var _art_stack: Control
+var _frame: TextureRect
 
 
 func setup(sound: Dictionary) -> void:
@@ -37,13 +43,13 @@ func setup(sound: Dictionary) -> void:
 		_hint.text = tr("Tap to unlock")
 		_hint.modulate = Color(1, 1, 1, 1)
 	modulate = Color.WHITE
-	_art.modulate = Color(1, 1, 1, 1) if _unlocked else Color(0.82, 0.84, 0.88, 1)
 	_art.texture = null
 	_art.rotation_degrees = 0.0
 	_art.scale = Vector2.ONE
-	_art.position = Vector2.ZERO
+	_ensure_overlay()
 	_apply_frame_style()
 	_apply_responsive_sizes()
+	_apply_icon_frame()
 	call_deferred("_layout_name_row")
 	call_deferred("_load_art")
 	_apply_daily_badge()
@@ -108,7 +114,10 @@ func _apply_daily_badge() -> void:
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", Color(0.93, 0.98, 0.96, 1))
 	row.add_child(label)
-	_art.add_child(badge)
+	var host: Node = _art_stack if _art_stack != null else _art
+	host.add_child(badge)
+	if _art_stack != null:
+		_art_stack.move_child(badge, -1)
 	_daily_badge = badge
 	call_deferred("_layout_daily_badge")
 
@@ -184,6 +193,7 @@ func _ready() -> void:
 	if _name_row:
 		_name_row.resized.connect(_layout_name_row)
 	_apply_frame_style()
+	_ensure_overlay()
 	call_deferred("_cache_parent_scroll")
 
 
@@ -375,3 +385,49 @@ func _apply_frame_style() -> void:
 		_art.custom_minimum_size = Vector2.ZERO
 		_art.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_art.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
+func _ensure_overlay() -> void:
+	if _art_frame == null or _art == null:
+		return
+	if _art_stack != null and is_instance_valid(_art_stack):
+		return
+	_art_stack = Control.new()
+	_art_stack.name = "ArtStack"
+	_art_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_art_stack.clip_contents = true
+	_art_stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_art_stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_art_frame.add_child(_art_stack)
+	_art.reparent(_art_stack)
+	_art.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_frame = TextureRect.new()
+	_frame.name = "TileFrame"
+	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame.texture = _FRAME_TEX
+	_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_art_stack.add_child(_frame)
+
+
+func _icon_tint() -> Color:
+	if _unlocked:
+		return Color(1, 1, 1, 1)
+	return Color(0.82, 0.84, 0.88, 1)
+
+
+func _apply_icon_frame() -> void:
+	if _art == null:
+		return
+	_ensure_overlay()
+	var tint := _icon_tint()
+	_art.modulate = tint
+	var mat := ShaderMaterial.new()
+	mat.shader = _ROUNDED_THUMB
+	mat.set_shader_parameter("radius", FRAME_CLIP_RADIUS)
+	mat.set_shader_parameter("zoom", SoundCatalog.icon_scale(_sound))
+	mat.set_shader_parameter("icon_tint", tint)
+	_art.material = mat

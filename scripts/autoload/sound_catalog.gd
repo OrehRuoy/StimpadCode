@@ -3,6 +3,21 @@ extends Node
 signal catalog_loaded
 
 const CATALOG_PATH := "res://data/sounds.json"
+const DEFAULT_ICON_SCALE := 1.14
+const ICON_SCALE_OVERRIDES := {
+	"fire_whistle": 1.08,
+	"police_siren": 1.08,
+	"vacuum": 1.08,
+	"school_bell": 1.08,
+	"hair_dryer": 1.0,
+	"car_horn": 1.08,
+	"morning_birds": 1.18,
+	"night_crickets": 1.18,
+	"ocean_waves": 1.18,
+	"forest_insects": 1.18,
+	"flowing_water": 1.18,
+	"restaurant_crowd": 1.18,
+}
 
 var sounds: Array[Dictionary] = []
 var categories: Array[String] = []
@@ -59,6 +74,17 @@ func get_sound_by_id(sound_id: String) -> Dictionary:
 		if str(sound.get("id", "")) == sound_id:
 			return sound
 	return {}
+
+
+## Optional per-sound icon_scale on the catalog entry wins. Otherwise the
+## named overrides, then 1.14. Enlarges the icon under the shared tile frame.
+func icon_scale(sound: Dictionary) -> float:
+	if sound.has("icon_scale"):
+		return float(sound.get("icon_scale", DEFAULT_ICON_SCALE))
+	var sound_id := str(sound.get("id", ""))
+	if ICON_SCALE_OVERRIDES.has(sound_id):
+		return float(ICON_SCALE_OVERRIDES[sound_id])
+	return DEFAULT_ICON_SCALE
 
 
 func get_sounds_for_category(category: String) -> Array[Dictionary]:
