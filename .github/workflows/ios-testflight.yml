@@ -54,6 +54,7 @@ jobs:
           grep -q 'name="iOS (TestFlight IPA)"' export_presets.cfg
           grep -q 'application/bundle_identifier="com.stimpad.soundboard"' export_presets.cfg
           grep -q 'plugins/AdmobPlugin=true' export_presets.cfg
+          grep -q 'plugins/LocalNotificationPlugin=true' export_presets.cfg
           grep -q 'application/app_store_team_id="9WRNQYQZTB"' export_presets.cfg
           UUID=$(grep 'application/provisioning_profile_uuid_release=' export_presets.cfg | sed -n 's/.*application\/provisioning_profile_uuid_release="\([^"]*\)".*/\1/p' | tail -1 || true)
           if [ -z "$UUID" ] || [ "$UUID" = "PASTE_PROFILE_UUID_HERE" ]; then
@@ -79,6 +80,14 @@ jobs:
           test -f tools/ios/patch_xcode_signing.py
           grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot
           grep -q 'res://addons/GodotFirebaseiOS/plugin.cfg' project.godot
+          grep -q 'res://addons/LocalNotificationPlugin/plugin.cfg' project.godot
+          grep -q 'DailySound=' project.godot
+          grep -q 'ReminderService=' project.godot
+          test -f ios/plugins/LocalNotificationPlugin.gdip
+          test -f ios/plugins/local_notification/local_notification.mm
+          test -f scripts/build_ios_local_notification.sh
+          test -f addons/LocalNotificationPlugin/plugin.cfg
+          test -f addons/LocalNotificationPlugin/plugin.gd
           if grep -nE '^\s*#' ios/plugins/*.gdip 2>/dev/null; then
             echo "::error::Remove # comments from .gdip files"
             exit 1
@@ -186,6 +195,13 @@ jobs:
           ./scripts/setup_ios_firebase.sh
           test -f addons/GodotFirebaseiOS/GoogleService-Info.plist
           grep -q '^FirebaseIOS=' project.godot
+
+      - name: Build iOS local notification plugin
+        run: |
+          chmod +x scripts/build_ios_local_notification.sh
+          ./scripts/build_ios_local_notification.sh
+          test -d ios/plugins/LocalNotificationPlugin.release.xcframework
+          test -d ios/plugins/LocalNotificationPlugin.debug.xcframework
 
       - name: Set build number
         run: sed -i '' "s|application/version=\"[^\"]*\"|application/version=\"${GITHUB_RUN_NUMBER}\"|" export_presets.cfg

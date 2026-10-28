@@ -19,6 +19,8 @@ var _press_pos: Vector2 = Vector2.ZERO
 var _pressing: bool = false
 var _dragged: bool = false
 var _parent_scroll: ScrollContainer
+var _daily_badge: Control
+var _watch_daily := false
 
 
 func setup(sound: Dictionary) -> void:
@@ -43,8 +45,123 @@ func setup(sound: Dictionary) -> void:
 	_apply_frame_style()
 	_apply_responsive_sizes()
 	call_deferred("_layout_name_row")
-	## Defer art so grid build doesn't decode every PNG in one frame.
 	call_deferred("_load_art")
+	_apply_daily_badge()
+
+
+func get_sound_id() -> String:
+	return str(_sound.get("id", ""))
+
+
+func highlight_briefly() -> void:
+	modulate = Color.WHITE
+	var tw := create_tween()
+	tw.tween_property(self, "modulate", Color(0.72, 1.0, 0.9, 1), 0.16)
+	tw.tween_property(self, "modulate", Color.WHITE, 0.7)
+
+
+func _apply_daily_badge() -> void:
+	if _daily_badge != null and is_instance_valid(_daily_badge):
+		_daily_badge.queue_free()
+	_daily_badge = null
+	_watch_daily = false
+	set_process(false)
+	if not DailySound.is_free_today(get_sound_id()) or _art == null:
+		return
+	_watch_daily = true
+	set_process(true)
+	if _parent_scroll == null:
+		_cache_parent_scroll()
+	var badge := PanelContainer.new()
+	badge.name = "FreeTodayBadge"
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.clip_contents = true
+	var chip := StyleBoxFlat.new()
+	chip.bg_color = Color(0.05, 0.1, 0.12, 0.82)
+	chip.corner_radius_top_left = 10
+	chip.corner_radius_top_right = 10
+	chip.corner_radius_bottom_right = 10
+	chip.corner_radius_bottom_left = 10
+	chip.set_content_margin_all(3)
+	badge.add_theme_stylebox_override("panel", chip)
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 3)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	badge.add_child(row)
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.custom_minimum_size = Vector2(16, 16)
+	if ResourceLoader.exists("res://assets/ui/badge_free_today.png"):
+		icon.texture = load("res://assets/ui/badge_free_today.png")
+	else:
+		push_warning("Missing daily badge art at res://assets/ui/badge_free_today.png")
+		icon.visible = false
+	row.add_child(icon)
+	var label := Label.new()
+	label.name = "Caption"
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = tr("Free today")
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", Color(0.93, 0.98, 0.96, 1))
+	row.add_child(label)
+	_art.add_child(badge)
+	_daily_badge = badge
+	call_deferred("_layout_daily_badge")
+
+
+func _layout_daily_badge() -> void:
+	if _daily_badge == null or not is_instance_valid(_daily_badge) or _art == null:
+		return
+	var frame_w := _art.size.x
+	if frame_w < 8.0:
+		return
+	var caption := _daily_badge.find_child("Caption", true, false) as Label
+	var icon := _daily_badge.find_child("Icon", true, false) as Control
+	var icon_s := 16.0
+	var text_w := 0.0
+	if caption and caption.get_theme_font("font"):
+		text_w = caption.get_theme_font("font").get_string_size(
+			caption.text, HORIZONTAL_ALIGNMENT_LEFT, -1, caption.get_theme_font_size("font_size")
+		).x
+	var show_text := text_w + icon_s + 16.0 <= frame_w - 8.0
+	if caption:
+		caption.visible = show_text
+	var badge_w := icon_s + 10.0
+	if show_text:
+		badge_w += text_w + 6.0
+	var badge_h := 24.0
+	_daily_badge.position = Vector2(6.0, maxf(4.0, _art.size.y - badge_h - 6.0))
+	_daily_badge.size = Vector2(minf(badge_w, frame_w - 8.0), badge_h)
+	if icon:
+		icon.custom_minimum_size = Vector2(icon_s, icon_s)
+
+
+func _process(_delta: float) -> void:
+	if not _watch_daily:
+		set_process(false)
+		return
+	_layout_daily_badge()
+	if not _daily_badge_on_screen():
+		return
+	DailySound.note_badge_shown(get_sound_id())
+	_watch_daily = false
+	set_process(false)
+
+
+func _daily_badge_on_screen() -> bool:
+	if not is_visible_in_tree():
+		return false
+	var tile_rect := get_global_rect()
+	if tile_rect.size.y < 8.0:
+		return false
+	var view := get_viewport().get_visible_rect()
+	if _parent_scroll != null:
+		view = _parent_scroll.get_global_rect()
+	return tile_rect.intersects(view)
 
 
 func _load_art() -> void:
@@ -73,6 +190,7 @@ func _ready() -> void:
 func _on_resized() -> void:
 	_apply_responsive_sizes()
 	_layout_name_row()
+	_layout_daily_badge()
 
 
 func _cache_parent_scroll() -> void:

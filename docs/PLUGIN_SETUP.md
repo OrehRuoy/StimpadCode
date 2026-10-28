@@ -65,6 +65,14 @@ Wired end-to-end:
 
 **Settings → Rate StimPad** always opens the store listing (`ReviewService.open_write_review()`): the App Store write-review page on iOS (`6796806236`) and the Play listing on Android. That button does not call the in-app review sheet. Enjoy → Yes calls `request_review()`, which uses the `InappReviewPlugin` singleton on Android and does not open the browser. Both Android export presets set `plugins/InappReviewPlugin=true`.
 
+## Daily reminder (iOS local notifications)
+No push server and no Firebase Messaging. `ReminderService` writes commands to `user://local_notifications` (the iOS Documents directory). `ios/plugins/local_notification/local_notification.mm` polls that folder with UserNotifications and exposes `local_notification_init` / `local_notification_deinit`.
+
+- `ios/plugins/LocalNotificationPlugin.gdip` is the Godot iOS plugin entry. `export_presets.cfg` sets `plugins/LocalNotificationPlugin=true` on the iOS preset only.
+- `addons/LocalNotificationPlugin` links `UserNotifications.framework` and `-ObjC` at export. Enable it in Project → Plugins (already listed in `project.godot`).
+- macOS CI runs `scripts/build_ios_local_notification.sh` before export. That script builds `LocalNotificationPlugin.debug.xcframework` and `LocalNotificationPlugin.release.xcframework` next to the `.gdip`. Those binaries are gitignored. Until they exist, the Godot editor reports `Invalid plugin config file LocalNotificationPlugin.gdip` because the iOS plugin loader requires both xcframeworks. The export job builds them first, so the upload still links the plugin.
+- The prompt is a dialog after a 45-second listen or a finished timer, never on the first launch. Settings → Daily reminder turns it off and cancels pending notifications.
+
 ## Feedback (Web3Forms)
 `FeedbackService` posts to `https://api.web3forms.com/submit` (access key in that script). Settings → Feedback and the enjoy-prompt **No** path open the same form (OS, version/build, message, optional email, optional sound requests).
 

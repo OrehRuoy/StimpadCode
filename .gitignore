@@ -25,6 +25,8 @@ android/build/src/debug/
 !addons/AdmobPlugin/bin/**/*.aar
 *.xcarchive
 *.dSYM.zip
+ios/plugins/LocalNotificationPlugin.debug.xcframework/
+ios/plugins/LocalNotificationPlugin.release.xcframework/
 
 # OS
 .DS_Store

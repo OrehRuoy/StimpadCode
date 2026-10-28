@@ -76,7 +76,7 @@ func notify_feature_used(tip_id: String) -> void:
 
 
 func on_returned_home() -> void:
-	if EnjoyPromptService.is_showing():
+	if EnjoyPromptService.is_showing() or ReminderService.is_showing():
 		return
 	if not _should_offer():
 		return
@@ -105,7 +105,7 @@ func _should_offer() -> bool:
 	var now := int(Time.get_unix_time_from_system())
 	if LocalPrefs.feature_tip_snooze_until > now:
 		return false
-	if EnjoyPromptService.is_showing():
+	if EnjoyPromptService.is_showing() or ReminderService.is_showing():
 		return false
 	return _next_unseen_tip() != null
 
@@ -121,7 +121,7 @@ func _on_settle_elapsed() -> void:
 		return
 	if nav.has_method("is_home_visible") and not nav.call("is_home_visible"):
 		return
-	if EnjoyPromptService.is_showing():
+	if EnjoyPromptService.is_showing() or ReminderService.is_showing():
 		return
 	_show_tip()
 

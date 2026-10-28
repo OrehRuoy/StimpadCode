@@ -38,6 +38,7 @@ LocalPrefs="*res://scripts/autoload/local_prefs.gd"
 HeadFlossService="*res://scripts/autoload/head_floss_service.gd"
 HapticsService="*res://scripts/autoload/haptics_service.gd"
 Entitlements="*res://scripts/autoload/entitlements.gd"
+DailySound="*res://scripts/autoload/daily_sound.gd"
 AdsService="*res://scripts/autoload/ads_service.gd"
 IAPService="*res://scripts/autoload/iap_service.gd"
 AnalyticsService="*res://scripts/autoload/analytics_service.gd"
@@ -45,6 +46,7 @@ FeedbackService="*res://scripts/autoload/feedback_service.gd"
 ReviewService="*res://scripts/autoload/review_service.gd"
 EnjoyPromptService="*res://scripts/autoload/enjoy_prompt_service.gd"
 FeatureTipService="*res://scripts/autoload/feature_tip_service.gd"
+ReminderService="*res://scripts/autoload/reminder_service.gd"
 
 [display]
 
@@ -58,7 +60,7 @@ window/handheld/orientation=1
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg", "res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/InappReviewPlugin/plugin.cfg")
+enabled=PackedStringArray("res://addons/AdmobPlugin/plugin.cfg", "res://addons/GodotFirebaseiOS/plugin.cfg", "res://addons/GodotGooglePlayBilling/plugin.cfg", "res://addons/InappReviewPlugin/plugin.cfg", "res://addons/LocalNotificationPlugin/plugin.cfg")
 
 [gui]
 

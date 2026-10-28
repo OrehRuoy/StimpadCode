@@ -5,6 +5,7 @@ extends Node
 signal playback_started(sound_id: String)
 signal playback_stopped(sound_id: String)
 signal playback_finished(sound_id: String)
+signal timer_finished(sound_id: String)
 signal session_duration_changed(seconds: int)
 signal preview_finished(sound_id: String, reason: String)
 signal listened_enough(sound_id: String)
@@ -130,6 +131,8 @@ func set_session_duration(seconds: int) -> void:
 	else:
 		_clear_stop_timer()
 	session_duration_changed.emit(seconds)
+	if is_playing() and not _previewing:
+		LocalPrefs.capture_playback_session()
 
 
 func get_session_duration() -> int:
@@ -203,12 +206,20 @@ func play_sound(sound: Dictionary) -> void:
 		})
 	LocalPrefs.note_recent_sound(sound_id)
 	AnalyticsService.log_sound_play(sound)
+	if DailySound.is_free_today(sound_id):
+		AnalyticsService.log_event("daily_sound_play", {
+			"sound_id": sound_id,
+			"days_since_first_open": LocalPrefs.days_since_first_open(),
+		})
+	LocalPrefs.capture_playback_session()
 
 
 func set_playback_rate(rate: float) -> void:
 	LocalPrefs.playback_rate = clampf(rate, 0.5, 1.5)
 	if _player != null:
 		_player.pitch_scale = LocalPrefs.playback_rate
+	if is_playing() and not _previewing:
+		LocalPrefs.capture_playback_session()
 
 
 func get_playback_rate() -> float:
@@ -376,6 +387,7 @@ func _on_session_timer_timeout() -> void:
 			"minutes": minutes,
 			"sound_id": finished_id,
 		})
+		timer_finished.emit(finished_id)
 		playback_finished.emit(finished_id)
 
 

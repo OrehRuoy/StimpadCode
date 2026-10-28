@@ -56,6 +56,8 @@ var _play_again_caption: Label
 var _play_again_scroll: ScrollContainer
 var _play_again_box: HBoxContainer
 var _library_label: Label
+var _pending_focus_id := ""
+var _focus_tries := 0
 
 enum DevMenuItem {
 	UNPAID = 0,
@@ -527,6 +529,7 @@ func _refresh_grid() -> void:
 			if gen != _grid_gen or not is_inside_tree():
 				return
 	_emit_first_home_ready()
+	_try_focus_pending()
 
 
 func _emit_first_home_ready() -> void:
@@ -656,7 +659,13 @@ func _rebuild_play_again() -> void:
 	var entries: Array[Dictionary] = []
 	var used := {}
 	var recents: Array[String] = LocalPrefs.recent_sound_ids
-	if not recents.is_empty():
+	var session_id := str(LocalPrefs.last_session.get("sound_id", ""))
+	if not session_id.is_empty():
+		var session_sound := SoundCatalog.get_sound_by_id(session_id)
+		if not session_sound.is_empty():
+			entries.append({"sound": session_sound, "slot": "last"})
+			used[session_id] = true
+	elif not recents.is_empty():
 		var last := SoundCatalog.get_sound_by_id(recents[0])
 		if _play_again_ok(last):
 			entries.append({"sound": last, "slot": "last"})
@@ -792,12 +801,74 @@ func _make_sound_shortcut(sound: Dictionary, sound_name: String, font_size: int,
 
 func _on_play_again_pressed(sound: Dictionary, slot: String, position: int) -> void:
 	HapticsService.tap()
+	var sound_id := str(sound.get("id", ""))
 	AnalyticsService.log_event("play_again_tap", {
-		"sound_id": str(sound.get("id", "")),
+		"sound_id": sound_id,
 		"slot": slot,
 		"position": position,
 	})
+	if sound_id == str(LocalPrefs.last_session.get("sound_id", "")) and not sound_id.is_empty():
+		AnalyticsService.log_event("resume_tap", {
+			"sound_id": sound_id,
+			"hours_since_last": LocalPrefs.hours_since_last_session(),
+		})
 	get_tree().get_first_node_in_group("main_nav").call("show_player", sound)
+
+
+func focus_daily_sound() -> void:
+	var sound_id := DailySound.today_id()
+	if sound_id.is_empty():
+		return
+	_pending_focus_id = sound_id
+	_focus_tries = 0
+	if not _filter_contains(sound_id):
+		_selected_scope = "All"
+		_selected_sound_category = "All"
+		LocalPrefs.last_scope = "All"
+		LocalPrefs.last_sound_category = "All"
+		LocalPrefs.save_prefs()
+		_rebuild_filters()
+		_refresh_grid()
+		return
+	_try_focus_pending()
+
+
+func _filter_contains(sound_id: String) -> bool:
+	for sound in _filtered_sounds():
+		if str(sound.get("id", "")) == sound_id:
+			return true
+	return false
+
+
+func _try_focus_pending() -> void:
+	if _pending_focus_id.is_empty():
+		return
+	get_tree().create_timer(0.05).timeout.connect(_focus_pending_now, CONNECT_ONE_SHOT)
+
+
+func _focus_pending_now() -> void:
+	if _pending_focus_id.is_empty() or _grid == null:
+		return
+	for child in _grid.get_children():
+		if not child.has_method("get_sound_id"):
+			continue
+		if str(child.get_sound_id()) != _pending_focus_id:
+			continue
+		var tile := child as Control
+		if tile.size.y < 8.0:
+			_focus_tries += 1
+			if _focus_tries < 24:
+				_try_focus_pending()
+			return
+		_scroll.scroll_vertical = maxi(0, int(tile.position.y) - 8)
+		if tile.has_method("highlight_briefly"):
+			tile.highlight_briefly()
+		_pending_focus_id = ""
+		_focus_tries = 0
+		return
+	_focus_tries += 1
+	if _focus_tries < 24:
+		_try_focus_pending()
 
 
 func _on_tile_pressed(sound: Dictionary) -> void:

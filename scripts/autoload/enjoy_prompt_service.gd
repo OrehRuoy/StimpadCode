@@ -101,6 +101,7 @@ func _on_settle_elapsed() -> void:
 	var blocked: bool = (
 		AdsService.is_fullscreen_ad_showing()
 		or FeatureTipService.is_showing()
+		or ReminderService.is_showing()
 		or (paywall != null and paywall.visible)
 	)
 	if blocked:

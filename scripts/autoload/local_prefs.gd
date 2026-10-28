@@ -44,10 +44,24 @@ var library_unlock_started_unix: int = 0
 var library_unlock_last_day: String = ""
 ## Android ads panel only. When true, ignore Plus and request Google's test units.
 var android_test_ads: bool = false
+## Last real playback. Restored into the existing controls on the next open.
+var last_session: Dictionary = {}
+var daily_sound_shown_day: String = ""
+var reminder_enabled: bool = false
+var reminder_hour: int = 20
+var reminder_minute: int = 0
+var reminder_decline_count: int = 0
+var reminder_prompt_last_unix: int = 0
+var reminder_pending_trigger: String = ""
+var _restored_session := false
 
 
 func _ready() -> void:
 	load_prefs()
+	if _restored_session:
+		_apply_last_session()
+		save_prefs()
+		call_deferred("_log_session_restored")
 	## AudioController boots before prefs — re-apply saved volume once disk values are loaded.
 	if AudioController != null:
 		AudioController.apply_sfx_volume(sfx_volume)
@@ -101,6 +115,17 @@ func load_prefs() -> void:
 	library_unlock_started_unix = int(parsed.get("library_unlock_started_unix", 0))
 	library_unlock_last_day = str(parsed.get("library_unlock_last_day", ""))
 	android_test_ads = bool(parsed.get("android_test_ads", false))
+	var session_raw: Variant = parsed.get("last_session", {})
+	if typeof(session_raw) == TYPE_DICTIONARY:
+		last_session = session_raw
+		_restored_session = not str(last_session.get("sound_id", "")).is_empty()
+	daily_sound_shown_day = str(parsed.get("daily_sound_shown_day", ""))
+	reminder_enabled = bool(parsed.get("reminder_enabled", false))
+	reminder_hour = clampi(int(parsed.get("reminder_hour", 20)), 0, 23)
+	reminder_minute = clampi(int(parsed.get("reminder_minute", 0)), 0, 59)
+	reminder_decline_count = maxi(0, int(parsed.get("reminder_decline_count", 0)))
+	reminder_prompt_last_unix = int(parsed.get("reminder_prompt_last_unix", 0))
+	reminder_pending_trigger = str(parsed.get("reminder_pending_trigger", ""))
 	if parsed.has("last_scope"):
 		last_scope = str(parsed.get("last_scope", "All"))
 		last_sound_category = str(parsed.get("last_sound_category", "All"))
@@ -147,6 +172,14 @@ func save_prefs() -> void:
 		"library_unlock_started_unix": library_unlock_started_unix,
 		"library_unlock_last_day": library_unlock_last_day,
 		"android_test_ads": android_test_ads,
+		"last_session": last_session,
+		"daily_sound_shown_day": daily_sound_shown_day,
+		"reminder_enabled": reminder_enabled,
+		"reminder_hour": reminder_hour,
+		"reminder_minute": reminder_minute,
+		"reminder_decline_count": reminder_decline_count,
+		"reminder_prompt_last_unix": reminder_prompt_last_unix,
+		"reminder_pending_trigger": reminder_pending_trigger,
 	}
 	var file := FileAccess.open(PREFS_PATH, FileAccess.WRITE)
 	if file == null:
@@ -183,6 +216,59 @@ func note_app_open() -> void:
 		first_open_unix = now
 	app_open_count += 1
 	save_prefs()
+
+
+func days_since_first_open() -> int:
+	if first_open_unix <= 0:
+		return 0
+	var elapsed := int(Time.get_unix_time_from_system()) - first_open_unix
+	return maxi(0, int(float(elapsed) / 86400.0))
+
+
+func hours_since_last_session() -> float:
+	var unix := int(last_session.get("unix", 0))
+	if unix <= 0:
+		return 0.0
+	var elapsed := float(int(Time.get_unix_time_from_system()) - unix) / 3600.0
+	return snappedf(maxf(0.0, elapsed), 0.1)
+
+
+func capture_playback_session() -> void:
+	if AudioController == null or not AudioController.is_playing() or AudioController.is_previewing():
+		return
+	var sound_id := AudioController.get_current_sound_id()
+	if sound_id.is_empty():
+		return
+	last_session = {
+		"sound_id": sound_id,
+		"playback_rate": clampf(playback_rate, 0.5, 1.5),
+		"head_floss_enabled": head_floss_enabled,
+		"session_duration_sec": session_duration_sec,
+		"repeat_oneshots": repeat_oneshots,
+		"unix": int(Time.get_unix_time_from_system()),
+	}
+	save_prefs()
+
+
+func _apply_last_session() -> void:
+	if last_session.has("playback_rate"):
+		playback_rate = clampf(float(last_session.get("playback_rate", playback_rate)), 0.5, 1.5)
+	if last_session.has("head_floss_enabled"):
+		head_floss_enabled = bool(last_session.get("head_floss_enabled", head_floss_enabled))
+	if last_session.has("session_duration_sec"):
+		session_duration_sec = _migrate_session_duration(int(last_session.get("session_duration_sec", 0)))
+	if last_session.has("repeat_oneshots"):
+		repeat_oneshots = bool(last_session.get("repeat_oneshots", repeat_oneshots))
+
+
+func _log_session_restored() -> void:
+	var sound_id := str(last_session.get("sound_id", ""))
+	if sound_id.is_empty():
+		return
+	AnalyticsService.log_event("session_restored", {
+		"sound_id": sound_id,
+		"hours_since_last": hours_since_last_session(),
+	})
 
 
 func mark_enjoy_prompt_shown() -> void:

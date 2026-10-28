@@ -95,6 +95,8 @@ func get_sounds_by_ids(ids: Array) -> Array[Dictionary]:
 
 
 func is_sound_unlocked(sound: Dictionary) -> bool:
+	if DailySound.is_free_today(str(sound.get("id", ""))):
+		return true
 	if str(sound.get("tier", "plus")) == "free" or Entitlements.has_plus():
 		return true
 	return Entitlements.is_temp_unlocked(str(sound.get("id", "")))

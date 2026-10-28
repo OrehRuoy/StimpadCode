@@ -40,6 +40,8 @@ func set_enabled(enabled: bool, persist: bool = true) -> void:
 	if persist:
 		LocalPrefs.head_floss_enabled = enabled
 		LocalPrefs.save_prefs()
+		if AudioController.is_playing() and not AudioController.is_previewing():
+			LocalPrefs.capture_playback_session()
 
 
 func is_enabled() -> bool:

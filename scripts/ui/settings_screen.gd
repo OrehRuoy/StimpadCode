@@ -24,6 +24,9 @@ const VERSION_TAP_WINDOW_SEC := 3.0
 
 var _version_taps: int = 0
 var _version_tap_at: float = 0.0
+var _reminder_btn: CheckButton
+var _reminder_time_btn: Button
+var _reminder_guard := false
 
 
 func _ready() -> void:
@@ -51,6 +54,7 @@ func _ready() -> void:
 	_refresh_plus_status()
 	_refresh_toggles()
 	_refresh_ad_privacy_btn(AdsService.privacy_choices_available())
+	_build_reminder_rows()
 
 
 func _on_visibility_changed() -> void:
@@ -58,6 +62,7 @@ func _on_visibility_changed() -> void:
 		_refresh_toggles()
 		_refresh_plus_status()
 		_refresh_ad_privacy_btn(AdsService.privacy_choices_available())
+		_refresh_reminder_rows()
 
 
 func _style_controls() -> void:
@@ -123,6 +128,8 @@ func _on_volume_changed(value: float) -> void:
 func _on_repeat_toggled(pressed: bool) -> void:
 	LocalPrefs.repeat_oneshots = pressed
 	LocalPrefs.save_prefs()
+	if AudioController.is_playing() and not AudioController.is_previewing():
+		LocalPrefs.capture_playback_session()
 	HapticsService.tap()
 
 
@@ -200,3 +207,55 @@ func _on_ad_privacy() -> void:
 
 func _on_back() -> void:
 	get_tree().get_first_node_in_group("main_nav").call("show_home")
+
+
+func _build_reminder_rows() -> void:
+	if not Platform.is_ios() and not OS.has_feature("editor"):
+		return
+	var content := _restore_btn.get_parent()
+	_reminder_btn = CheckButton.new()
+	_reminder_btn.name = "ReminderBtn"
+	_reminder_btn.text = tr("Daily reminder")
+	_reminder_btn.custom_minimum_size = Vector2(0, 54)
+	_reminder_btn.focus_mode = Control.FOCUS_NONE
+	_reminder_time_btn = Button.new()
+	_reminder_time_btn.name = "ReminderTimeBtn"
+	_reminder_time_btn.custom_minimum_size = Vector2(0, 50)
+	_reminder_time_btn.focus_mode = Control.FOCUS_NONE
+	content.add_child(_reminder_btn)
+	content.add_child(_reminder_time_btn)
+	content.move_child(_reminder_btn, _restore_btn.get_index())
+	content.move_child(_reminder_time_btn, _reminder_btn.get_index() + 1)
+	UiLook.style_settings_row(_reminder_btn)
+	UiLook.style_settings_row(_reminder_time_btn)
+	_reminder_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_RELEASE
+	_reminder_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	_reminder_btn.toggled.connect(_on_reminder_toggled)
+	_reminder_time_btn.pressed.connect(_on_reminder_time)
+	ReminderService.reminder_state_changed.connect(_refresh_reminder_rows)
+	_refresh_reminder_rows()
+
+
+func _refresh_reminder_rows() -> void:
+	if _reminder_btn == null:
+		return
+	_reminder_guard = true
+	_reminder_btn.set_pressed_no_signal(LocalPrefs.reminder_enabled)
+	_reminder_guard = false
+	_reminder_time_btn.text = tr("Reminder time  ·  %s") % ReminderService.format_time(
+		LocalPrefs.reminder_hour, LocalPrefs.reminder_minute
+	)
+
+
+func _on_reminder_toggled(pressed: bool) -> void:
+	if _reminder_guard:
+		return
+	if pressed:
+		await ReminderService.enable_from_settings()
+	else:
+		await ReminderService.disable_from_settings()
+	_refresh_reminder_rows()
+
+
+func _on_reminder_time() -> void:
+	ReminderService.pick_time_from_settings()

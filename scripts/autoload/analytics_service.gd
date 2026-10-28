@@ -18,6 +18,7 @@ const _GA4_STRING_DIMENSIONS: Dictionary = {
 	"screen_name": true,
 	"product_id": true,
 	"source": true,
+	"trigger": true,
 	"method": true,
 	"os": true,
 }
@@ -31,6 +32,8 @@ var _queue: Array[Dictionary] = []
 var _queue_open := true
 var _flushing := false
 var _queue_started_msec: int = 0
+var _sound_play_strings_logged := false
+var _pending_user_props: Dictionary = {}
 
 
 func _ready() -> void:
@@ -66,15 +69,13 @@ func log_event(event_name: String, params: Dictionary = {}) -> void:
 		_enqueue(event_name, clean)
 
 
-func log_app_open() -> void:
-	var days := 0
-	if LocalPrefs.first_open_unix > 0:
-		var elapsed := int(Time.get_unix_time_from_system()) - LocalPrefs.first_open_unix
-		days = maxi(0, int(float(elapsed) / 86400.0))
+func log_app_open(source: String = "direct") -> void:
+	var open_source := "reminder" if source == "reminder" else "direct"
 	log_event("app_open", {
 		"app_open_count": LocalPrefs.app_open_count,
 		"has_plus": Entitlements.has_plus(),
-		"days_since_first_open": days,
+		"days_since_first_open": LocalPrefs.days_since_first_open(),
+		"source": open_source,
 	})
 
 
@@ -97,6 +98,12 @@ func log_sound_play(sound: Dictionary) -> void:
 		"content_type": "sound",
 		"item_id": sound_id,
 	}
+	if OS.is_debug_build() and not _sound_play_strings_logged:
+		_sound_play_strings_logged = true
+		print("AnalyticsService sound_play strings sound_id=%s sound_name=%s" % [
+			JSON.stringify(str(params["sound_id"])),
+			JSON.stringify(str(params["sound_name"])),
+		])
 	log_event("sound_play", params)
 	## GA4 recommended event — shows under Engagement → Events more cleanly.
 	log_event("select_content", {
@@ -139,6 +146,7 @@ func _initialize_analytics() -> void:
 		if Platform.is_android():
 			set_user_property("platform", Platform.store_name())
 			set_user_property("app_build", AppInfo.build_number())
+		_flush_user_props()
 		_flush_queue()
 
 
@@ -148,6 +156,7 @@ func _on_fail_open() -> void:
 	if _native == null:
 		_native = _resolve_native()
 	if _native != null:
+		_flush_user_props()
 		_flush_queue()
 
 
@@ -156,6 +165,7 @@ func _on_firebase_ready() -> void:
 	_initialized = true
 	print("AnalyticsService: Firebase initialized")
 	if _native != null:
+		_flush_user_props()
 		_flush_queue()
 
 
@@ -175,6 +185,7 @@ func _retry_native() -> void:
 	if resolved != null:
 		_native = resolved
 		_initialized = true
+		_flush_user_props()
 		_flush_queue()
 		return
 	_arm_native_retry()
@@ -213,6 +224,8 @@ func set_user_property(prop_name: String, prop_value: String) -> void:
 	var value_text := prop_value.strip_edges()
 	if name_key.is_empty():
 		return
+	if OS.has_feature("editor") or not OS.has_feature("mobile"):
+		print("[Analytics] user_property %s=%s" % [name_key, value_text])
 	if Platform.is_android():
 		if _android_bridge == null:
 			return
@@ -221,8 +234,19 @@ func set_user_property(prop_name: String, prop_value: String) -> void:
 		if JavaClassWrapper.get_exception() != null:
 			push_warning("AnalyticsService.set_user_property failed for '%s'" % name_key)
 		return
-	if OS.has_feature("ios") and _native != null and _native.has_method("set_user_property"):
-		_native.set_user_property(name_key, value_text)
+	if OS.has_feature("ios"):
+		if _native != null and _native.has_method("set_user_property"):
+			_native.set_user_property(name_key, value_text)
+		else:
+			_pending_user_props[name_key] = value_text
+
+
+func _flush_user_props() -> void:
+	if _native == null or not _native.has_method("set_user_property"):
+		return
+	for key in _pending_user_props.keys():
+		_native.set_user_property(str(key), str(_pending_user_props[key]))
+	_pending_user_props.clear()
 
 
 func _resolve_native():

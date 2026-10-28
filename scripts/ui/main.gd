@@ -69,14 +69,16 @@ func _ready() -> void:
 	Entitlements.library_unlock_ended.connect(_on_library_unlock_ended)
 	_screens.clip_contents = true
 	_update_banner_inset()
-	AnalyticsService.log_app_open()
-	## Keep splash up until home grid has staggered in — avoids crop flash + mid-load crash.
 	if _home.has_signal("home_content_ready"):
 		_home.home_content_ready.connect(_on_home_content_ready, CONNECT_ONE_SHOT)
 	else:
 		call_deferred("_on_home_content_ready")
 	## If the home grid never signals, the overlay is nearly black. Reveal anyway.
 	get_tree().create_timer(8.0).timeout.connect(_on_boot_timeout, CONNECT_ONE_SHOT)
+	var open_source: String = await ReminderService.prepare_launch_source()
+	AnalyticsService.log_app_open(open_source)
+	if ReminderService.take_highlight() and _home.has_method("focus_daily_sound"):
+		_home.call("focus_daily_sound")
 
 
 func _setup_boot_overlay() -> void:
@@ -106,6 +108,8 @@ func _on_boot_timeout() -> void:
 
 
 func _on_home_content_ready() -> void:
+	if ReminderService.take_highlight() and _home.has_method("focus_daily_sound"):
+		_home.call("focus_daily_sound")
 	_finish_boot(false)
 
 
@@ -122,6 +126,7 @@ func _finish_boot(from_timeout: bool) -> void:
 		await tw.finished
 		_boot_overlay.visible = false
 		_boot_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ReminderService.on_home_settled()
 	## Ads, Play Billing, and Firebase start only after splash is gone.
 	AdsService.notify_ui_ready()
 	IAPService.ensure_store_started()
@@ -157,6 +162,7 @@ func show_home(count_safe_exit: bool = true) -> void:
 	AnalyticsService.log_screen("home")
 	EnjoyPromptService.on_returned_home()
 	FeatureTipService.on_returned_home()
+	ReminderService.on_home_settled()
 
 
 func show_player(sound: Dictionary) -> void:
@@ -195,6 +201,12 @@ func show_paywall(for_sound: Dictionary = {}, reason: String = "") -> void:
 		"sound_id": str(for_sound.get("id", "")),
 	})
 	AnalyticsService.log_screen("paywall")
+
+
+func open_from_reminder() -> void:
+	show_home(false)
+	if _home.has_method("focus_daily_sound"):
+		_home.call("focus_daily_sound")
 
 
 func show_feedback(return_to_settings: bool = true) -> void:
@@ -269,6 +281,9 @@ func _notification(what: int) -> void:
 func _on_android_back() -> void:
 	if EnjoyPromptService.is_showing():
 		EnjoyPromptService.dismiss()
+		return
+	if ReminderService.is_showing():
+		ReminderService.dismiss()
 		return
 	if FeatureTipService.is_showing():
 		FeatureTipService.dismiss()
