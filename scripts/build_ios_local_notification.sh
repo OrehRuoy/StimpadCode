@@ -100,9 +100,10 @@ for cfg in debug release; do
 done
 
 LIB="$OUT/LocalNotificationPlugin.release.xcframework/ios-arm64/LocalNotificationPlugin.a"
-syms="$(nm -gU "$LIB" 2>/dev/null || true)"
-if ! printf '%s\n' "$syms" | grep -c local_notification_init >/dev/null; then
-  echo "missing local_notification_init in $LIB"
+raw="$(nm -gU "$LIB" 2>/dev/null || true)"
+syms="$(printf '%s\n' "$raw" | c++filt || true)"
+if ! printf '%s\n' "$syms" | grep -c 'local_notification_init()' >/dev/null; then
+  echo "missing local_notification_init() in $LIB"
   exit 1
 fi
 echo "LocalNotificationPlugin xcframeworks ready"

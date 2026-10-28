@@ -222,11 +222,11 @@ static void StimPadWriteJSON(NSString *name, NSDictionary *payload) {
 
 @end
 
-extern "C" void local_notification_init(void) {
+void local_notification_init() {
 	[StimPadLocalNotifications.shared start];
 }
 
-extern "C" void local_notification_deinit(void) {
+void local_notification_deinit() {
 }
 
 __attribute__((constructor)) static void stim_pad_local_notifications_boot(void) {
