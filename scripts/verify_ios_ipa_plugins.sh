@@ -68,5 +68,17 @@ for lang in en de fr es pt-BR ja; do
     exit 1
   fi
 done
+while IFS= read -r dir; do
+  base=$(basename "$dir" .lproj)
+  case "$base" in
+    en|de|fr|es|pt-BR|ja) ;;
+    *)
+      echo "unexpected localization $dir"
+      exit 1
+      ;;
+  esac
+done <<EOF
+$(find "$APP" -type d -name '*.lproj')
+EOF
 echo "Store languages present: en de fr es pt-BR ja"
 echo "IPA plugin verification passed"

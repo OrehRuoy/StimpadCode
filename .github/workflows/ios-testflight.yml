@@ -286,6 +286,15 @@ jobs:
             XCODE_ARGS=(-project build/StimPad.xcodeproj)
           fi
           python3 tools/ios/patch_xcode_signing.py build "$PROFILE_NAME"
+          # Google Sign-In ships many .lproj folders. App Store Connect counts those
+          # inside the .app, so keep only the StimPad store languages.
+          find build \( -path '*.bundle/*' -o -path '*.framework/*' \) -type d -name '*.lproj' | while IFS= read -r dir; do
+            base=$(basename "$dir" .lproj)
+            case "$base" in
+              en|de|fr|es|pt-BR|ja) ;;
+              *) rm -rf "$dir"; echo "Removed $dir" ;;
+            esac
+          done
           # Keep Firebase symbols exported; Release strip causes dyld crash on launch.
           xcodebuild "${XCODE_ARGS[@]}" \
             -scheme StimPad \
@@ -302,6 +311,13 @@ jobs:
             archive
           APP_DIR="build/StimPad.xcarchive/Products/Applications/StimPad.app"
           python3 tools/ios/add_store_localizations.py --verify-app "$APP_DIR"
+          find "$APP_DIR" \( -path '*.bundle/*' -o -path '*.framework/*' \) -type d -name '*.lproj' | while IFS= read -r dir; do
+            base=$(basename "$dir" .lproj)
+            case "$base" in
+              en|de|fr|es|pt-BR|ja) ;;
+              *) rm -rf "$dir"; echo "Removed $dir" ;;
+            esac
+          done
           APP_BIN="$APP_DIR/StimPad"
           test -f "$APP_BIN"
           EXPORTED=$(nm -gU "$APP_BIN" 2>/dev/null | grep -c 'FirebaseAuth\|FIRApp\|FirebaseCore' || true)
