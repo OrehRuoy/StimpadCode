@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       run_macos_export:
-        description: "Run macOS export + TestFlight upload"
+        description: "Run macOS export"
+        required: true
+        type: boolean
+        default: false
+      upload_to_testflight:
+        description: "Upload the IPA to App Store Connect (TestFlight). Leave false to build only."
         required: true
         type: boolean
         default: false
@@ -78,6 +83,10 @@ jobs:
           test -f tools/ios/inject_firebase_force_load.sh
           test -f tools/ios/GodotFirebaseiOS_export_plugin.gd
           test -f tools/ios/patch_xcode_signing.py
+          test -f tools/ios/add_store_localizations.py
+          python3 tools/ios/add_store_localizations.py --self-test
+          grep -q 'CFBundleLocalizations' export_presets.cfg
+          grep -q '>pt-BR<' export_presets.cfg
           grep -q 'res://addons/AdmobPlugin/plugin.cfg' project.godot
           grep -q 'res://addons/GodotFirebaseiOS/plugin.cfg' project.godot
           grep -q 'res://addons/LocalNotificationPlugin/plugin.cfg' project.godot
@@ -251,6 +260,7 @@ jobs:
               || { echo "ERROR: -Wl,-U,_swift_entry_point missing"; exit 1; }
           fi
           echo "Firebase force_load injection OK"
+          python3 tools/ios/add_store_localizations.py build
           ls -la build/
 
       - name: Archive and export IPA
@@ -288,7 +298,9 @@ jobs:
             COPY_PHASE_STRIP=NO \
             STRIP_STYLE=non-global \
             archive
-          APP_BIN="build/StimPad.xcarchive/Products/Applications/StimPad.app/StimPad"
+          APP_DIR="build/StimPad.xcarchive/Products/Applications/StimPad.app"
+          python3 tools/ios/add_store_localizations.py --verify-app "$APP_DIR"
+          APP_BIN="$APP_DIR/StimPad"
           test -f "$APP_BIN"
           EXPORTED=$(nm -gU "$APP_BIN" 2>/dev/null | grep -c 'FirebaseAuth\|FIRApp\|FirebaseCore' || true)
           echo "Firebase symbols exported by app binary: $EXPORTED"
@@ -315,6 +327,7 @@ jobs:
           retention-days: 7
 
       - name: Upload to TestFlight
+        if: ${{ inputs.upload_to_testflight }}
         env:
           APPLE_ID_USERNAME: ${{ secrets.APPLE_ID_USERNAME }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}

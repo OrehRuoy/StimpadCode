@@ -49,4 +49,24 @@ if /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$APP/Info
 else
   echo "::warning::NSUserTrackingUsageDescription missing from Info.plist"
 fi
+# App Store Connect Languages is the .lproj set inside the .app, plus CFBundleLocalizations.
+for lang in en de fr es pt-BR ja; do
+  if [ ! -f "$APP/$lang.lproj/InfoPlist.strings" ]; then
+    echo "missing $lang.lproj/InfoPlist.strings"
+    exit 1
+  fi
+done
+LOC_DUMP=$(/usr/libexec/PlistBuddy -c "Print :CFBundleLocalizations" "$APP/Info.plist" 2>/dev/null || true)
+if [ -z "$LOC_DUMP" ]; then
+  echo "CFBundleLocalizations missing from Info.plist"
+  exit 1
+fi
+for lang in en de fr es pt-BR ja; do
+  if ! printf '%s\n' "$LOC_DUMP" | grep -Eq "^[[:space:]]+${lang//-/\\-}$"; then
+    echo "CFBundleLocalizations missing $lang"
+    printf '%s\n' "$LOC_DUMP"
+    exit 1
+  fi
+done
+echo "Store languages present: en de fr es pt-BR ja"
 echo "IPA plugin verification passed"
