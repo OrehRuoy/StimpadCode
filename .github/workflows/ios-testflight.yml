@@ -179,8 +179,10 @@ jobs:
         run: |
           GAP_DIR="$RUNNER_TEMP/gap"
           mkdir -p "$GAP_DIR/download"
+          # Same pin as before. migueldeicaza/GodotApplePlugins no longer publishes
+          # these release zips; xibbon still hosts build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65.
           gh release download "build-3781b9c19eaf69b2387eacecf4b6f88fc8d07e65" \
-            --repo migueldeicaza/GodotApplePlugins --pattern "*.zip" --dir "$GAP_DIR/download"
+            --repo xibbon/GodotApplePlugins --pattern "*.zip" --dir "$GAP_DIR/download"
           unzip -q "$GAP_DIR"/download/*.zip -d "$GAP_DIR/extracted"
           ADDONS_SRC=$(find "$GAP_DIR/extracted" -type d -name "addons" | head -n 1)
           if [ -z "$ADDONS_SRC" ]; then
