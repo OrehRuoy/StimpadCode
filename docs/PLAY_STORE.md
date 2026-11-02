@@ -13,7 +13,7 @@ The Play preset uses `gradle_build/export_format=1`, arm64-v8a only, and target 
 
 ## Version code
 
-`version/name` is `1.0.5`. Both Android presets use `version/code=7` for the next Play upload. Version code 6 was the previous build. The next App Store short version is still 1.0.6.
+`version/name` is `1.0.9`. Both Android presets use `version/code=12` for the next Play upload. Version code 11 was the previous preset. The next App Store short version is 1.0.9.
 
 ## Signing
 

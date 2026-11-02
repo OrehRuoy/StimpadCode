@@ -2,6 +2,10 @@ extends RefCounted
 class_name AppInfo
 ## Shared app identity helpers for feedback / diagnostics.
 
+## SensorFit opens this Play developer page from Settings. Not the portfolio site.
+const DEVELOPER_PLAY_STORE_URL := "https://play.google.com/store/apps/developer?id=OrehRuoy"
+const DEVELOPER_APP_STORE_URL := "https://apps.apple.com/developer/id6789963001"
+
 
 static func store_label() -> String:
 	var store := Platform.store_name()
@@ -32,6 +36,12 @@ static func build_number() -> String:
 	if build.is_empty():
 		build = version_name()
 	return build
+
+
+static func developer_store_url() -> String:
+	if OS.get_name() == "iOS":
+		return DEVELOPER_APP_STORE_URL
+	return DEVELOPER_PLAY_STORE_URL
 
 
 static func version_line() -> String:
