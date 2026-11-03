@@ -118,12 +118,12 @@
     "pt_BR": "Todas as categorias",
     "ja": "すべてのカテゴリ"
   },
-  "One purchase unlocks StimPad and Taptico": {
-    "de": "Ein Kauf schaltet StimPad und Taptico frei",
-    "es": "Una compra desbloquea StimPad y Taptico",
-    "fr": "Un achat débloque StimPad et Taptico",
-    "pt_BR": "Uma compra desbloqueia StimPad e Taptico",
-    "ja": "1回の購入でStimPadとTapticoを解除"
+  "One purchase unlocks StimPad": {
+    "de": "Ein Kauf schaltet StimPad frei",
+    "es": "Una compra desbloquea StimPad",
+    "fr": "Un achat débloque StimPad",
+    "pt_BR": "Uma compra desbloqueia o StimPad",
+    "ja": "1回の購入でStimPadを解除"
   },
   "Already sending…": {
     "de": "Wird schon gesendet…",
@@ -1525,12 +1525,12 @@
     "pt_BR": "Produto desconhecido",
     "ja": "不明な商品"
   },
-  "\"%s\" is a Plus sound. Buying unlocks StimPad and Taptico.": {
-    "de": "„%s“ ist ein Plus-Sound. Der Kauf schaltet StimPad und Taptico frei.",
-    "es": "\"%s\" es un sonido Plus. Comprar desbloquea StimPad y Taptico.",
-    "fr": "« %s » est un son Plus. L’achat débloque StimPad et Taptico.",
-    "pt_BR": "\"%s\" é um som Plus. A compra desbloqueia StimPad e Taptico.",
-    "ja": "「%s」は Plus の音です。購入するとStimPadとTapticoを解除します。"
+  "\"%s\" is a Plus sound. Buying unlocks StimPad.": {
+    "de": "„%s“ ist ein Plus-Sound. Der Kauf schaltet StimPad frei.",
+    "es": "\"%s\" es un sonido Plus. Comprar desbloquea StimPad.",
+    "fr": "« %s » est un son Plus. L’achat débloque StimPad.",
+    "pt_BR": "\"%s\" é um som Plus. A compra desbloqueia o StimPad.",
+    "ja": "「%s」は Plus の音です。購入するとStimPadを解除します。"
   },
   "Checking your purchases…": {
     "de": "Käufe werden geprüft…",
@@ -1546,12 +1546,12 @@
     "pt_BR": "Volte amanhã ou pegue o Plus",
     "ja": "明日また来るか、Plus を入手してください"
   },
-  "Everything is open for now. One purchase keeps StimPad and Taptico unlocked, with no ads.": {
-    "de": "Gerade ist alles offen. Ein Kauf behält StimPad und Taptico, ohne Werbung.",
-    "es": "Todo está abierto por ahora. Una compra mantiene StimPad y Taptico desbloqueados, sin anuncios.",
-    "fr": "Tout est ouvert pour le moment. Un achat garde StimPad et Taptico débloqués, sans pub.",
-    "pt_BR": "Está tudo aberto por agora. Uma compra mantém StimPad e Taptico desbloqueados, sem anúncios.",
-    "ja": "今はすべて開けています。1回の購入でStimPadとTapticoを広告なしのまま残せます。"
+  "Everything is open for now. One purchase keeps StimPad unlocked, with no ads.": {
+    "de": "Gerade ist alles offen. Ein Kauf behält StimPad, ohne Werbung.",
+    "es": "Todo está abierto por ahora. Una compra mantiene StimPad desbloqueado, sin anuncios.",
+    "fr": "Tout est ouvert pour le moment. Un achat garde StimPad débloqué, sans pub.",
+    "pt_BR": "Está tudo aberto por agora. Uma compra mantém o StimPad desbloqueado, sem anúncios.",
+    "ja": "今はすべて開けています。1回の購入でStimPadを広告なしのまま残せます。"
   },
   "No purchase found for this Apple ID.": {
     "de": "Kein Kauf für diese Apple-ID gefunden.",
@@ -1602,12 +1602,12 @@
     "pt_BR": "Prévia · %s",
     "ja": "プレビュー · %s"
   },
-  "Buying unlocks StimPad and Taptico: all %d sounds (%d free, %d with Plus) and no ads.": {
-    "de": "Ein Kauf schaltet StimPad und Taptico frei: alle %d Sounds (%d kostenlos, %d mit Plus) und keine Werbung.",
-    "es": "Comprar desbloquea StimPad y Taptico: los %d sonidos (%d gratis, %d con Plus) y sin anuncios.",
-    "fr": "L’achat débloque StimPad et Taptico : les %d sons (%d gratuits, %d avec Plus) et sans pub.",
-    "pt_BR": "A compra desbloqueia StimPad e Taptico: todos os %d sons (%d grátis, %d com Plus) e sem anúncios.",
-    "ja": "購入するとStimPadとTapticoを解除：全%d音（無料%d、Plusで%d）、広告なし。"
+  "Buying unlocks StimPad: all %d sounds (%d free, %d with Plus) and no ads.": {
+    "de": "Ein Kauf schaltet StimPad frei: alle %d Sounds (%d kostenlos, %d mit Plus) und keine Werbung.",
+    "es": "Comprar desbloquea StimPad: los %d sonidos (%d gratis, %d con Plus) y sin anuncios.",
+    "fr": "L’achat débloque StimPad : les %d sons (%d gratuits, %d avec Plus) et sans pub.",
+    "pt_BR": "A compra desbloqueia o StimPad: todos os %d sons (%d grátis, %d com Plus) e sem anúncios.",
+    "ja": "購入するとStimPadを解除：全%d音（無料%d、Plusで%d）、広告なし。"
   },
   "Unlock all": {
     "de": "Alles frei",
@@ -1770,12 +1770,12 @@
     "pt_BR": "Sim",
     "ja": "はい"
   },
-  "You have StimPad Plus. StimPad and Taptico are unlocked, and ads are removed.": {
-    "de": "Du hast StimPad Plus. StimPad und Taptico sind frei, und die Werbung ist weg.",
-    "es": "Tienes StimPad Plus. StimPad y Taptico están desbloqueados y no hay anuncios.",
-    "fr": "Vous avez StimPad Plus. StimPad et Taptico sont débloqués, sans pub.",
-    "pt_BR": "Você tem o StimPad Plus. StimPad e Taptico estão desbloqueados, sem anúncios.",
-    "ja": "StimPad Plusを利用中です。StimPadとTapticoが解除され、広告はありません。"
+  "You have StimPad Plus. StimPad is unlocked, and ads are removed.": {
+    "de": "Du hast StimPad Plus. StimPad ist frei, und die Werbung ist weg.",
+    "es": "Tienes StimPad Plus. StimPad está desbloqueado y no hay anuncios.",
+    "fr": "Vous avez StimPad Plus. StimPad est débloqué, sans pub.",
+    "pt_BR": "Você tem o StimPad Plus. O StimPad está desbloqueado, sem anúncios.",
+    "ja": "StimPad Plusを利用中です。StimPadが解除され、広告はありません。"
   },
   "You're all set": {
     "de": "Alles bereit",

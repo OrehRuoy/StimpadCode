@@ -207,33 +207,33 @@ module.exports = {
   "Retro": row("Retro", "Retro", "Rétro", "Retrô", "レトロ"),
   "Misc": row("Sonstiges", "Varios", "Divers", "Outros", "その他"),
   "StimPad Plus": row("StimPad Plus", "StimPad Plus", "StimPad Plus", "StimPad Plus", "StimPad Plus"),
-  "One purchase unlocks StimPad and Taptico": row(
-    "Ein Kauf schaltet StimPad und Taptico frei",
-    "Una compra desbloquea StimPad y Taptico",
-    "Un achat débloque StimPad et Taptico",
-    "Uma compra desbloqueia StimPad e Taptico",
-    "1回の購入でStimPadとTapticoを解除"
+  "One purchase unlocks StimPad": row(
+    "Ein Kauf schaltet StimPad frei",
+    "Una compra desbloquea StimPad",
+    "Un achat débloque StimPad",
+    "Uma compra desbloqueia o StimPad",
+    "1回の購入でStimPadを解除"
   ),
-  "Buying unlocks StimPad and Taptico: all %d sounds (%d free, %d with Plus) and no ads.": row(
-    "Ein Kauf schaltet StimPad und Taptico frei: alle %d Sounds (%d kostenlos, %d mit Plus) und keine Werbung.",
-    "Comprar desbloquea StimPad y Taptico: los %d sonidos (%d gratis, %d con Plus) y sin anuncios.",
-    "L’achat débloque StimPad et Taptico : les %d sons (%d gratuits, %d avec Plus) et sans pub.",
-    "A compra desbloqueia StimPad e Taptico: todos os %d sons (%d grátis, %d com Plus) e sem anúncios.",
-    "購入するとStimPadとTapticoを解除：全%d音（無料%d、Plusで%d）、広告なし。"
+  "Buying unlocks StimPad: all %d sounds (%d free, %d with Plus) and no ads.": row(
+    "Ein Kauf schaltet StimPad frei: alle %d Sounds (%d kostenlos, %d mit Plus) und keine Werbung.",
+    "Comprar desbloquea StimPad: los %d sonidos (%d gratis, %d con Plus) y sin anuncios.",
+    "L’achat débloque StimPad : les %d sons (%d gratuits, %d avec Plus) et sans pub.",
+    "A compra desbloqueia o StimPad: todos os %d sons (%d grátis, %d com Plus) e sem anúncios.",
+    "購入するとStimPadを解除：全%d音（無料%d、Plusで%d）、広告なし。"
   ),
-  "\"%s\" is a Plus sound. Buying unlocks StimPad and Taptico.": row(
-    "„%s“ ist ein Plus-Sound. Der Kauf schaltet StimPad und Taptico frei.",
-    "\"%s\" es un sonido Plus. Comprar desbloquea StimPad y Taptico.",
-    "« %s » est un son Plus. L’achat débloque StimPad et Taptico.",
-    "\"%s\" é um som Plus. A compra desbloqueia StimPad e Taptico.",
-    "「%s」は Plus の音です。購入するとStimPadとTapticoを解除します。"
+  "\"%s\" is a Plus sound. Buying unlocks StimPad.": row(
+    "„%s“ ist ein Plus-Sound. Der Kauf schaltet StimPad frei.",
+    "\"%s\" es un sonido Plus. Comprar desbloquea StimPad.",
+    "« %s » est un son Plus. L’achat débloque StimPad.",
+    "\"%s\" é um som Plus. A compra desbloqueia o StimPad.",
+    "「%s」は Plus の音です。購入するとStimPadを解除します。"
   ),
-  "Everything is open for now. One purchase keeps StimPad and Taptico unlocked, with no ads.": row(
-    "Gerade ist alles offen. Ein Kauf behält StimPad und Taptico, ohne Werbung.",
-    "Todo está abierto por ahora. Una compra mantiene StimPad y Taptico desbloqueados, sin anuncios.",
-    "Tout est ouvert pour le moment. Un achat garde StimPad et Taptico débloqués, sans pub.",
-    "Está tudo aberto por agora. Uma compra mantém StimPad e Taptico desbloqueados, sem anúncios.",
-    "今はすべて開けています。1回の購入でStimPadとTapticoを広告なしのまま残せます。"
+  "Everything is open for now. One purchase keeps StimPad unlocked, with no ads.": row(
+    "Gerade ist alles offen. Ein Kauf behält StimPad, ohne Werbung.",
+    "Todo está abierto por ahora. Una compra mantiene StimPad desbloqueado, sin anuncios.",
+    "Tout est ouvert pour le moment. Un achat garde StimPad débloqué, sans pub.",
+    "Está tudo aberto por agora. Uma compra mantém o StimPad desbloqueado, sem anúncios.",
+    "今はすべて開けています。1回の購入でStimPadを広告なしのまま残せます。"
   ),
   "More by OrehRuoy": row(
     "Mehr von OrehRuoy",
@@ -256,12 +256,12 @@ module.exports = {
   "$4.99 · one-time": row("4,99 $ · einmalig", "4,99 $ · un solo pago", "4,99 $ · une fois", "US$ 4,99 · único", "$4.99 · 1回"),
   "%s · one-time": row("%s · einmalig", "%s · un solo pago", "%s · une fois", "%s · único", "%s · 1回"),
   "You're all set": row("Alles bereit", "Todo listo", "C’est prêt", "Tudo pronto", "準備できました"),
-  "You have StimPad Plus. StimPad and Taptico are unlocked, and ads are removed.": row(
-    "Du hast StimPad Plus. StimPad und Taptico sind frei, und die Werbung ist weg.",
-    "Tienes StimPad Plus. StimPad y Taptico están desbloqueados y no hay anuncios.",
-    "Vous avez StimPad Plus. StimPad et Taptico sont débloqués, sans pub.",
-    "Você tem o StimPad Plus. StimPad e Taptico estão desbloqueados, sem anúncios.",
-    "StimPad Plusを利用中です。StimPadとTapticoが解除され、広告はありません。"
+  "You have StimPad Plus. StimPad is unlocked, and ads are removed.": row(
+    "Du hast StimPad Plus. StimPad ist frei, und die Werbung ist weg.",
+    "Tienes StimPad Plus. StimPad está desbloqueado y no hay anuncios.",
+    "Vous avez StimPad Plus. StimPad est débloqué, sans pub.",
+    "Você tem o StimPad Plus. O StimPad está desbloqueado, sem anúncios.",
+    "StimPad Plusを利用中です。StimPadが解除され、広告はありません。"
   ),
   "Owned": row("Gekauft", "Comprado", "Acheté", "Comprado", "購入済み"),
   "Unlock \"%s\" or go Plus": row("„%s“ freischalten oder Plus holen", "Desbloquea «%s» o pasa a Plus", "Débloquez « %s » ou passez à Plus", "Desbloqueie “%s” ou assine o Plus", "「%s」を解除するか Plus にする"),

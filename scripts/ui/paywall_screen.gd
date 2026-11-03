@@ -227,7 +227,7 @@ func _library_clock() -> String:
 func _all_sounds_status() -> String:
 	var total := SoundCatalog.sounds.size()
 	var free_count := SoundCatalog.get_free_sounds().size()
-	return tr("Buying unlocks StimPad and Taptico: all %d sounds (%d free, %d with Plus) and no ads.") % [total, free_count, total - free_count]
+	return tr("Buying unlocks StimPad: all %d sounds (%d free, %d with Plus) and no ads.") % [total, free_count, total - free_count]
 
 
 func _refresh() -> void:
@@ -243,7 +243,7 @@ func _refresh() -> void:
 
 	if Entitlements.has_plus():
 		_subtitle.text = tr("You're all set")
-		_status.text = tr("You have StimPad Plus. StimPad and Taptico are unlocked, and ads are removed.")
+		_status.text = tr("You have StimPad Plus. StimPad is unlocked, and ads are removed.")
 		_price_label.text = tr("Owned")
 		_set_watch_visible(false)
 		_sync_house_offer_button()
@@ -253,7 +253,7 @@ func _refresh() -> void:
 
 	if Entitlements.is_library_unlocked():
 		_subtitle.text = tr("Plus unlocked: %s left") % _library_clock()
-		_status.text = tr("Everything is open for now. One purchase keeps StimPad and Taptico unlocked, with no ads.")
+		_status.text = tr("Everything is open for now. One purchase keeps StimPad unlocked, with no ads.")
 		_set_watch_visible(false)
 		_sync_house_offer_button()
 		_reveal_actions()
@@ -264,16 +264,16 @@ func _refresh() -> void:
 	_watch_hint.text = tr("Plus free for 20 min")
 	_set_watch_visible(AdsService.can_offer_rewarded())
 	if _open_reason == "library_window_ended":
-		_subtitle.text = tr("One purchase unlocks StimPad and Taptico")
+		_subtitle.text = tr("One purchase unlocks StimPad")
 		_status.text = tr("Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.")
 	elif Entitlements.library_used_today() or not Entitlements.can_start_library_unlock():
-		_subtitle.text = tr("\"%s\" is a Plus sound. Buying unlocks StimPad and Taptico.") % sound_name if has_focus else tr("One purchase unlocks StimPad and Taptico")
+		_subtitle.text = tr("\"%s\" is a Plus sound. Buying unlocks StimPad.") % sound_name if has_focus else tr("One purchase unlocks StimPad")
 		_status.text = tr("Come back tomorrow or get Plus")
 	elif has_focus:
-		_subtitle.text = tr("\"%s\" is a Plus sound. Buying unlocks StimPad and Taptico.") % sound_name
+		_subtitle.text = tr("\"%s\" is a Plus sound. Buying unlocks StimPad.") % sound_name
 		_status.text = tr("Watch one ad and every sound is open for 20 minutes today. Or get Plus for good.")
 	else:
-		_subtitle.text = tr("One purchase unlocks StimPad and Taptico")
+		_subtitle.text = tr("One purchase unlocks StimPad")
 		_status.text = _all_sounds_status()
 	_sync_house_offer_button()
 	_reveal_actions()
