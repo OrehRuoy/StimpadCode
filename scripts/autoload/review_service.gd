@@ -30,6 +30,10 @@ func request_review() -> bool:
 	if OS.has_feature("ios"):
 		return _request_ios_sheet()
 	if OS.has_feature("android"):
+		if not Engine.has_singleton("InappReviewPlugin"):
+			print("[ReviewService] path=unavailable reason=plugin_missing platform=android")
+			AnalyticsService.log_event("review_request_unavailable", {"reason": "plugin_missing", "os": "android"})
+			return false
 		_start_android_review(false)
 		return true
 	print("[ReviewService] In-app review (editor/desktop stub)")

@@ -56,6 +56,7 @@ var _play_again_caption: Label
 var _play_again_scroll: ScrollContainer
 var _play_again_box: HBoxContainer
 var _library_label: Label
+var _reward_offer: Button
 var _pending_focus_id := ""
 var _focus_tries := 0
 
@@ -79,6 +80,9 @@ func _ready() -> void:
 	Entitlements.temp_unlocks_changed.connect(_refresh_grid)
 	Entitlements.temp_unlocks_changed.connect(_rebuild_play_again)
 	Entitlements.temp_unlocks_changed.connect(_refresh_library_banner)
+	Entitlements.temp_unlocks_changed.connect(_refresh_reward_offer)
+	AdsService.rewarded_became_ready.connect(func() -> void: _refresh_reward_offer())
+	AdsService.privacy_choices_availability_changed.connect(func(_available: bool) -> void: _refresh_reward_offer())
 	visibility_changed.connect(_on_home_visibility_changed)
 	SoundCatalog.catalog_loaded.connect(_rebuild_filters)
 	SoundCatalog.catalog_loaded.connect(_refresh_grid)
@@ -188,6 +192,7 @@ func _on_plus_changed(is_plus: bool) -> void:
 	_apply_responsive_layout()
 	_refresh_grid()
 	_rebuild_play_again()
+	_refresh_reward_offer()
 
 
 func _apply_responsive_layout() -> void:
@@ -236,6 +241,7 @@ func _layout_header(vs: Vector2, margins: Vector4) -> void:
 		brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_corner_spacer.custom_minimum_size = Vector2(0, icon_s)
 	_top_bar.custom_minimum_size = Vector2(0, icon_s + 8.0 + logo_h)
+	_place_reward_chip(icon_s)
 	var side := maxf(margins.x, margins.z)
 	_plus_btn.offset_left = side
 	_plus_btn.offset_right = side + icon_s
@@ -580,8 +586,78 @@ func _build_library_banner() -> void:
 	var vbox := _category_select.get_parent()
 	vbox.add_child(_library_label)
 	vbox.move_child(_library_label, _category_select.get_index() + 1)
+	_build_reward_chip()
 	_refresh_library_banner()
+	_refresh_reward_offer()
 	set_process(true)
+
+
+func _build_reward_chip() -> void:
+	## Sits in the header band that already clears the Plus and Settings buttons.
+	## It does not add a row above the sound grid.
+	_reward_offer = Button.new()
+	_reward_offer.name = "RewardOffer"
+	_reward_offer.focus_mode = Control.FOCUS_NONE
+	_reward_offer.clip_text = true
+	_reward_offer.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_reward_offer.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_reward_offer.custom_minimum_size = Vector2(0, 22)
+	_style_reward_chip(_reward_offer)
+	_reward_offer.pressed.connect(_on_reward_offer_pressed)
+	_corner_spacer.add_child(_reward_offer)
+	_corner_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_place_reward_chip(44.0)
+
+
+func _style_reward_chip(btn: Button) -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.16, 0.22, 0.94)
+	style.border_color = Color(0.45, 0.86, 0.74, 0.75)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(11)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 1
+	style.content_margin_bottom = 1
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		btn.add_theme_stylebox_override(state, style)
+	btn.add_theme_font_size_override("font_size", 12)
+	btn.add_theme_color_override("font_color", Color(0.93, 0.98, 0.96, 1))
+	btn.add_theme_color_override("font_hover_color", Color(0.93, 0.98, 0.96, 1))
+	btn.add_theme_color_override("font_pressed_color", Color(0.93, 0.98, 0.96, 1))
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+func _place_reward_chip(icon_s: float) -> void:
+	if _reward_offer == null:
+		return
+	var gap := 6.0
+	_reward_offer.anchor_left = 0.0
+	_reward_offer.anchor_right = 1.0
+	_reward_offer.anchor_top = 0.5
+	_reward_offer.anchor_bottom = 0.5
+	_reward_offer.offset_left = icon_s + gap
+	_reward_offer.offset_right = -(icon_s + gap)
+	_reward_offer.offset_top = -12.0
+	_reward_offer.offset_bottom = 12.0
+	_reward_offer.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_fit_reward_chip_text()
+
+
+func _fit_reward_chip_text() -> void:
+	if _reward_offer == null or not _reward_offer.visible:
+		return
+	var full := tr("Watch an ad · 20 min of every sound")
+	var short := tr("Watch an ad · 20 min")
+	_reward_offer.text = full
+	var font := _reward_offer.get_theme_font("font")
+	var font_size := _reward_offer.get_theme_font_size("font_size")
+	if font == null:
+		return
+	var text_w := font.get_string_size(full, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var inner := _reward_offer.size.x - 20.0
+	if inner > 8.0 and text_w > inner:
+		_reward_offer.text = short
 
 
 func _process(_delta: float) -> void:
@@ -609,6 +685,40 @@ func _library_clock() -> String:
 func _on_home_visibility_changed() -> void:
 	if visible:
 		_rebuild_play_again()
+		AdsService.prepare_rewarded_offer()
+		_refresh_reward_offer()
+
+
+func _refresh_reward_offer() -> void:
+	if _reward_offer == null:
+		return
+	## One quiet row on Home. Plus, today's used unlock, and a consent block hide it.
+	var show := (
+		not Entitlements.has_plus()
+		and Entitlements.can_start_library_unlock()
+		and AdsService.can_offer_rewarded()
+	)
+	_reward_offer.visible = show
+	if show:
+		_fit_reward_chip_text()
+
+
+func debug_set_reward_offer(on: bool) -> void:
+	if _reward_offer == null:
+		return
+	_reward_offer.visible = on
+	if on:
+		_fit_reward_chip_text()
+
+
+func refit_reward_chip() -> void:
+	_fit_reward_chip_text()
+
+
+func _on_reward_offer_pressed() -> void:
+	var nav := get_tree().get_first_node_in_group("main_nav")
+	if nav != null and nav.has_method("show_paywall"):
+		nav.call("show_paywall", {}, "reward_offer", true)
 
 
 func _build_play_again() -> void:
