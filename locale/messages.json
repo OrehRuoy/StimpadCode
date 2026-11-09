@@ -69,6 +69,13 @@
     "pt_BR": "Área do anúncio (prévia)",
     "ja": "広告エリア（プレビュー）"
   },
+  "Ad ready — tap Watch Ad": {
+    "de": "Werbung bereit — tippe auf Werbung ansehen",
+    "es": "Anuncio listo — toca Ver anuncio",
+    "fr": "Pub prête — touchez Voir la pub",
+    "pt_BR": "Anúncio pronto — toque em Assistir anúncio",
+    "ja": "広告の準備ができました — 広告を見るをタップ"
+  },
   "Ad is still loading — try again in a moment.": {
     "de": "Die Werbung lädt noch — gleich noch einmal versuchen.",
     "es": "El anuncio aún se carga. Prueba en un momento.",
@@ -1699,6 +1706,13 @@
     "fr": "Envie d’un éclat doux quand vous touchez ? Activez Ondes au toucher dans Réglages.",
     "pt_BR": "Quer um brilho suave ao tocar? Ative Ondas ao tocar em Ajustes.",
     "ja": "タップしたときに柔らかい光が欲しいときは、設定でタップの波紋をオンにしてください。"
+  },
+  "Watch an ad · 20 min of every sound": {
+    "de": "Werbung ansehen · 20 Min. alle Sounds",
+    "es": "Ver un anuncio · 20 min de cada sonido",
+    "fr": "Voir une pub · 20 min de chaque son",
+    "pt_BR": "Ver um anúncio · 20 min de cada som",
+    "ja": "広告を見る · すべての音が20分"
   },
   "Watch one ad and every sound is open for 20 minutes today. Or get Plus for good.": {
     "de": "Schau eine Werbung und alle Sounds sind heute 20 Minuten offen. Oder hol Plus für immer.",

@@ -56,6 +56,7 @@ var _play_again_caption: Label
 var _play_again_scroll: ScrollContainer
 var _play_again_box: HBoxContainer
 var _library_label: Label
+var _reward_offer: Button
 var _pending_focus_id := ""
 var _focus_tries := 0
 
@@ -79,6 +80,9 @@ func _ready() -> void:
 	Entitlements.temp_unlocks_changed.connect(_refresh_grid)
 	Entitlements.temp_unlocks_changed.connect(_rebuild_play_again)
 	Entitlements.temp_unlocks_changed.connect(_refresh_library_banner)
+	Entitlements.temp_unlocks_changed.connect(_refresh_reward_offer)
+	AdsService.rewarded_became_ready.connect(func() -> void: _refresh_reward_offer())
+	AdsService.privacy_choices_availability_changed.connect(func(_available: bool) -> void: _refresh_reward_offer())
 	visibility_changed.connect(_on_home_visibility_changed)
 	SoundCatalog.catalog_loaded.connect(_rebuild_filters)
 	SoundCatalog.catalog_loaded.connect(_refresh_grid)
@@ -188,6 +192,7 @@ func _on_plus_changed(is_plus: bool) -> void:
 	_apply_responsive_layout()
 	_refresh_grid()
 	_rebuild_play_again()
+	_refresh_reward_offer()
 
 
 func _apply_responsive_layout() -> void:
@@ -580,7 +585,19 @@ func _build_library_banner() -> void:
 	var vbox := _category_select.get_parent()
 	vbox.add_child(_library_label)
 	vbox.move_child(_library_label, _category_select.get_index() + 1)
+	_reward_offer = Button.new()
+	_reward_offer.name = "RewardOffer"
+	_reward_offer.text = tr("Watch an ad · 20 min of every sound")
+	_reward_offer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_reward_offer.clip_text = false
+	_reward_offer.custom_minimum_size = Vector2(0, 64)
+	UiLook.style_secondary_slate(_reward_offer)
+	_reward_offer.add_theme_font_size_override("font_size", 15)
+	_reward_offer.pressed.connect(_on_reward_offer_pressed)
+	vbox.add_child(_reward_offer)
+	vbox.move_child(_reward_offer, _library_label.get_index() + 1)
 	_refresh_library_banner()
+	_refresh_reward_offer()
 	set_process(true)
 
 
@@ -609,6 +626,28 @@ func _library_clock() -> String:
 func _on_home_visibility_changed() -> void:
 	if visible:
 		_rebuild_play_again()
+		AdsService.prepare_rewarded_offer()
+		_refresh_reward_offer()
+
+
+func _refresh_reward_offer() -> void:
+	if _reward_offer == null:
+		return
+	## One quiet row on Home. Plus, today's used unlock, and a consent block hide it.
+	var show := (
+		not Entitlements.has_plus()
+		and Entitlements.can_start_library_unlock()
+		and AdsService.can_offer_rewarded()
+	)
+	_reward_offer.visible = show
+	if show:
+		_reward_offer.text = tr("Watch an ad · 20 min of every sound")
+
+
+func _on_reward_offer_pressed() -> void:
+	var nav := get_tree().get_first_node_in_group("main_nav")
+	if nav != null and nav.has_method("show_paywall"):
+		nav.call("show_paywall", {}, "reward_offer", true)
 
 
 func _build_play_again() -> void:

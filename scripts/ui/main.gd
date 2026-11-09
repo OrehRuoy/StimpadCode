@@ -55,6 +55,7 @@ func _ready() -> void:
 	AudioController.playback_started.connect(_on_now_playing_changed)
 	AudioController.playback_stopped.connect(_on_now_playing_changed)
 	AudioController.playback_finished.connect(_on_now_playing_changed)
+	AudioController.timer_finished.connect(_on_session_timer_finished)
 	_setup_boot_overlay()
 	_ensure_ripple_layer()
 	_show_screen(_home)
@@ -154,10 +155,13 @@ func is_home_visible() -> bool:
 
 
 func show_home(count_safe_exit: bool = true) -> void:
-	if AudioController.is_previewing():
+	var leaving := _current_screen
+	## A cancelled preview is not a finished session. Check before end_preview clears the flag.
+	var was_preview := AudioController.is_previewing()
+	if was_preview:
 		AudioController.end_preview("cancel")
-	if count_safe_exit:
-		AdsService.try_show_interstitial_on_safe_exit()
+	if count_safe_exit and not was_preview:
+		_offer_break_interstitial(leaving)
 	_show_screen(_home)
 	AnalyticsService.log_screen("home")
 	EnjoyPromptService.on_returned_home()
@@ -184,15 +188,15 @@ func show_player(sound: Dictionary) -> void:
 func show_settings() -> void:
 	if AudioController.is_previewing():
 		AudioController.end_preview("cancel")
-	AdsService.try_show_interstitial_on_safe_exit()
+	## Opening Settings is not a break. The interstitial, if any, waits until they come back.
 	_show_screen(_settings)
 	AnalyticsService.log_screen("settings")
 
 
-func show_paywall(for_sound: Dictionary = {}, reason: String = "") -> void:
+func show_paywall(for_sound: Dictionary = {}, reason: String = "", start_rewarded: bool = false) -> void:
 	IAPService.ensure_store_started()
 	_show_screen(_paywall)
-	_paywall.call("open_for_sound", for_sound, reason)
+	_paywall.call("open_for_sound", for_sound, reason, start_rewarded)
 	var why := reason
 	if why.is_empty():
 		why = "locked_sound" if not for_sound.is_empty() else "plus_button"
@@ -257,6 +261,21 @@ func _on_preview_finished(sound_id: String, reason: String) -> void:
 			show_paywall(sound, "preview_ended")
 
 
+func _offer_break_interstitial(leaving: Control) -> void:
+	## Only after a sound has already stopped, or when coming back from Settings.
+	## A playing loop, a preview, and the paywall are not breaks.
+	if leaving == _player:
+		AdsService.try_show_interstitial_on_break("session_closed")
+	elif leaving == _settings:
+		AdsService.try_show_interstitial_on_break("menu_returned")
+
+
+func _on_session_timer_finished(_sound_id: String) -> void:
+	if _current_screen == _paywall or _current_screen == _feedback:
+		return
+	AdsService.try_show_interstitial_on_break("timer_ended")
+
+
 func _on_library_unlock_ended(reason: String) -> void:
 	if reason == "plus_purchased":
 		return
@@ -291,7 +310,9 @@ func _on_android_back() -> void:
 	if _current_screen == _player or _current_screen == _paywall or _current_screen == _settings or _current_screen == _feedback:
 		if _current_screen == _player and AudioController.is_previewing():
 			_player.call("close_preview")
-		show_home(false)
+		## Back from a stopped player or from Settings is a break. Paywall and feedback are not.
+		var offer_break := _current_screen == _player or _current_screen == _settings
+		show_home(offer_break)
 		return
 	if _current_screen == _home:
 		get_tree().quit()

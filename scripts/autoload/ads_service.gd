@@ -5,6 +5,8 @@ signal house_banner_changed
 signal privacy_choices_availability_changed(available: bool)
 signal rewarded_unlock_completed
 signal rewarded_unlock_failed(reason: String)
+## Fired when a rewarded ad finishes loading, including after the paywall already gave up waiting.
+signal rewarded_became_ready
 
 ## iOS production (AdMob app + units).
 const PROD_APP_ID_IOS := "ca-app-pub-5356882403986713~1231581339"
@@ -78,18 +80,25 @@ const AD_ERROR_INVALID_REQUEST := 1
 const AD_ERROR_NETWORK := 2
 const AD_ERROR_NO_FILL := 3
 
-## Interstitials: not every navigation — every Nth safe exit, with a cooldown.
-const INTERSTITIAL_EVERY_N_EXITS := 3
-const INTERSTITIAL_MIN_INTERVAL_SEC := 90.0
+## Fullscreen caps live in res://scripts/ad_policy.gd.
+const AdCaps := preload("res://scripts/ad_policy.gd")
+const INTERSTITIAL_MIN_INTERVAL_SEC := AdCaps.INTERSTITIAL_MIN_INTERVAL_SEC
+const INTERSTITIAL_SESSION_GRACE_SEC := AdCaps.INTERSTITIAL_SESSION_GRACE_SEC
 ## One banner stays on every screen. A new creative is requested this often.
 ## AdMob's own refresh, if it fires, resets this wait so two requests are not stacked.
 const BANNER_REFRESH_SEC := 45.0
 ## Wait after a rewarded load failure before requesting that unit again.
 const REWARDED_LOAD_FAIL_COOLDOWN_SEC := 60.0
+## How long a Watch Ad tap waits for an in-flight load before asking the person to tap again.
+const REWARDED_SHOW_WAIT_SEC := 20.0
+## Rewarded ads expire about an hour after they load. Reload before that so a tap does not show a dead ad.
+const REWARDED_MAX_AGE_SEC := AdCaps.REWARDED_MAX_AGE_SEC
+## A load that never calls back must not latch "in flight" and block every later request.
+const REWARDED_LOAD_TIMEOUT_SEC := 30.0
 ## A few points so the last control does not sit on the ad's top edge.
 const BANNER_UI_GAP := 4.0
 
-var _safe_exit_count: int = 0
+var _session_started_unix: float = 0.0
 var _last_interstitial_unix: float = -99999.0
 var _banner_mounted: bool = false
 var _banner_refresh_armed: bool = false
@@ -111,6 +120,7 @@ var _last_banner_result: String = "none"
 var _last_rewarded_result: String = "none"
 var _last_banner_error: String = ""
 var _last_rewarded_error: String = ""
+var _last_rewarded_failure_code: String = ""
 var _house_reward_offer: bool = false
 var _ads_debug_layer: CanvasLayer
 var _ads_debug_body: Label
@@ -120,11 +130,16 @@ var _house_rotate_gen: int = 0
 var _pending_reward_active: bool = false
 var _fullscreen_ad_since_unix: float = 0.0
 var _reward_earned_pending: bool = false
+var _rewarded_loaded_unix: float = 0.0
+var _rewarded_load_gen: int = 0
+var _rewarded_show_gen: int = 0
+var _rewarded_show_started: bool = false
 ## Main UI (home grid) finished first paint — set via notify_ui_ready().
 var _ui_ready: bool = false
 
 
 func _ready() -> void:
+	_session_started_unix = Time.get_unix_time_from_system()
 	AudioController.playback_started.connect(_on_playback_started)
 	AudioController.playback_stopped.connect(_on_playback_stopped)
 	AudioController.playback_finished.connect(_on_playback_stopped)
@@ -164,13 +179,19 @@ func set_ads_enabled(enabled: bool) -> void:
 	else:
 		ensure_banner_mounted()
 		_preload_interstitial()
+		_preload_rewarded()
 	banner_visibility_changed.emit(should_show_banner())
+
+
+func ads_allowed() -> bool:
+	## StimPad Plus is the remove-ads purchase. Consent denial blocks every format too.
+	return _ads_enabled and not _plus_blocks_ads() and not _ads_blocked_by_consent
 
 
 func _banner_slot_open() -> bool:
 	## The bottom slot stays reserved for non-Plus players even before AdMob
 	## is ready, so the bar is a house ad instead of an empty gray strip.
-	return _ads_enabled and not _plus_blocks_ads() and not _ads_blocked_by_consent
+	return ads_allowed()
 
 
 func should_show_banner() -> bool:
@@ -331,25 +352,11 @@ func banner_reserved_height() -> float:
 
 
 func can_show_interstitial() -> bool:
-	var reason := _interstitial_block_reason()
-	var cooldown := _interstitial_cooldown_remaining()
-	if not reason.is_empty():
-		print("[AdsService] interstitial blocked reason=%s exits=%d cooldown=%.0f" % [
-			reason, _safe_exit_count, cooldown,
-		])
-		return false
-	if cooldown > 0.0:
-		print("[AdsService] interstitial blocked reason=cooldown exits=%d cooldown=%.0f" % [
-			_safe_exit_count, cooldown,
-		])
-		return false
-	return true
+	return _interstitial_block_reason().is_empty()
 
 
 func can_offer_rewarded() -> bool:
-	if _plus_blocks_ads():
-		return false
-	if not _ads_enabled or _ads_blocked_by_consent:
+	if not ads_allowed():
 		return false
 	## Desktop/editor: simulate rewarded unlock for testing.
 	if not OS.has_feature("mobile"):
@@ -411,22 +418,18 @@ func hide_banner() -> void:
 	house_banner_changed.emit()
 
 
-func try_show_interstitial_on_safe_exit() -> void:
-	_safe_exit_count += 1
-	var cooldown := _interstitial_cooldown_remaining()
-	if _safe_exit_count % INTERSTITIAL_EVERY_N_EXITS != 0:
-		print("[AdsService] interstitial blocked reason=exit_count exits=%d cooldown=%.0f" % [
-			_safe_exit_count, cooldown,
-		])
-		return
+func try_show_interstitial_on_break(kind: String) -> void:
+	## Natural breaks only: a stopped sound session, a timer that already stopped
+	## the sound, or coming back from Settings. Callers must not use this mid-loop.
 	var reason := _interstitial_block_reason()
 	if reason == "not loaded":
-		print("[AdsService] interstitial blocked reason=not loaded exits=%d cooldown=%.0f" % [
-			_safe_exit_count, cooldown,
-		])
+		print("[AdsService] interstitial blocked reason=not loaded kind=%s" % kind)
 		_preload_interstitial()
 		return
-	if not can_show_interstitial():
+	if not reason.is_empty():
+		print("[AdsService] interstitial blocked reason=%s kind=%s grace=%.0f cooldown=%.0f" % [
+			reason, kind, _session_grace_remaining(), _interstitial_cooldown_remaining(),
+		])
 		return
 	if _admob == null or not _admob.is_interstitial_ad_loaded():
 		_interstitial_ready = false
@@ -434,12 +437,29 @@ func try_show_interstitial_on_safe_exit() -> void:
 		return
 	_interstitial_ready = false
 	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
+	print("[AdsService] interstitial show kind=%s" % kind)
 	_admob.show_interstitial_ad()
 
 
 func _emit_rewarded_failed(code: String, message: String) -> void:
+	_last_rewarded_failure_code = code
 	AnalyticsService.log_event("rewarded_failed", {"reason": code})
 	rewarded_unlock_failed.emit(message)
+
+
+func rewarded_failure_can_retry() -> bool:
+	return _last_rewarded_failure_code in ["loading", "no_ad", "not_ready", "show_failed"]
+
+
+func prepare_rewarded_offer() -> void:
+	## Keep a fresh rewarded ad loaded before anyone taps Watch Ad.
+	if not ads_allowed() or not OS.has_feature("mobile") or not _sdk_ready or _pending_reward_active:
+		return
+	if _rewarded_is_stale():
+		_discard_stale_rewarded()
+		return
+	if not _rewarded_ready and not _rewarded_load_in_flight:
+		_preload_rewarded()
 
 
 func try_show_rewarded_for_library() -> void:
@@ -457,47 +477,90 @@ func try_show_rewarded_for_library() -> void:
 	if _playback_active:
 		_emit_rewarded_failed("playback_active", tr("Stop playback first."))
 		return
+	if _pending_reward_active:
+		return
+	_pending_reward_active = true
+	_reward_earned_pending = false
 	if not _sdk_ready:
 		ensure_initialized_for_rewarded()
-		_pending_reward_active = true
-		_reward_earned_pending = false
 		var waited := 0.0
 		while not _sdk_ready and waited < 12.0:
 			await get_tree().create_timer(0.4).timeout
 			waited += 0.4
-		if not _sdk_ready or _admob == null:
-			_on_rewarded_not_ready("no_sdk")
-			return
 		if not _pending_reward_active:
 			return
+		if not _sdk_ready or _admob == null:
+			_pending_reward_active = false
+			_on_rewarded_not_ready("no_sdk")
+			return
 	if _admob == null:
+		_pending_reward_active = false
 		_on_rewarded_not_ready("no_sdk")
 		return
-	_pending_reward_active = true
-	_reward_earned_pending = false
-	_apply_request_config_before_ad_load()
-	if _rewarded_ready:
-		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
-		print("[AdsService] rewarded show unit=%s" % _rewarded_unit)
-		_admob.show_rewarded_ad()
-		_rewarded_ready = false
+	if _rewarded_is_stale() or (_rewarded_ready and not _plugin_has_rewarded()):
+		_discard_stale_rewarded()
+	if _rewarded_can_present():
+		_present_rewarded()
 		return
 	if not _rewarded_load_in_flight:
 		_preload_rewarded()
-	var loaded := await _wait_until_rewarded_settled(8.0)
+	var loaded := await _wait_until_rewarded_settled(REWARDED_SHOW_WAIT_SEC)
 	if not _pending_reward_active:
 		return
-	if loaded and _admob and _rewarded_ready:
-		_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
-		print("[AdsService] rewarded show unit=%s" % _rewarded_unit)
-		_admob.show_rewarded_ad()
-		_rewarded_ready = false
-	elif _rewarded_load_in_flight:
+	if loaded and _rewarded_can_present():
+		_present_rewarded()
+		return
+	_pending_reward_active = false
+	if _rewarded_load_in_flight:
 		_offer_android_house_reward("loading")
 		_emit_rewarded_failed("loading", tr("The video ad is still loading. Try again in a moment, or open a partner app.") if Platform.is_android() else tr("Ad is still loading — try again in a moment."))
 	else:
 		_offer_android_house_reward("load_error")
 		_emit_rewarded_failed("no_ad", tr("No video ad yet. Try again in a moment, or open a partner app.") if Platform.is_android() else tr("No ad available right now — try again in a bit."))
+
+
+func _rewarded_can_present() -> bool:
+	return _admob != null and _rewarded_ready and _plugin_has_rewarded() and not _rewarded_is_stale()
+
+
+func _plugin_has_rewarded() -> bool:
+	return _admob != null and _admob.is_rewarded_ad_loaded()
+
+
+func _rewarded_is_stale() -> bool:
+	return _rewarded_ready and AdCaps.rewarded_ad_is_stale(
+		_rewarded_loaded_unix, Time.get_unix_time_from_system(), REWARDED_MAX_AGE_SEC
+	)
+
+
+func _discard_stale_rewarded() -> void:
+	print("[AdsService] rewarded stale — reloading unit=%s" % _rewarded_unit)
+	_rewarded_ready = false
+	_rewarded_loaded_unix = 0.0
+	_rewarded_load_in_flight = false
+	if _admob != null and _admob.is_rewarded_ad_loaded():
+		_admob.remove_rewarded_ad()
+	_preload_rewarded()
+
+
+func _present_rewarded() -> void:
+	_rewarded_show_gen += 1
+	var gen := _rewarded_show_gen
+	_rewarded_show_started = false
+	print("[AdsService] rewarded show unit=%s" % _rewarded_unit)
+	_admob.show_rewarded_ad()
+	## A missing cached ad logs and never emits a callback. A real show emits within a few seconds.
+	get_tree().create_timer(8.0).timeout.connect(func() -> void:
+		if gen != _rewarded_show_gen or _rewarded_show_started or not _pending_reward_active:
+			return
+		## The plugin logged "ad not found" and never emitted a show callback.
+		_pending_reward_active = false
+		_reward_earned_pending = false
+		_fullscreen_ad_since_unix = 0.0
+		_rewarded_ready = false
+		_preload_rewarded()
+		_emit_rewarded_failed("show_failed", tr("Couldn't show the ad. Try again."))
+	, CONNECT_ONE_SHOT)
 
 
 func privacy_choices_available() -> bool:
@@ -631,7 +694,11 @@ func _refresh_ads_status_panel() -> void:
 		"init_done=%s" % str(_admob_init_cb_fired),
 		"banner=%s" % _format_load_status(_last_banner_result, _last_banner_error, _banner_mounted),
 		"rewarded=%s" % _format_load_status(_last_rewarded_result, _last_rewarded_error, _rewarded_ready),
-		"interstitial=%s" % _interstitial_status_label(),
+		"interstitial=%s grace=%.0f cooldown=%.0f" % [
+			_interstitial_status_label(),
+			_session_grace_remaining(),
+			_interstitial_cooldown_remaining(),
+		],
 		"test_ads=%s" % str(LocalPrefs.android_test_ads),
 		"banner_unit=%s" % _banner_unit,
 		"rewarded_unit=%s" % _rewarded_unit,
@@ -712,6 +779,7 @@ func _drop_loaded_ads_for_unit_change() -> void:
 		_admob.remove_rewarded_ad()
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
+	_rewarded_loaded_unix = 0.0
 	_last_rewarded_result = "none"
 	_last_rewarded_error = ""
 	if _admob.is_interstitial_ad_loaded():
@@ -1133,16 +1201,10 @@ func _initialize_ads() -> void:
 	_admob.interstitial_ad_showed_full_screen_content.connect(_on_interstitial_showed)
 	_admob.interstitial_ad_failed_to_show_full_screen_content.connect(_on_interstitial_failed_to_show)
 	_admob.interstitial_ad_dismissed_full_screen_content.connect(_on_interstitial_dismissed)
-	_admob.rewarded_ad_loaded.connect(func(_a, _r):
-		_rewarded_ready = true
-		_rewarded_load_in_flight = false
-		_last_rewarded_result = "success"
-		_last_rewarded_error = ""
-		_house_reward_offer = false
-		print("[AdsService] rewarded load success unit=%s" % _rewarded_unit)
-	)
+	_admob.rewarded_ad_loaded.connect(_on_rewarded_loaded)
 	_admob.rewarded_ad_failed_to_load.connect(_on_rewarded_failed_to_load)
 	_admob.rewarded_ad_user_earned_reward.connect(_on_rewarded_earned)
+	_admob.rewarded_ad_showed_full_screen_content.connect(_on_rewarded_showed)
 	_admob.rewarded_ad_dismissed_full_screen_content.connect(_on_rewarded_dismissed)
 	_admob.rewarded_ad_failed_to_show_full_screen_content.connect(_on_rewarded_failed_to_show)
 	if OS.get_name() == "iOS":
@@ -1704,24 +1766,33 @@ func _interstitial_unit_id() -> String:
 
 
 func _interstitial_block_reason() -> String:
-	if not _ads_enabled:
-		return "ads off"
-	if _plus_blocks_ads():
-		return "Plus"
-	if Entitlements.is_library_unlocked():
-		return "library unlock"
-	if _playback_active:
-		return "playback"
-	if _ads_blocked_by_consent:
-		return "consent"
-	if not _has_mobile_ads() or not _sdk_ready:
-		return "SDK"
-	if not _interstitial_ready:
-		return "not loaded"
-	return ""
+	return AdCaps.interstitial_block_reason_for(
+		_ads_enabled,
+		_plus_blocks_ads(),
+		_playback_active,
+		_ads_blocked_by_consent,
+		Entitlements.is_library_unlocked(),
+		_has_mobile_ads() and _sdk_ready,
+		_interstitial_ready,
+		is_fullscreen_ad_showing(),
+		Time.get_unix_time_from_system(),
+		_session_started_unix,
+		_last_interstitial_unix,
+		INTERSTITIAL_SESSION_GRACE_SEC,
+		INTERSTITIAL_MIN_INTERVAL_SEC,
+	)
+
+
+func _session_grace_remaining() -> float:
+	if _session_started_unix <= 0.0:
+		return INTERSTITIAL_SESSION_GRACE_SEC
+	var elapsed := Time.get_unix_time_from_system() - _session_started_unix
+	return maxf(0.0, INTERSTITIAL_SESSION_GRACE_SEC - elapsed)
 
 
 func _interstitial_cooldown_remaining() -> float:
+	if _last_interstitial_unix <= 0.0:
+		return 0.0
 	var elapsed := Time.get_unix_time_from_system() - _last_interstitial_unix
 	return maxf(0.0, INTERSTITIAL_MIN_INTERVAL_SEC - elapsed)
 
@@ -1737,21 +1808,9 @@ func _interstitial_status_label() -> String:
 
 
 func _preload_interstitial() -> void:
-	print("[AdsService] interstitial preload called")
 	if not _admob or not _sdk_ready:
-		print("[AdsService] interstitial blocked reason=SDK exits=%d cooldown=%.0f" % [
-			_safe_exit_count, _interstitial_cooldown_remaining(),
-		])
 		return
-	if not _ads_enabled:
-		print("[AdsService] interstitial blocked reason=ads off exits=%d cooldown=%.0f" % [
-			_safe_exit_count, _interstitial_cooldown_remaining(),
-		])
-		return
-	if _plus_blocks_ads():
-		print("[AdsService] interstitial blocked reason=Plus exits=%d cooldown=%.0f" % [
-			_safe_exit_count, _interstitial_cooldown_remaining(),
-		])
+	if not _ads_enabled or _plus_blocks_ads():
 		return
 	if _interstitial_ready or _interstitial_load_in_flight:
 		return
@@ -1767,10 +1826,15 @@ func _preload_interstitial() -> void:
 
 
 func _preload_rewarded() -> void:
-	if not _admob or not _sdk_ready or not _ads_enabled or _plus_blocks_ads():
+	if not _admob or not _sdk_ready or not ads_allowed():
 		return
 	if _rewarded_ready or _rewarded_load_in_flight:
 		return
+	if _rewarded_unit.is_empty() or not Engine.has_singleton("AdmobPlugin"):
+		push_warning("AdMob rewarded load skipped — unit or plugin missing")
+		return
+	_rewarded_load_gen += 1
+	var gen := _rewarded_load_gen
 	_rewarded_load_in_flight = true
 	_apply_request_config_before_ad_load()
 	_last_rewarded_result = "requested"
@@ -1778,6 +1842,14 @@ func _preload_rewarded() -> void:
 	var req := _admob.create_rewarded_ad_request()
 	req.set_ad_unit_id(_rewarded_unit)
 	_admob.load_rewarded_ad(req)
+	get_tree().create_timer(REWARDED_LOAD_TIMEOUT_SEC).timeout.connect(func() -> void:
+		if gen != _rewarded_load_gen or not _rewarded_load_in_flight:
+			return
+		push_warning("AdMob rewarded load timed out — will try again")
+		_rewarded_load_in_flight = false
+		_last_rewarded_result = "timeout"
+		_schedule_rewarded_preload(5.0)
+	, CONNECT_ONE_SHOT)
 
 
 func _schedule_rewarded_preload(delay_sec: float) -> void:
@@ -1821,18 +1893,41 @@ func _show_banner_native() -> void:
 	banner_visibility_changed.emit(false)
 
 
+func _on_rewarded_loaded(_ad_info, _response = null) -> void:
+	_rewarded_ready = true
+	_rewarded_load_in_flight = false
+	_rewarded_loaded_unix = Time.get_unix_time_from_system()
+	_last_rewarded_result = "success"
+	_last_rewarded_error = ""
+	_house_reward_offer = false
+	print("[AdsService] rewarded load success unit=%s" % _rewarded_unit)
+	rewarded_became_ready.emit()
+	_refresh_ads_status_panel()
+
+
 func _on_rewarded_earned(_ad_info, _reward) -> void:
 	_reward_earned_pending = true
+
+
+func _on_rewarded_showed(_ad_info) -> void:
+	_rewarded_show_started = true
+	_rewarded_ready = false
+	_rewarded_loaded_unix = 0.0
+	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
+	print("[AdsService] rewarded shown")
 
 
 func _on_rewarded_dismissed(_ad_info) -> void:
 	_fullscreen_ad_since_unix = 0.0
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
+	_rewarded_loaded_unix = 0.0
+	_rewarded_show_started = false
 	var active := _pending_reward_active
 	var earned := _reward_earned_pending
 	_pending_reward_active = false
 	_reward_earned_pending = false
+	## The shown ad is single-use. Request the next one immediately.
 	_preload_rewarded()
 	keep_banner_visible()
 	if not active:
@@ -1846,8 +1941,13 @@ func _on_rewarded_dismissed(_ad_info) -> void:
 
 
 func _on_rewarded_failed_to_load(_ad_info, error) -> void:
+	## A load that already finished (or was replaced) must not cancel the ad we are showing next.
+	if not _rewarded_load_in_flight:
+		_log_ad_error("rewarded", error, _rewarded_unit)
+		return
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
+	_rewarded_loaded_unix = 0.0
 	_log_ad_error("rewarded", error, _rewarded_unit)
 	_schedule_rewarded_preload(REWARDED_LOAD_FAIL_COOLDOWN_SEC)
 
@@ -1856,7 +1956,9 @@ func _on_rewarded_failed_to_show(_ad_info, error) -> void:
 	_fullscreen_ad_since_unix = 0.0
 	_pending_reward_active = false
 	_reward_earned_pending = false
+	_rewarded_show_started = false
 	_rewarded_ready = false
+	_rewarded_loaded_unix = 0.0
 	_log_ad_error("rewarded show", error)
 	_preload_rewarded()
 	keep_banner_visible()

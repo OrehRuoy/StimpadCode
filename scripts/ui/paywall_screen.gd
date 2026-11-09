@@ -30,6 +30,7 @@ var _open_reason: String = ""
 var _countdown_accum := 0.0
 var _paywall_scroll: ScrollContainer
 var _house_offer_btn: Button
+var _waiting_for_ad := false
 
 
 func _ready() -> void:
@@ -44,6 +45,7 @@ func _ready() -> void:
 	Entitlements.plus_changed.connect(func(_v): _refresh())
 	AdsService.rewarded_unlock_completed.connect(_on_rewarded_done)
 	AdsService.rewarded_unlock_failed.connect(_on_rewarded_failed)
+	AdsService.rewarded_became_ready.connect(_on_rewarded_became_ready)
 	AdsService.privacy_choices_availability_changed.connect(func(_available): _refresh())
 	resized.connect(_apply_responsive_layout)
 	_style_controls()
@@ -64,12 +66,16 @@ func _process(delta: float) -> void:
 	_refresh()
 
 
-func open_for_sound(sound: Dictionary = {}, reason: String = "") -> void:
+func open_for_sound(sound: Dictionary = {}, reason: String = "", start_rewarded: bool = false) -> void:
 	_focus_sound = sound
 	_open_reason = reason
+	_waiting_for_ad = false
 	if not Entitlements.has_plus() and Entitlements.can_start_library_unlock():
 		AdsService.ensure_initialized_for_rewarded()
+		AdsService.prepare_rewarded_offer()
 	_refresh()
+	if start_rewarded and _watch_wrap.visible:
+		call_deferred("_on_watch_ad")
 
 
 func _style_controls() -> void:
@@ -259,10 +265,11 @@ func _refresh() -> void:
 		_reveal_actions()
 		return
 
-	## Watch Ad stays on every locked paywall, including right after a preview.
-	## Hidden when Android consent does not allow an ad request.
+	## Watch Ad stays on a locked paywall until today's unlock is used.
+	## Hidden for Plus, for a consent block, and after the daily unlock.
 	_watch_hint.text = tr("Plus free for 20 min")
-	_set_watch_visible(AdsService.can_offer_rewarded())
+	var can_watch := AdsService.can_offer_rewarded() and Entitlements.can_start_library_unlock()
+	_set_watch_visible(can_watch)
 	if _open_reason == "library_window_ended":
 		_subtitle.text = tr("One purchase unlocks StimPad")
 		_status.text = tr("Your 20 minutes of Plus are up. Get Plus to keep every sound, or tap Restore if you already bought it.")
@@ -280,12 +287,23 @@ func _refresh() -> void:
 
 
 func _on_watch_ad() -> void:
+	_waiting_for_ad = true
 	_status.text = tr("Loading ad…")
 	AnalyticsService.log_event("paywall_watch_ad_tap", {"scope": "library"})
 	AdsService.try_show_rewarded_for_library()
 
 
+func _on_rewarded_became_ready() -> void:
+	if not visible or not _waiting_for_ad:
+		return
+	if not Entitlements.can_start_library_unlock():
+		return
+	_waiting_for_ad = false
+	_status.text = tr("Ad ready — tap Watch Ad")
+
+
 func _on_rewarded_done() -> void:
+	_waiting_for_ad = false
 	_refresh()
 	if not _focus_sound.is_empty():
 		_nav_call("show_player", [_focus_sound])
@@ -319,6 +337,8 @@ func _sync_house_offer_button() -> void:
 
 
 func _on_rewarded_failed(reason: String) -> void:
+	## Keep waiting only when a load may still finish. A daily cap or an early close should stay on screen.
+	_waiting_for_ad = AdsService.rewarded_failure_can_retry()
 	_status.text = reason
 	_sync_house_offer_button()
 
