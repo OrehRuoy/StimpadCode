@@ -129,6 +129,8 @@ var _house_rotate_armed: bool = false
 var _house_rotate_gen: int = 0
 var _pending_reward_active: bool = false
 var _fullscreen_ad_since_unix: float = 0.0
+## When the last fullscreen ad closed. Review waits until this is a quiet moment.
+var _fullscreen_closed_unix: float = 0.0
 var _reward_earned_pending: bool = false
 var _rewarded_loaded_unix: float = 0.0
 var _rewarded_load_gen: int = 0
@@ -1638,6 +1640,20 @@ func is_fullscreen_ad_showing() -> bool:
 	return true
 
 
+func blocks_review_prompt() -> bool:
+	## Native review must not land on top of an ad, or in the moment it closes.
+	if is_fullscreen_ad_showing():
+		return true
+	if _fullscreen_closed_unix <= 0.0:
+		return false
+	return Time.get_unix_time_from_system() - _fullscreen_closed_unix < 45.0
+
+
+func _note_fullscreen_ad_closed() -> void:
+	_fullscreen_ad_since_unix = 0.0
+	_fullscreen_closed_unix = Time.get_unix_time_from_system()
+
+
 func _on_interstitial_showed(_ad_info) -> void:
 	_fullscreen_ad_since_unix = Time.get_unix_time_from_system()
 	_last_interstitial_unix = Time.get_unix_time_from_system()
@@ -1655,7 +1671,7 @@ func _on_interstitial_failed_to_show(_ad_info, error) -> void:
 
 
 func _on_interstitial_dismissed(_ad_info) -> void:
-	_fullscreen_ad_since_unix = 0.0
+	_note_fullscreen_ad_closed()
 	print("[AdsService] interstitial closed")
 	_preload_interstitial()
 	keep_banner_visible()
@@ -1918,7 +1934,7 @@ func _on_rewarded_showed(_ad_info) -> void:
 
 
 func _on_rewarded_dismissed(_ad_info) -> void:
-	_fullscreen_ad_since_unix = 0.0
+	_note_fullscreen_ad_closed()
 	_rewarded_ready = false
 	_rewarded_load_in_flight = false
 	_rewarded_loaded_unix = 0.0

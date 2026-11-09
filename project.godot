@@ -12,7 +12,7 @@ config_version=5
 
 config/name="StimPad"
 config/description="Audio sensory fidget soundboard for neurodivergent users."
-config/version="1.0.10"
+config/version="1.0.11"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "Mobile")

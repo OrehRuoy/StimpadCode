@@ -1,58 +1,58 @@
 extends Node
-## Schedules the “Are you enjoying StimPad?” prompt and owns the overlay instance.
+## The one automatic review prompt. It asks the OS to show its own sheet
+## (iOS SKStoreReviewController / Android Play In-App Review). It does not
+## show a custom "are you enjoying this?" card first.
 ##
-## Timing:
-## - Eligible from the 2nd app open (never the first)
-## - Never on cold launch / idle home wait
-## - After one sound has been listened to for 45 seconds, then the user returns Home
-## Apple still rate-limits the actual review sheet.
-##
-## IMPORTANT: do not preload enjoy_prompt.tscn here — that scene’s script
-## references this autoload and would create a circular load failure.
+## When:
+## - The 3rd app open in which a real sound was played, after that sound stops, or
+## - A timer finishes (the sound has already stopped).
+## Never while audio is playing, and not in the 45 seconds after a fullscreen ad.
+## At most once every 90 days. The OS may still show nothing.
 
 signal prompt_visibility_changed(visible: bool)
 
-const PROMPT_SCENE_PATH := "res://scenes/ui/enjoy_prompt.tscn"
-## Brief beat after returning home so the grid settles (and ads can clear).
-const HOME_SETTLE_SEC := 1.4
-## Ask from the 2nd launch. Never the first. Apple still limits the sheet.
-const MIN_APP_OPENS := 2
-## After dismissing with X, wait before asking again.
+## Kept so the old card script still compiles if a debug build opens it.
 const SNOOZE_DISMISS_SEC := 60 * 60 * 24 * 5
-## After “No” (+ feedback), wait a week — they may change their mind.
 const SNOOZE_NO_SEC := 60 * 60 * 24 * 7
+const MIN_LISTEN_SESSIONS := 3
+const MIN_INTERVAL_SEC := 60 * 60 * 24 * 90
 
 var _prompt: Control = null
 var _delay_timer: SceneTreeTimer = null
-var _force_next := false
-var _qualified_listen := false
+var _counted_this_open := false
+var _timer_ready := false
+var _retries := 0
 
 
 func _ready() -> void:
 	LocalPrefs.note_app_open()
-	AudioController.listened_enough.connect(_on_listened_enough)
+	AudioController.playback_started.connect(_on_playback_started)
+	AudioController.playback_stopped.connect(_on_playback_stopped)
+	AudioController.playback_finished.connect(_on_playback_stopped)
+	AudioController.timer_finished.connect(_on_timer_finished)
 
 
-func _on_listened_enough(_sound_id: String) -> void:
-	_qualified_listen = true
-	## Listening often finishes on the player, or on Home after they already
-	## came back. Either way, try again once the 45 seconds are real.
-	_schedule_prompt()
+func _on_playback_started(_sound_id: String) -> void:
+	if AudioController.is_previewing() or _counted_this_open:
+		return
+	_counted_this_open = true
+	LocalPrefs.note_review_listen_session()
 
 
-## Call when navigating back to Home — may show the prompt after settle delay.
+func _on_playback_stopped(_sound_id: String = "") -> void:
+	if LocalPrefs.review_listen_sessions >= MIN_LISTEN_SESSIONS:
+		_schedule_check(1.2)
+
+
+func _on_timer_finished(_sound_id: String) -> void:
+	_timer_ready = true
+	## The interstitial, if any, is decided on this same signal. Wait until that settles.
+	_schedule_check(2.0)
+
+
 func on_returned_home() -> void:
-	_schedule_prompt()
-
-
-func _schedule_prompt() -> void:
-	if not _should_offer():
-		return
-	if not _force_next and not _qualified_listen:
-		return
-	_cancel_delay()
-	_delay_timer = get_tree().create_timer(HOME_SETTLE_SEC)
-	_delay_timer.timeout.connect(_on_settle_elapsed, CONNECT_ONE_SHOT)
+	if _timer_ready or LocalPrefs.review_listen_sessions >= MIN_LISTEN_SESSIONS:
+		_schedule_check(1.2)
 
 
 func is_showing() -> bool:
@@ -67,79 +67,77 @@ func dismiss() -> void:
 
 
 func force_show_now() -> void:
-	_force_next = true
-	_cancel_delay()
-	_show_prompt()
+	## Debug menu. Still the native sheet, not the old Yes/No card.
+	var ok: bool = ReviewService.request_review()
+	if ok:
+		LocalPrefs.mark_review_requested()
+	print("[Review] force native request ok=%s" % str(ok))
 
 
-func _should_offer() -> bool:
-	if _force_next:
-		return true
-	## Yes / review path only — permanent.
-	if LocalPrefs.enjoy_prompt_completed:
-		return false
-	var now := Time.get_unix_time_from_system()
-	if LocalPrefs.enjoy_prompt_snooze_until > now:
-		return false
-	if LocalPrefs.app_open_count < MIN_APP_OPENS:
-		return false
-	return true
+static func automatic_review_block_reason(
+	playing: bool,
+	previewing: bool,
+	ad_blocking: bool,
+	other_prompt: bool,
+	sessions: int,
+	timer_moment: bool,
+	now: float,
+	last_request: float,
+	min_sessions: int,
+	min_interval: float,
+) -> String:
+	if playing or previewing:
+		return "audio"
+	if ad_blocking:
+		return "ad"
+	if other_prompt:
+		return "prompt"
+	if last_request > 0.0 and now - last_request < min_interval:
+		return "cooldown"
+	if timer_moment or sessions >= min_sessions:
+		return ""
+	return "too_soon"
 
 
-func _on_settle_elapsed() -> void:
+func _schedule_check(delay_sec: float) -> void:
+	if _delay_timer != null:
+		return
+	_delay_timer = get_tree().create_timer(delay_sec)
+	_delay_timer.timeout.connect(_on_check, CONNECT_ONE_SHOT)
+
+
+func _on_check() -> void:
 	_delay_timer = null
-	if not _should_offer():
+	var reason := _current_block_reason()
+	if reason == "":
+		var ok: bool = ReviewService.request_review()
+		if ok:
+			LocalPrefs.mark_review_requested()
+			print("[Review] native request sessions=%d timer=%s" % [
+				LocalPrefs.review_listen_sessions, str(_timer_ready),
+			])
+			_timer_ready = false
+			_retries = 0
+		else:
+			print("[Review] native request unavailable")
 		return
-	if not _force_next and not _qualified_listen:
-		return
-	var nav := get_tree().get_first_node_in_group("main_nav")
-	if nav == null:
-		return
-	if nav.has_method("is_home_visible") and not nav.call("is_home_visible"):
-		return
-	var paywall := nav.get_node_or_null("Screens/PaywallScreen")
-	var blocked: bool = (
-		AdsService.is_fullscreen_ad_showing()
-		or FeatureTipService.is_showing()
-		or ReminderService.is_showing()
-		or (paywall != null and paywall.visible)
+	print("[Review] skipped reason=%s sessions=%d" % [reason, LocalPrefs.review_listen_sessions])
+	if reason in ["audio", "ad", "prompt"] and _retries < 2:
+		_retries += 1
+		_schedule_check(50.0 if reason == "ad" else 20.0)
+
+
+func _current_block_reason() -> String:
+	var other := FeatureTipService.is_showing() or ReminderService.is_showing() or is_showing()
+	return automatic_review_block_reason(
+		AudioController.is_playing(),
+		AudioController.is_previewing(),
+		AdsService.blocks_review_prompt(),
+		other,
+		LocalPrefs.review_listen_sessions,
+		_timer_ready,
+		Time.get_unix_time_from_system(),
+		float(LocalPrefs.review_request_unix()),
+		MIN_LISTEN_SESSIONS,
+		float(MIN_INTERVAL_SEC),
 	)
-	if blocked:
-		## Don't drop this chance because an ad or tip was still up.
-		_schedule_prompt()
-		return
-	_show_prompt()
-
-
-func _show_prompt() -> void:
-	if _prompt != null and is_instance_valid(_prompt):
-		return
-	var host := get_tree().get_first_node_in_group("main_nav")
-	if host == null:
-		return
-	var packed: PackedScene = load(PROMPT_SCENE_PATH) as PackedScene
-	if packed == null:
-		push_error("EnjoyPromptService: missing %s" % PROMPT_SCENE_PATH)
-		return
-	_prompt = packed.instantiate()
-	host.add_child(_prompt)
-	_prompt.z_index = 80
-	if _prompt.has_signal("closed"):
-		_prompt.closed.connect(_on_prompt_closed)
-	if _prompt.has_method("present"):
-		_prompt.call("present")
-	_force_next = false
-	LocalPrefs.mark_enjoy_prompt_shown()
-	AnalyticsService.log_event("enjoy_prompt_shown", {
-		"qualified_listen": true,
-	})
-	prompt_visibility_changed.emit(true)
-
-
-func _on_prompt_closed() -> void:
-	_prompt = null
-	prompt_visibility_changed.emit(false)
-
-
-func _cancel_delay() -> void:
-	_delay_timer = null

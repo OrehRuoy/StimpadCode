@@ -37,6 +37,9 @@ var app_open_count: int = 0
 var enjoy_prompt_completed: bool = false
 var enjoy_prompt_snooze_until: int = 0
 var enjoy_prompt_last_shown_unix: int = 0
+## Native review sheet. One listen-session per app open, asked at most every 90 days.
+var review_listen_sessions: int = 0
+var review_last_request_unix: int = 0
 var preview_day: String = ""
 var previewed_ids: Array[String] = []
 var library_unlock_until_unix: int = 0
@@ -109,6 +112,8 @@ func load_prefs() -> void:
 	enjoy_prompt_completed = bool(parsed.get("enjoy_prompt_completed", false))
 	enjoy_prompt_snooze_until = int(parsed.get("enjoy_prompt_snooze_until", 0))
 	enjoy_prompt_last_shown_unix = int(parsed.get("enjoy_prompt_last_shown_unix", 0))
+	review_listen_sessions = maxi(0, int(parsed.get("review_listen_sessions", 0)))
+	review_last_request_unix = int(parsed.get("review_last_request_unix", 0))
 	preview_day = str(parsed.get("preview_day", ""))
 	previewed_ids = _to_string_array(parsed.get("previewed_ids", []))
 	library_unlock_until_unix = int(parsed.get("library_unlock_until_unix", 0))
@@ -166,6 +171,8 @@ func save_prefs() -> void:
 		"enjoy_prompt_completed": enjoy_prompt_completed,
 		"enjoy_prompt_snooze_until": enjoy_prompt_snooze_until,
 		"enjoy_prompt_last_shown_unix": enjoy_prompt_last_shown_unix,
+		"review_listen_sessions": review_listen_sessions,
+		"review_last_request_unix": review_last_request_unix,
 		"preview_day": preview_day,
 		"previewed_ids": previewed_ids,
 		"library_unlock_until_unix": library_unlock_until_unix,
@@ -269,6 +276,25 @@ func _log_session_restored() -> void:
 		"sound_id": sound_id,
 		"hours_since_last": hours_since_last_session(),
 	})
+
+
+func note_review_listen_session() -> void:
+	review_listen_sessions += 1
+	save_prefs()
+
+
+func mark_review_requested() -> void:
+	review_last_request_unix = int(Time.get_unix_time_from_system())
+	save_prefs()
+
+
+## Last time we asked the OS to show the sheet. A Yes on the old card counts.
+func review_request_unix() -> int:
+	if review_last_request_unix > 0:
+		return review_last_request_unix
+	if enjoy_prompt_completed and enjoy_prompt_last_shown_unix > 0:
+		return enjoy_prompt_last_shown_unix
+	return 0
 
 
 func mark_enjoy_prompt_shown() -> void:

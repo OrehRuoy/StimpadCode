@@ -5,15 +5,15 @@ alwaysApply: true
 
 # Store version
 
-iOS short version is **1.0.10** (next TestFlight). Android `version/name` is **1.0.10**. 1.0.9 was the previous TestFlight short version. 1.0.6 was the previous App Store / TestFlight short version. 1.0.5 is the live iOS release.
+iOS short version is **1.0.11** (next TestFlight). Android `version/name` is **1.0.11**. 1.0.10 was the previous preset short version. 1.0.9 was the TestFlight short version before that. 1.0.6 was the previous App Store / TestFlight short version. 1.0.5 is the live iOS release named in the earlier note.
 
 Keep these in sync when a store version changes:
 
-- `project.godot` `config/version` is **1.0.10** (Android marketing name, same as the App Store short version).
-- `export_presets.cfg` iOS `application/short_version` is **1.0.10**
-- `export_presets.cfg` Android `version/name` is **1.0.10** on both presets
-- Android `version/code` is **13** on both presets. Version code 12 was the previous Play preset (live Play before that was 10). Add 1 for each later Play upload. The iOS preset build number is **10**; GitHub Actions still replaces it with `GITHUB_RUN_NUMBER` on upload.
+- `project.godot` `config/version` is **1.0.11** (Android marketing name, same as the App Store short version).
+- `export_presets.cfg` iOS `application/short_version` is **1.0.11**
+- `export_presets.cfg` Android `version/name` is **1.0.11** on both presets
+- Android `version/code` is **14** on both presets. Version code 13 was the previous preset. Version code 12 was the preset before that (live Play before that was 10). Add 1 for each later Play upload. The iOS preset build number stays **10**; GitHub Actions replaces it with `GITHUB_RUN_NUMBER` on upload.
 
-The next App Store upload after 1.0.10 must be **1.0.11** unless the user asks for a larger bump. 1.0.1, 1.0.2, 1.0.3, 1.0.4, 1.0.5, 1.0.6, 1.0.7, 1.0.8, and 1.0.9 are closed. Uploading a short version that is not higher than the approved release fails with Apple 90186 (train closed) and 90062 (version must be higher than the approved release).
+The next App Store upload after 1.0.11 must be **1.0.12** unless the user asks for a larger bump. 1.0.1, 1.0.2, 1.0.3, 1.0.4, 1.0.5, 1.0.6, 1.0.7, 1.0.8, 1.0.9, and 1.0.10 are closed for a new train. Uploading a short version that is not higher than the approved release fails with Apple 90186 (train closed) and 90062 (version must be higher than the approved release).
 
 CI sets the iOS build number from `GITHUB_RUN_NUMBER`. Do not reuse an approved short version. After a new version is uploaded, update this rule to that version and the following patch.
